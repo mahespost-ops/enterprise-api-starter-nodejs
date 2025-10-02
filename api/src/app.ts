@@ -19,6 +19,7 @@ import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.middleware';
 import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
+import { xssSanitizationMiddleware } from './middleware/xss.middleware';
 
 /**
  * Create and configure Express application
@@ -89,6 +90,11 @@ async function createApp(): Promise<Application> {
   // ============================================
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // ============================================
+  // 4a. XSS Sanitization (After body parsing)
+  // ============================================
+  app.use(xssSanitizationMiddleware);
 
   // ============================================
   // 5. Compression Middleware
