@@ -17,6 +17,8 @@ import config from './config';
 import logger, { morganStream } from './config/logger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.middleware';
+import { requestIdMiddleware } from './middleware/request-id.middleware';
+import { apiLimiter } from './middleware/rate-limit.middleware';
 
 /**
  * Create and configure Express application
@@ -25,20 +27,50 @@ async function createApp(): Promise<Application> {
   const app = express();
 
   // ============================================
-  // 1. Logging Middleware (First)
+  // 1. Request ID Middleware (First - for tracing)
+  // ============================================
+  app.use(requestIdMiddleware);
+
+  // ============================================
+  // 2. Logging Middleware
   // ============================================
   const morganFormat = config.isDevelopment ? 'dev' : 'combined';
   app.use(morgan(morganFormat, { stream: morganStream }));
 
   // ============================================
-  // 2. Security Middleware
+  // 3. Security Middleware
   // ============================================
 
-  // Helmet - Set security headers
+  // Helmet - Set security headers with enhanced CSP
   app.use(
     helmet({
-      contentSecurityPolicy: config.isProduction,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for Swagger UI
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
+      },
       crossOriginEmbedderPolicy: config.isProduction,
+      crossOriginResourcePolicy: { policy: 'same-site' },
+      dnsPrefetchControl: { allow: false },
+      frameguard: { action: 'deny' },
+      hidePoweredBy: true,
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      ieNoOpen: true,
+      noSniff: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      xssFilter: true,
     })
   );
 
@@ -53,18 +85,18 @@ async function createApp(): Promise<Application> {
   );
 
   // ============================================
-  // 3. Body Parsing Middleware
+  // 4. Body Parsing Middleware
   // ============================================
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // ============================================
-  // 4. Compression Middleware
+  // 5. Compression Middleware
   // ============================================
   app.use(compression());
 
   // ============================================
-  // 5. API Documentation (Swagger UI)
+  // 6. API Documentation (Swagger UI)
   // ============================================
   if (config.apiDocs.enabled) {
     try {
@@ -88,8 +120,11 @@ async function createApp(): Promise<Application> {
   }
 
   // ============================================
-  // 6. API Routes
+  // 7. API Routes
   // ============================================
+  // Apply rate limiting to all API routes
+  app.use('/api/', apiLimiter);
+
   // Mount all routes under /api/v1
   app.use('/api/v1', routes);
 
@@ -105,7 +140,7 @@ async function createApp(): Promise<Application> {
   });
 
   // ============================================
-  // 7. Error Handling (Last)
+  // 8. Error Handling (Last)
   // ============================================
 
   // 404 handler for undefined routes
