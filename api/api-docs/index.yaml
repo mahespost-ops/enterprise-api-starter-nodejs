@@ -65,17 +65,16 @@ paths:
     $ref: './paths/devices.yaml#/listDevices'
   /devices/{id}:
     put:
-      $ref: './paths/devices.yaml#/updateDevice'
+      $ref: './paths/devices.yaml#/updateDevice/put'
     delete:
-      $ref: './paths/devices.yaml#/revokeDevice'
+      $ref: './paths/devices.yaml#/revokeDevice/delete'
   /sessions:
-    get:
-      $ref: './paths/sessions.yaml#/listSessions'
+    $ref: './paths/sessions.yaml#/listSessions'
   /sessions/{id}:
     get:
-      $ref: './paths/sessions.yaml#/getSession'
+      $ref: './paths/sessions.yaml#/getSession/get'
     delete:
-      $ref: './paths/sessions.yaml#/revokeSession'
+      $ref: './paths/sessions.yaml#/revokeSession/delete'
   /sessions/device/{deviceId}:
     $ref: './paths/sessions.yaml#/revokeDeviceSessions'
   /sessions/all:

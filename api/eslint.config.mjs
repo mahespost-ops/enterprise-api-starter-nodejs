@@ -5,6 +5,15 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
+    ignores: [
+      "node_modules/**",
+      "dist/**",
+      "coverage/**",
+      "*.config.js",
+      "jest.config.ts",
+    ],
+  },
+  {
     files: ["**/*.ts"],
     languageOptions: {
       parser: tsParser,
