@@ -38,7 +38,11 @@ security:
 
 tags:
   - name: Authentication
-    description: User authentication and authorization
+    description: Passwordless authentication with magic tokens
+  - name: Devices
+    description: Device management and fingerprinting
+  - name: Sessions
+    description: Session management and monitoring
   - name: Users
     description: User management
   - name: Health
@@ -49,12 +53,35 @@ paths:
     $ref: './paths/health.yaml#/health'
   /auth/register:
     $ref: './paths/auth.yaml#/register'
-  /auth/login:
-    $ref: './paths/auth.yaml#/login'
+  /auth/request-token:
+    $ref: './paths/auth.yaml#/requestToken'
+  /auth/verify-token:
+    $ref: './paths/auth.yaml#/verifyToken'
   /auth/refresh:
     $ref: './paths/auth.yaml#/refresh'
   /auth/logout:
     $ref: './paths/auth.yaml#/logout'
+  /devices:
+    $ref: './paths/devices.yaml#/listDevices'
+  /devices/{id}:
+    put:
+      $ref: './paths/devices.yaml#/updateDevice'
+    delete:
+      $ref: './paths/devices.yaml#/revokeDevice'
+  /sessions:
+    get:
+      $ref: './paths/sessions.yaml#/listSessions'
+  /sessions/{id}:
+    get:
+      $ref: './paths/sessions.yaml#/getSession'
+    delete:
+      $ref: './paths/sessions.yaml#/revokeSession'
+  /sessions/device/{deviceId}:
+    $ref: './paths/sessions.yaml#/revokeDeviceSessions'
+  /sessions/all:
+    $ref: './paths/sessions.yaml#/revokeAllSessionsExceptCurrent'
+  /sessions/all/force:
+    $ref: './paths/sessions.yaml#/revokeAllSessions'
 
 components:
   securitySchemes:
@@ -66,55 +93,17 @@ components:
 
   responses:
     UnauthorizedError:
-      description: Authentication token is missing or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            status: 401
-            message: Unauthorized
-            error: Invalid or missing authentication token
-
+      $ref: './components/responses.yaml#/UnauthorizedError'
     ForbiddenError:
-      description: User does not have permission to access this resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            status: 403
-            message: Forbidden
-            error: Insufficient permissions
-
+      $ref: './components/responses.yaml#/ForbiddenError'
     NotFoundError:
-      description: The requested resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            status: 404
-            message: Not Found
-            error: Resource not found
-
+      $ref: './components/responses.yaml#/NotFoundError'
     ValidationError:
-      description: Request validation failed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ValidationError'
-
+      $ref: './components/responses.yaml#/ValidationError'
+    RateLimitError:
+      $ref: './components/responses.yaml#/RateLimitError'
     InternalServerError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            status: 500
-            message: Internal Server Error
-            error: An unexpected error occurred
+      $ref: './components/responses.yaml#/InternalServerError'
 
   schemas:
     Error:

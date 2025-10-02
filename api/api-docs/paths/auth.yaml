@@ -3,7 +3,7 @@ register:
     tags:
       - Authentication
     summary: Register new user
-    description: Create a new user account
+    description: Create a new user account and send magic token for verification
     operationId: register
     security: []
     requestBody:
@@ -14,13 +14,11 @@ register:
             $ref: '../components/schemas/auth.yaml#/RegisterRequest'
     responses:
       '201':
-        description: User successfully registered
+        description: User successfully registered, magic token sent
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/auth.yaml#/AuthResponse'
-      '422':
-        $ref: '../index.yaml#/components/responses/ValidationError'
+              $ref: '../components/schemas/auth.yaml#/RequestMagicTokenResponse'
       '409':
         description: User already exists
         content:
@@ -31,23 +29,57 @@ register:
               status: 409
               message: Conflict
               error: User with this email already exists
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '429':
+        $ref: '../index.yaml#/components/responses/RateLimitError'
       '500':
         $ref: '../index.yaml#/components/responses/InternalServerError'
 
-login:
+requestToken:
   post:
     tags:
       - Authentication
-    summary: User login
-    description: Authenticate user and receive JWT tokens
-    operationId: login
+    summary: Request magic token
+    description: Request a passwordless magic token via email or SMS
+    operationId: requestMagicToken
     security: []
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: '../components/schemas/auth.yaml#/LoginRequest'
+            $ref: '../components/schemas/auth.yaml#/RequestMagicTokenRequest'
+    responses:
+      '200':
+        description: Magic token sent successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/RequestMagicTokenResponse'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '429':
+        $ref: '../index.yaml#/components/responses/RateLimitError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+verifyToken:
+  post:
+    tags:
+      - Authentication
+    summary: Verify magic token
+    description: Verify magic token and receive access + refresh tokens
+    operationId: verifyMagicToken
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/VerifyMagicTokenRequest'
     responses:
       '200':
         description: Successfully authenticated
@@ -55,18 +87,18 @@ login:
           application/json:
             schema:
               $ref: '../components/schemas/auth.yaml#/AuthResponse'
-      '401':
-        description: Invalid credentials
-        content:
-          application/json:
+        headers:
+          Set-Cookie:
+            description: httpOnly secure cookie with refresh token
             schema:
-              $ref: '../components/schemas/common.yaml#/Error'
-            example:
-              status: 401
-              message: Unauthorized
-              error: Invalid email or password
+              type: string
+              example: refreshToken=abc123...; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
+      '429':
+        $ref: '../index.yaml#/components/responses/RateLimitError'
       '500':
         $ref: '../index.yaml#/components/responses/InternalServerError'
 
@@ -75,32 +107,33 @@ refresh:
     tags:
       - Authentication
     summary: Refresh access token
-    description: Get a new access token using refresh token
+    description: |
+      Get new access and refresh tokens using current refresh token.
+      Refresh token can be provided in cookie or request body.
+      Returns new rotated refresh token for security.
     operationId: refreshToken
     security: []
     requestBody:
-      required: true
+      required: false
       content:
         application/json:
           schema:
             $ref: '../components/schemas/auth.yaml#/RefreshTokenRequest'
     responses:
       '200':
-        description: New access token generated
+        description: New tokens generated successfully
         content:
           application/json:
             schema:
               $ref: '../components/schemas/auth.yaml#/RefreshTokenResponse'
-      '401':
-        description: Invalid or expired refresh token
-        content:
-          application/json:
+        headers:
+          Set-Cookie:
+            description: New httpOnly secure cookie with rotated refresh token
             schema:
-              $ref: '../components/schemas/common.yaml#/Error'
-            example:
-              status: 401
-              message: Unauthorized
-              error: Invalid or expired refresh token
+              type: string
+              example: refreshToken=xyz789...; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -111,26 +144,30 @@ logout:
     tags:
       - Authentication
     summary: User logout
-    description: Invalidate refresh token and logout user
+    description: Invalidate current session and refresh token
     operationId: logout
     security:
       - bearerAuth: []
     requestBody:
-      required: true
+      required: false
       content:
         application/json:
           schema:
             type: object
-            required:
-              - refreshToken
             properties:
               refreshToken:
                 type: string
-                description: JWT refresh token to invalidate
-                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                description: Refresh token to invalidate (optional if in cookie)
+                example: a7b3c4d5e6f7890123456789abcdef01234567890123456789abcdef012345
     responses:
       '204':
         description: Successfully logged out
+        headers:
+          Set-Cookie:
+            description: Clear refresh token cookie
+            schema:
+              type: string
+              example: refreshToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '500':

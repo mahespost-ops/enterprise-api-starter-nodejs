@@ -1,0 +1,90 @@
+listDevices:
+  get:
+    tags:
+      - Devices
+    summary: List user's devices
+    description: Get all devices registered for the authenticated user
+    operationId: listDevices
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: List of devices
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/device.yaml#/DeviceList'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+updateDevice:
+  put:
+    tags:
+      - Devices
+    summary: Update device name
+    description: Update the custom name for a device
+    operationId: updateDevice
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/device.yaml#/DeviceUpdate'
+    responses:
+      '200':
+        description: Device updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/device.yaml#/Device'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+revokeDevice:
+  delete:
+    tags:
+      - Devices
+    summary: Revoke device
+    description: Revoke a device and all its active sessions
+    operationId: revokeDevice
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Device revoked successfully
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

@@ -1,0 +1,68 @@
+UnauthorizedError:
+  description: Authentication token is missing or invalid
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 401
+        message: Unauthorized
+        error: Invalid or missing authentication token
+
+ForbiddenError:
+  description: User does not have permission to access this resource
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 403
+        message: Forbidden
+        error: Insufficient permissions
+
+NotFoundError:
+  description: The requested resource was not found
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 404
+        message: Not Found
+        error: Resource not found
+
+ValidationError:
+  description: Request validation failed
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/ValidationError'
+      example:
+        status: 422
+        message: Validation Failed
+        errors:
+          - field: email
+            message: Invalid email format
+            value: invalid-email
+
+RateLimitError:
+  description: Rate limit exceeded
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 429
+        message: Too Many Requests
+        error: Rate limit exceeded. Please try again later.
+
+InternalServerError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 500
+        message: Internal Server Error
+        error: An unexpected error occurred

@@ -1,25 +1,105 @@
-LoginRequest:
+RequestMagicTokenRequest:
   type: object
   required:
     - email
-    - password
   properties:
     email:
       type: string
       format: email
       description: User email address
       example: user@example.com
-    password:
+    phone:
       type: string
-      format: password
-      description: User password
-      example: SecureP@ss123
+      pattern: '^\+[1-9]\d{1,14}$'
+      description: Phone number in E.164 format (optional, used if preferred_auth_method is SMS)
+      example: '+12025551234'
+    deliveryMethod:
+      type: string
+      enum:
+        - email
+        - sms
+      description: Preferred delivery method for magic token (defaults to user preference)
+      example: email
+    deviceFingerprint:
+      type: object
+      description: Client-side device fingerprint data
+      properties:
+        userAgent:
+          type: string
+          example: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...'
+        timezone:
+          type: string
+          example: 'America/New_York'
+        acceptLanguage:
+          type: string
+          example: 'en-US,en;q=0.9'
+        screenResolution:
+          type: string
+          example: '1920x1080'
+        colorDepth:
+          type: integer
+          example: 24
+
+RequestMagicTokenResponse:
+  type: object
+  required:
+    - message
+    - deliveryMethod
+    - sentTo
+    - expiresIn
+  properties:
+    message:
+      type: string
+      description: Success message
+      example: 'Magic token sent successfully'
+    deliveryMethod:
+      type: string
+      enum:
+        - email
+        - sms
+      example: email
+    sentTo:
+      type: string
+      description: Masked email or phone number
+      example: 'u***@example.com'
+    expiresIn:
+      type: integer
+      description: Token expiration time in seconds
+      example: 900
+
+VerifyMagicTokenRequest:
+  type: object
+  required:
+    - token
+  properties:
+    token:
+      type: string
+      description: Magic token from email/SMS (URL-safe base64 or 6-digit code)
+      example: 'a7b3c4d5e6f7890123456789abcdef01'
+    code:
+      type: string
+      pattern: '^\d{6}$'
+      description: Alternative 6-digit verification code
+      example: '123456'
+    deviceFingerprint:
+      type: object
+      description: Client-side device fingerprint data (same as request)
+      properties:
+        userAgent:
+          type: string
+        timezone:
+          type: string
+        acceptLanguage:
+          type: string
+        screenResolution:
+          type: string
+        colorDepth:
+          type: integer
 
 RegisterRequest:
   type: object
   required:
     - email
-    - password
     - firstName
     - lastName
   properties:
@@ -28,12 +108,11 @@ RegisterRequest:
       format: email
       description: User email address
       example: user@example.com
-    password:
+    phone:
       type: string
-      format: password
-      description: User password (min 8 characters, must include uppercase, lowercase, number, and special character)
-      example: SecureP@ss123
-      minLength: 8
+      pattern: '^\+[1-9]\d{1,14}$'
+      description: Phone number in E.164 format (optional)
+      example: '+12025551234'
     firstName:
       type: string
       description: User first name
@@ -46,6 +125,32 @@ RegisterRequest:
       example: Doe
       minLength: 1
       maxLength: 50
+    preferredAuthMethod:
+      type: string
+      enum:
+        - email
+        - sms
+      description: Preferred authentication method
+      example: email
+      default: email
+    timezone:
+      type: string
+      description: User timezone
+      example: 'America/New_York'
+    deviceFingerprint:
+      type: object
+      description: Initial device fingerprint
+      properties:
+        userAgent:
+          type: string
+        timezone:
+          type: string
+        acceptLanguage:
+          type: string
+        screenResolution:
+          type: string
+        colorDepth:
+          type: integer
 
 AuthResponse:
   type: object
@@ -53,20 +158,27 @@ AuthResponse:
     - accessToken
     - refreshToken
     - expiresIn
+    - refreshExpiresIn
     - user
+    - device
+    - session
   properties:
     accessToken:
       type: string
-      description: JWT access token
+      description: JWT access token (15 minutes)
       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     refreshToken:
       type: string
-      description: JWT refresh token
-      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      description: Opaque refresh token (30 days, stored in httpOnly cookie)
+      example: a7b3c4d5e6f7890123456789abcdef01234567890123456789abcdef012345
     expiresIn:
       type: integer
-      description: Token expiration time in seconds
-      example: 86400
+      description: Access token expiration time in seconds
+      example: 900
+    refreshExpiresIn:
+      type: integer
+      description: Refresh token expiration time in seconds
+      example: 2592000
     tokenType:
       type: string
       description: Token type
@@ -74,6 +186,27 @@ AuthResponse:
       default: Bearer
     user:
       $ref: './user.yaml#/User'
+    device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        isNew:
+          type: boolean
+          description: True if this is a new device for the user
+    session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+          description: Session (refresh token) expiration timestamp
 
 RefreshTokenRequest:
   type: object
@@ -82,23 +215,33 @@ RefreshTokenRequest:
   properties:
     refreshToken:
       type: string
-      description: JWT refresh token
-      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      description: Current refresh token (from cookie or request body)
+      example: a7b3c4d5e6f7890123456789abcdef01234567890123456789abcdef012345
 
 RefreshTokenResponse:
   type: object
   required:
     - accessToken
+    - refreshToken
     - expiresIn
+    - refreshExpiresIn
   properties:
     accessToken:
       type: string
-      description: New JWT access token
+      description: New JWT access token (15 minutes)
       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    refreshToken:
+      type: string
+      description: New refresh token (30 days, rotated for security)
+      example: b8c4d5e6f7901234567890abcdef01234567890123456789abcdef012345678
     expiresIn:
       type: integer
-      description: Token expiration time in seconds
-      example: 86400
+      description: Access token expiration time in seconds
+      example: 900
+    refreshExpiresIn:
+      type: integer
+      description: Refresh token expiration time in seconds
+      example: 2592000
     tokenType:
       type: string
       description: Token type
