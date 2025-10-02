@@ -1,0 +1,137 @@
+register:
+  post:
+    tags:
+      - Authentication
+    summary: Register new user
+    description: Create a new user account
+    operationId: register
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/RegisterRequest'
+    responses:
+      '201':
+        description: User successfully registered
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/AuthResponse'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '409':
+        description: User already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: User with this email already exists
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+login:
+  post:
+    tags:
+      - Authentication
+    summary: User login
+    description: Authenticate user and receive JWT tokens
+    operationId: login
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Successfully authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/AuthResponse'
+      '401':
+        description: Invalid credentials
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 401
+              message: Unauthorized
+              error: Invalid email or password
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+refresh:
+  post:
+    tags:
+      - Authentication
+    summary: Refresh access token
+    description: Get a new access token using refresh token
+    operationId: refreshToken
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/RefreshTokenRequest'
+    responses:
+      '200':
+        description: New access token generated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/RefreshTokenResponse'
+      '401':
+        description: Invalid or expired refresh token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 401
+              message: Unauthorized
+              error: Invalid or expired refresh token
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+logout:
+  post:
+    tags:
+      - Authentication
+    summary: User logout
+    description: Invalidate refresh token and logout user
+    operationId: logout
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - refreshToken
+            properties:
+              refreshToken:
+                type: string
+                description: JWT refresh token to invalidate
+                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    responses:
+      '204':
+        description: Successfully logged out
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

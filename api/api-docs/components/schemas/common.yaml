@@ -1,0 +1,95 @@
+Error:
+  type: object
+  required:
+    - status
+    - message
+  properties:
+    status:
+      type: integer
+      description: HTTP status code
+      example: 400
+    message:
+      type: string
+      description: Error message
+      example: Bad Request
+    error:
+      type: string
+      description: Detailed error description
+      example: Invalid input parameters
+    timestamp:
+      type: string
+      format: date-time
+      description: Timestamp of the error
+      example: '2025-10-02T12:34:56.789Z'
+    path:
+      type: string
+      description: Request path that caused the error
+      example: /api/v1/users
+
+ValidationError:
+  type: object
+  required:
+    - status
+    - message
+    - errors
+  properties:
+    status:
+      type: integer
+      description: HTTP status code
+      example: 422
+    message:
+      type: string
+      description: Error message
+      example: Validation Failed
+    errors:
+      type: array
+      description: List of validation errors
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+            description: Field that failed validation
+            example: email
+          message:
+            type: string
+            description: Validation error message
+            example: Invalid email format
+          value:
+            description: Invalid value provided
+            example: invalid-email
+    timestamp:
+      type: string
+      format: date-time
+      description: Timestamp of the error
+      example: '2025-10-02T12:34:56.789Z'
+
+PaginationMeta:
+  type: object
+  required:
+    - page
+    - limit
+    - total
+    - totalPages
+  properties:
+    page:
+      type: integer
+      description: Current page number
+      example: 1
+      minimum: 1
+    limit:
+      type: integer
+      description: Number of items per page
+      example: 20
+      minimum: 1
+      maximum: 100
+    total:
+      type: integer
+      description: Total number of items
+      example: 150
+      minimum: 0
+    totalPages:
+      type: integer
+      description: Total number of pages
+      example: 8
+      minimum: 0

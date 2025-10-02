@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Source maps and build artifacts
+*.map
+.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation and markdown
+*.md
+!README.md
+docs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Testing
+tests/
+*.test.ts
+*.spec.ts
+jest.config.ts
+
+# Linting
+.eslintrc*
+.prettierrc*
+eslint.config.mjs
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.log
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Credentials
+credentials.json
+secrets.json
+*.pem
+*.key
+*.cert
+serviceAccount*.json

@@ -1,0 +1,70 @@
+health:
+  get:
+    tags:
+      - Health
+    summary: Health check
+    description: Check if the API is running and database is accessible
+    operationId: healthCheck
+    security: []
+    responses:
+      '200':
+        description: Service is healthy
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - timestamp
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - healthy
+                  example: healthy
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: '2025-10-02T12:34:56.789Z'
+                uptime:
+                  type: number
+                  description: Server uptime in seconds
+                  example: 3600.5
+                database:
+                  type: object
+                  properties:
+                    connected:
+                      type: boolean
+                      example: true
+                    latency:
+                      type: number
+                      description: Database response time in milliseconds
+                      example: 12.5
+      '503':
+        description: Service is unhealthy
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - timestamp
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - unhealthy
+                  example: unhealthy
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: '2025-10-02T12:34:56.789Z'
+                error:
+                  type: string
+                  example: Database connection failed
+                database:
+                  type: object
+                  properties:
+                    connected:
+                      type: boolean
+                      example: false
