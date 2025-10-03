@@ -30,23 +30,90 @@ You are an enterprise software architect that pays special care to clean code, b
 
 ## Project Structure
 
-This is a reduce-config-drift-demo project with two main components:
+This is a reduce-config-drift-demo project focused on the API service:
 
 ### `/api`
-- **Purpose**: Backend API service
-- **Structure**:
-  - `src/`: Source code
-    - `constants/`: Centralized constants (error messages, HTTP status codes)
-    - `services/`: Business logic with adapter pattern for external services
-    - `utils/`: Utility functions and helpers
-  - `migrations/`: Database migrations
-  - `docs/`: API documentation
-  - `api-docs/`: OpenAPI/Swagger specifications
+Backend API service with comprehensive structure:
+
+#### Root Configuration
+- `package.json` - Dependencies and npm scripts
+- `tsconfig.json` - TypeScript configuration
+- `jest.config.ts` - Jest testing configuration
+- `eslint.config.mjs` - ESLint configuration
+- `.env` / `.env.example` - Environment variables
+- `.prettierrc` - Code formatting rules
+- `Dockerfile` / `.dockerignore` - Container configuration
+
+#### Source Code (`src/`)
+- **`server.ts`** - Application entry point
+- **`app.ts`** - Express application setup
+- **`types/`** - TypeScript type definitions
+  - `express.d.ts` - Express request/response type extensions
+- **`config/`** - Application configuration
+  - `index.ts` - Configuration management
+  - `logger.ts` - Winston logger setup
+- **`constants/`** - Centralized constants
+  - `error-messages.constants.ts` - Standardized error messages
+  - `http-status.constants.ts` - HTTP status code constants
+- **`middleware/`** - Express middleware
+  - `error-handler.middleware.ts` - Global error handling
+  - `rate-limit.middleware.ts` - Rate limiting
+  - `request-id.middleware.ts` - Request ID tracking
+  - `xss.middleware.ts` - XSS protection
+  - `STANDARDS.md` - Middleware design patterns
+- **`routes/`** - Route definitions
+  - `index.ts` - Route aggregation
+  - `health.routes.ts` - Health check routes
+  - `STANDARDS.md` - Route design patterns
+- **`controllers/`** - Request handlers
+  - `health.controller.ts` - Health check controller
+  - `STANDARDS.md` - Controller design patterns
+- **`services/`** - Business logic and adapters
+  - `adapter.factory.ts` - Factory for service adapters
+  - `health.service.ts` - Health check business logic
+  - `config/adapter.config.ts` - Adapter configuration
+  - `email/` - Email service adapters (SendGrid, SMTP, Mock)
+  - `secrets/` - Secrets management adapters (GCP, AWS, Vault, File, Env, Memory)
+  - `storage/` - Object storage adapters (GCS, S3, Local)
+  - `queue/` - Message queue adapters (Pub/Sub, SQS, Redis, Kafka, Memory)
+- **`utils/`** - Utility functions
+  - `errors.ts` - Custom error classes
+  - `async-handler.ts` - Async route wrapper
+  - `pagination-response.ts` - Pagination helpers
+  - `query-params.ts` - Query parameter parsing
+  - `__tests__/` - Unit tests for utilities
+
+#### Documentation (`docs/`)
+- `ADAPTER_PATTERN.md` - Adapter pattern overview
+- `ADAPTER_USAGE.md` - How to use adapters
+- `ADAPTER_IMPLEMENTATION_PROGRESS.md` - Adapter completion status
+- `AUTHENTICATION_DESIGN.md` - Auth system design
+- `QUERY_PARAMETER_STANDARDS.md` - Query parameter conventions
+- `OAPI_IMPLEMENTATION_PROGRESS.md` - OpenAPI implementation status
+- `SECURITY_ASSESSMENT.md` - Security analysis
+
+#### OpenAPI Specifications (`api-docs/`)
+- `index.yaml` - Main OpenAPI specification
+- `ENDPOINT_STANDARDIZATION_TEMPLATE.md` - Endpoint documentation template
+- **`paths/`** - Endpoint definitions by resource
+  - `health.yaml`, `auth.yaml`, `users.yaml`
+  - `organizations.yaml`, `environments.yaml`, `members.yaml`, `groups.yaml`
+  - `events.yaml`, `webhooks.yaml`
+  - `admin-*.yaml` - Admin endpoint definitions
+- **`components/`** - Reusable OpenAPI components
+  - `parameters.yaml` - Common parameters
+  - `responses.yaml` - Common responses
+  - `security.yaml` - Security schemes
+  - `schemas/` - Data models (auth, user, organization, environment, group, member, role, event, webhook, etc.)
+
+#### Database (`migrations/`)
+- Empty directory - migrations to be added
+
+#### Testing (`coverage/`)
+- Code coverage reports from Jest
 
 ### `/infra`
-- **Purpose**: Infrastructure as Code (IaC) definitions
-- **Structure**:
-  - `docs/`: Infrastructure documentation
+Infrastructure as Code (IaC) definitions - not yet implemented
 
 ## Architecture
 
@@ -290,11 +357,25 @@ All list endpoints return:
 
 ## Development Notes
 
+### File Organization
 - When adding new components, maintain the separation between API and infrastructure concerns
 - Place database migrations in `api/migrations/`
-- Keep infrastructure documentation in `infra/docs/`
 - Keep API-specific documentation in `api/docs/`
+- Keep OpenAPI specifications in `api/api-docs/paths/` and `api/api-docs/components/`
+- Reference STANDARDS.md files in each component directory (`routes/`, `controllers/`, `middleware/`) for consistency
+
+### API Design
 - All list endpoints must follow the standardization template in `api/api-docs/ENDPOINT_STANDARDIZATION_TEMPLATE.md`
+- Use adapter pattern for external services (email, secrets, storage, queue)
+- Maintain provider-agnostic interfaces to avoid cloud vendor lock-in
+- Factor out reusable OpenAPI schemas to `api/api-docs/components/schemas/`
+
+### Code Quality
+- Run `npm run typecheck` before committing
+- Run `npm run lint` and fix issues with `npm run lint:fix`
+- Format code with `npm run format`
+- Write tests for new utilities in `__tests__/` directories
+- Maintain test coverage with `npm run test:coverage`
 
 ## API Scripts (from /api/package.json)
 
