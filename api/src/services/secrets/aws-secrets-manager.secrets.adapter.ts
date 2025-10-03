@@ -16,6 +16,7 @@ import {
   TagResourceCommand,
   type Tag,
 } from '@aws-sdk/client-secrets-manager';
+import { getErrorMessage, isErrorWithName } from '../../constants/error-messages.constants.js';
 import type {
   ISecretsAdapter,
   ISecretValue,
@@ -71,11 +72,12 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
 
       logger.debug('Secret retrieved from AWS', { name, version });
       return response.SecretString;
-    } catch (error: any) {
-      if (error.name === 'ResourceNotFoundException') {
+    } catch (error: unknown) {
+      if (isErrorWithName(error, 'ResourceNotFoundException')) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to get secret from AWS', { name, error: error.message });
+      const errorMessage = getErrorMessage(error);
+      logger.error('Failed to get secret from AWS', { name, error: errorMessage });
       throw new InternalServerError();
     }
   }
@@ -125,13 +127,14 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
         value: valueResponse.SecretString,
         metadata,
       };
-    } catch (error: any) {
-      if (error.name === 'ResourceNotFoundException') {
+    } catch (error: unknown) {
+      if (isErrorWithName(error, 'ResourceNotFoundException')) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
+      const errorMessage = getErrorMessage(error);
       logger.error('Failed to get secret metadata from AWS', {
         name,
-        error: error.message,
+        error: errorMessage,
       });
       throw new InternalServerError();
     }
@@ -144,8 +147,8 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
       try {
         await this.client.send(new DescribeSecretCommand({ SecretId: params.name }));
         secretExists = true;
-      } catch (error: any) {
-        if (error.name !== 'ResourceNotFoundException') {
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== 'ResourceNotFoundException') {
           throw error;
         }
       }
@@ -190,10 +193,11 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
 
         logger.info('Secret updated in AWS', { name: params.name });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       logger.error('Failed to set secret in AWS', {
         name: params.name,
-        error: error.message,
+        error: errorMessage,
       });
       throw new InternalServerError();
     }
@@ -208,11 +212,12 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
 
       await this.client.send(command);
       logger.info('Secret deleted from AWS', { name });
-    } catch (error: any) {
-      if (error.name === 'ResourceNotFoundException') {
+    } catch (error: unknown) {
+      if (isErrorWithName(error, 'ResourceNotFoundException')) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to delete secret from AWS', { name, error: error.message });
+      const errorMessage = getErrorMessage(error);
+      logger.error('Failed to delete secret from AWS', { name, error: errorMessage });
       throw new InternalServerError();
     }
   }
@@ -242,8 +247,9 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
 
       logger.debug('Secrets listed from AWS', { count: secrets.length });
       return secrets;
-    } catch (error: any) {
-      logger.error('Failed to list secrets from AWS', { error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      logger.error('Failed to list secrets from AWS', { error: errorMessage });
       throw new InternalServerError();
     }
   }
@@ -252,13 +258,14 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
     try {
       await this.client.send(new DescribeSecretCommand({ SecretId: name }));
       return true;
-    } catch (error: any) {
-      if (error.name === 'ResourceNotFoundException') {
+    } catch (error: unknown) {
+      if (isErrorWithName(error, 'ResourceNotFoundException')) {
         return false;
       }
+      const errorMessage = getErrorMessage(error);
       logger.error('Failed to check secret existence in AWS', {
         name,
-        error: error.message,
+        error: errorMessage,
       });
       throw new InternalServerError();
     }
@@ -277,10 +284,11 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
         region: this.region,
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       logger.error('AWS Secrets Manager configuration validation failed', {
         region: this.region,
-        error: error.message,
+        error: errorMessage,
       });
       return false;
     }
@@ -290,9 +298,10 @@ export class AWSSecretsManagerAdapter implements ISecretsAdapter {
     try {
       this.client.destroy();
       logger.info('AWS Secrets Manager client destroyed');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       logger.warn('Error destroying AWS Secrets Manager client', {
-        error: error.message,
+        error: errorMessage,
       });
     }
   }

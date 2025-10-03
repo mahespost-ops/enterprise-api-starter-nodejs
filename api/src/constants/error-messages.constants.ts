@@ -53,6 +53,29 @@ export const ERROR_MESSAGES = {
   SESSION_EXPIRED: 'Session has expired',
   SESSION_REVOKED: 'Session has been revoked',
   INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
+
+  // Generic
+  UNKNOWN_ERROR: 'Unknown error',
 } as const;
 
 export type ErrorMessage = (typeof ERROR_MESSAGES)[keyof typeof ERROR_MESSAGES];
+
+/**
+ * Helper function to safely extract error message from unknown error types
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return ERROR_MESSAGES.UNKNOWN_ERROR;
+}
+
+/**
+ * Helper function to check if error has a specific name
+ */
+export function isErrorWithName(error: unknown, name: string): boolean {
+  return error instanceof Error && error.name === name;
+}

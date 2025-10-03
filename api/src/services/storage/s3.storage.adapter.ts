@@ -33,6 +33,7 @@ import type {
 import type { IAWSS3Config } from '../config/adapter.config';
 import logger from '../../config/logger';
 import { NotFoundError } from '../../utils/errors';
+import { getErrorMessage, isErrorWithName } from '../../constants/error-messages.constants.js';
 
 export class S3StorageAdapter implements IStorageAdapter {
   private client: S3Client;
@@ -64,6 +65,7 @@ export class S3StorageAdapter implements IStorageAdapter {
       ContentType: params.contentType,
       CacheControl: params.cacheControl,
       Metadata: params.metadata,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ACL: params.acl ? (this.mapAcl(params.acl) as any) : undefined,
     };
 
@@ -120,7 +122,7 @@ export class S3StorageAdapter implements IStorageAdapter {
 
       return buffer;
     } catch (error: unknown) {
-      if ((error as { name?: string }).name === 'NoSuchKey') {
+      if (isErrorWithName(error, 'NoSuchKey')) {
         throw new NotFoundError(`File not found: ${params.key}`);
       }
       throw error;
@@ -141,7 +143,7 @@ export class S3StorageAdapter implements IStorageAdapter {
         bucket: this.bucketName,
       });
     } catch (error: unknown) {
-      if ((error as { name?: string }).name === 'NoSuchKey') {
+      if (isErrorWithName(error, 'NoSuchKey')) {
         throw new NotFoundError(`File not found: ${key}`);
       }
       throw error;
@@ -158,7 +160,7 @@ export class S3StorageAdapter implements IStorageAdapter {
       await this.client.send(command);
       return true;
     } catch (error: unknown) {
-      if ((error as { name?: string }).name === 'NotFound') {
+      if (isErrorWithName(error, 'NotFound')) {
         return false;
       }
       throw error;
@@ -183,7 +185,7 @@ export class S3StorageAdapter implements IStorageAdapter {
         metadata: response.Metadata,
       };
     } catch (error: unknown) {
-      if ((error as { name?: string }).name === 'NotFound') {
+      if (isErrorWithName(error, 'NotFound')) {
         throw new NotFoundError(`File not found: ${key}`);
       }
       throw error;
@@ -277,7 +279,7 @@ export class S3StorageAdapter implements IStorageAdapter {
         destinationKey,
       });
     } catch (error: unknown) {
-      if ((error as { name?: string }).name === 'NoSuchKey') {
+      if (isErrorWithName(error, 'NoSuchKey')) {
         throw new NotFoundError(`Source file not found: ${sourceKey}`);
       }
       throw error;
@@ -299,10 +301,10 @@ export class S3StorageAdapter implements IStorageAdapter {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('AWS S3 adapter configuration validation failed', {
         bucket: this.bucketName,
-        error,
+        error: getErrorMessage(error),
       });
       return false;
     }
@@ -315,11 +317,13 @@ export class S3StorageAdapter implements IStorageAdapter {
 
   // Helper methods
 
-  private mapAcl(acl: 'private' | 'public-read' | 'authenticated-read'): string {
-    const aclMap: Record<string, string> = {
-      private: 'private',
-      'public-read': 'public-read',
-      'authenticated-read': 'authenticated-read',
+  private mapAcl(
+    acl: 'private' | 'public-read' | 'authenticated-read'
+  ): 'private' | 'public-read' | 'authenticated-read' {
+    const aclMap = {
+      private: 'private' as const,
+      'public-read': 'public-read' as const,
+      'authenticated-read': 'authenticated-read' as const,
     };
     return aclMap[acl] || 'private';
   }

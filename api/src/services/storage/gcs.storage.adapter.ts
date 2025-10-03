@@ -19,6 +19,7 @@ import type {
 import type { IGoogleCloudStorageConfig } from '../config/adapter.config';
 import logger from '../../config/logger';
 import { NotFoundError } from '../../utils/errors';
+import { getErrorMessage, isErrorWithName } from '../../constants/error-messages.constants.js';
 
 export class GoogleCloudStorageAdapter implements IStorageAdapter {
   private storage: Storage;
@@ -60,14 +61,15 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
 
     // Map ACL to GCS predefinedAcl
     if (params.acl) {
-      const aclMap: Record<string, string> = {
-        private: 'private',
-        'public-read': 'publicRead',
-        'authenticated-read': 'authenticatedRead',
+      const aclMap = {
+        private: 'private' as const,
+        'public-read': 'publicRead' as const,
+        'authenticated-read': 'authenticatedRead' as const,
       };
       options.predefinedAcl = aclMap[params.acl] || 'private';
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await file.save(data, options as any);
 
     // Get metadata after upload
@@ -84,6 +86,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
       url: `https://storage.googleapis.com/${this.bucketName}/${params.key}`,
       size: parseInt(metadata.size as string),
       etag: metadata.etag || metadata.md5Hash || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       timestamp: new Date((metadata.updated || metadata.timeCreated || Date.now()) as any),
     };
   }
@@ -93,6 +96,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
 
     try {
       const [buffer] = await file.download(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         params.versionId ? ({ generation: params.versionId } as any) : undefined
       );
 
@@ -104,7 +108,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
 
       return buffer;
     } catch (error: unknown) {
-      if ((error as { code?: number }).code === 404) {
+      if (isErrorWithName(error, 'NotFound') || (error as { code?: number }).code === 404) {
         throw new NotFoundError(`File not found: ${params.key}`);
       }
       throw error;
@@ -122,7 +126,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
         bucket: this.bucketName,
       });
     } catch (error: unknown) {
-      if ((error as { code?: number }).code === 404) {
+      if (isErrorWithName(error, 'NotFound') || (error as { code?: number }).code === 404) {
         throw new NotFoundError(`File not found: ${key}`);
       }
       throw error;
@@ -155,7 +159,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
         metadata: metadata.metadata as Record<string, string> | undefined,
       };
     } catch (error: unknown) {
-      if ((error as { code?: number }).code === 404) {
+      if (isErrorWithName(error, 'NotFound') || (error as { code?: number }).code === 404) {
         throw new NotFoundError(`File not found: ${key}`);
       }
       throw error;
@@ -245,7 +249,7 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
         destinationKey,
       });
     } catch (error: unknown) {
-      if ((error as { code?: number }).code === 404) {
+      if (isErrorWithName(error, 'NotFound') || (error as { code?: number }).code === 404) {
         throw new NotFoundError(`Source file not found: ${sourceKey}`);
       }
       throw error;
@@ -274,10 +278,10 @@ export class GoogleCloudStorageAdapter implements IStorageAdapter {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Google Cloud Storage adapter configuration validation failed', {
         bucket: this.bucketName,
-        error,
+        error: getErrorMessage(error),
       });
       return false;
     }

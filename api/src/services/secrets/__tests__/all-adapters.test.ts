@@ -32,7 +32,7 @@ describe('Secrets Adapters', () => {
             await adapter.deleteSecret(secret);
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
 
@@ -374,7 +374,7 @@ MzEfYyjiWA4R4/M2bS1+fWIcPm15j7HgNDqJxuJ3RmG7B5xCsY9RTJ3yJ3XWz7Qz
         // For stateful adapters (like Vault), this might fail - that's OK
         try {
           await adapter.validateConfig();
-        } catch (error) {
+        } catch {
           // Expected for some adapters
         }
       });
@@ -394,7 +394,7 @@ MzEfYyjiWA4R4/M2bS1+fWIcPm15j7HgNDqJxuJ3RmG7B5xCsY9RTJ3yJ3XWz7Qz
       // Cleanup test secrets directory
       try {
         await fs.rm(testSecretsDir, { recursive: true, force: true });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
 

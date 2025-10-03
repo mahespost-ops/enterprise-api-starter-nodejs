@@ -14,6 +14,7 @@ import type {
 } from './secrets.interface';
 import logger from '../../config/logger';
 import { NotFoundError, InternalServerError } from '../../utils/errors';
+import { getErrorMessage } from '../../constants/error-messages.constants.js';
 
 export interface VaultConfig {
   /**
@@ -38,6 +39,7 @@ export interface VaultConfig {
 }
 
 export class VaultSecretsAdapter implements ISecretsAdapter {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private client: any;
   private mountPath: string;
 
@@ -80,11 +82,14 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
 
       logger.debug('Secret retrieved from Vault', { name, version });
       return value;
-    } catch (error: any) {
-      if (error.response?.statusCode === 404 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { statusCode?: number } }).response?.statusCode === 404 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to get secret from Vault', { name, error: error.message });
+      logger.error('Failed to get secret from Vault', { name, error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -136,13 +141,16 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
       logger.debug('Secret with metadata retrieved from Vault', { name, version });
 
       return { value, metadata };
-    } catch (error: any) {
-      if (error.response?.statusCode === 404 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { statusCode?: number } }).response?.statusCode === 404 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
       logger.error('Failed to get secret metadata from Vault', {
         name,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       throw new InternalServerError();
     }
@@ -179,20 +187,20 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
           await this.client.write(metadataPath, {
             custom_metadata: customMetadata,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Some Vault versions may not support custom_metadata
           logger.warn('Failed to set custom metadata in Vault', {
             name: params.name,
-            error: error.message,
+            error: getErrorMessage(error),
           });
         }
       }
 
       logger.info('Secret set in Vault', { name: params.name });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to set secret in Vault', {
         name: params.name,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       throw new InternalServerError();
     }
@@ -206,11 +214,14 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
       await this.client.delete(metadataPath);
 
       logger.info('Secret deleted from Vault', { name });
-    } catch (error: any) {
-      if (error.response?.statusCode === 404 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { statusCode?: number } }).response?.statusCode === 404 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to delete secret from Vault', { name, error: error.message });
+      logger.error('Failed to delete secret from Vault', { name, error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -225,12 +236,12 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
 
       logger.debug('Secrets listed from Vault', { count: keys.length });
       return keys;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Empty list is not an error
-      if (error.response?.statusCode === 404) {
+      if ((error as { response?: { statusCode?: number } }).response?.statusCode === 404) {
         return [];
       }
-      logger.error('Failed to list secrets from Vault', { error: error.message });
+      logger.error('Failed to list secrets from Vault', { error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -240,13 +251,16 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
       const metadataPath = `${this.mountPath}/metadata/${name}`;
       await this.client.read(metadataPath);
       return true;
-    } catch (error: any) {
-      if (error.response?.statusCode === 404 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { statusCode?: number } }).response?.statusCode === 404 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         return false;
       }
       logger.error('Failed to check secret existence in Vault', {
         name,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       throw new InternalServerError();
     }
@@ -259,8 +273,8 @@ export class VaultSecretsAdapter implements ISecretsAdapter {
 
       logger.info('Vault configuration validated');
       return true;
-    } catch (error: any) {
-      logger.error('Vault configuration validation failed', { error: error.message });
+    } catch (error: unknown) {
+      logger.error('Vault configuration validation failed', { error: getErrorMessage(error) });
       return false;
     }
   }

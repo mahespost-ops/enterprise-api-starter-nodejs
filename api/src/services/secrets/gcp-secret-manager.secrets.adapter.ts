@@ -14,6 +14,7 @@ import type {
 } from './secrets.interface';
 import logger from '../../config/logger';
 import { NotFoundError, InternalServerError } from '../../utils/errors';
+import { getErrorMessage } from '../../constants/error-messages.constants.js';
 
 export interface GCPSecretManagerConfig {
   projectId: string;
@@ -61,11 +62,14 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       logger.debug('Secret retrieved from GCP', { name, version });
 
       return value;
-    } catch (error: any) {
-      if (error.code === 5 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { code?: number }).code === 5 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to get secret from GCP', { name, error: error.message });
+      logger.error('Failed to get secret from GCP', { name, error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -109,13 +113,16 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       logger.debug('Secret with metadata retrieved from GCP', { name, version });
 
       return { value, metadata };
-    } catch (error: any) {
-      if (error.code === 5 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { code?: number }).code === 5 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
       logger.error('Failed to get secret metadata from GCP', {
         name,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       throw new InternalServerError();
     }
@@ -130,15 +137,15 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       try {
         await this.client.getSecret({ name: secretPath });
         secretExists = true;
-      } catch (error: any) {
-        if (error.code !== 5) {
+      } catch (error: unknown) {
+        if ((error as { code?: number }).code !== 5) {
           throw error;
         }
       }
 
       if (!secretExists) {
         // Create new secret
-        const createRequest: any = {
+        const createRequest = {
           parent: this.projectPath,
           secretId: params.name,
           secret: {
@@ -173,10 +180,10 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       });
 
       logger.info('Secret version added in GCP', { name: params.name });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to set secret in GCP', {
         name: params.name,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       throw new InternalServerError();
     }
@@ -187,11 +194,14 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       const secretPath = this.getSecretPath(name);
       await this.client.deleteSecret({ name: secretPath });
       logger.info('Secret deleted from GCP', { name });
-    } catch (error: any) {
-      if (error.code === 5 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { code?: number }).code === 5 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         throw new NotFoundError(`Secret not found: ${name}`);
       }
-      logger.error('Failed to delete secret from GCP', { name, error: error.message });
+      logger.error('Failed to delete secret from GCP', { name, error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -210,8 +220,8 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
 
       logger.debug('Secrets listed from GCP', { count: secretNames.length });
       return secretNames;
-    } catch (error: any) {
-      logger.error('Failed to list secrets from GCP', { error: error.message });
+    } catch (error: unknown) {
+      logger.error('Failed to list secrets from GCP', { error: getErrorMessage(error) });
       throw new InternalServerError();
     }
   }
@@ -221,8 +231,11 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
       const secretPath = this.getSecretPath(name);
       await this.client.getSecret({ name: secretPath });
       return true;
-    } catch (error: any) {
-      if (error.code === 5 || error.message?.includes('not found')) {
+    } catch (error: unknown) {
+      if (
+        (error as { code?: number }).code === 5 ||
+        getErrorMessage(error).includes('not found')
+      ) {
         return false;
       }
       throw new InternalServerError();
@@ -241,10 +254,10 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
         projectId: this.projectId,
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('GCP Secret Manager configuration validation failed', {
         projectId: this.projectId,
-        error: error.message,
+        error: getErrorMessage(error),
       });
       return false;
     }
@@ -254,8 +267,8 @@ export class GCPSecretManagerAdapter implements ISecretsAdapter {
     try {
       await this.client.close();
       logger.info('GCP Secret Manager client closed');
-    } catch (error: any) {
-      logger.warn('Error closing GCP Secret Manager client', { error: error.message });
+    } catch (error: unknown) {
+      logger.warn('Error closing GCP Secret Manager client', { error: getErrorMessage(error) });
     }
   }
 
