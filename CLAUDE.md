@@ -45,6 +45,17 @@ This is a reduce-config-drift-demo project with two main components:
 
 This repository demonstrates configuration drift reduction patterns across API services and infrastructure. The project is organized to maintain separation between application code (`api/`) and infrastructure definitions (`infra/`).
 
+### Adapter Pattern for External Services
+
+The application implements the adapter pattern to eliminate cloud provider lock-in and reduce configuration drift:
+
+- **Email Service**: `services/email/` - SendGrid, AWS SES, or mock adapters
+- **Secrets Management**: `services/secrets/` - GCP Secret Manager, AWS Secrets Manager, or environment variables
+- **Object Storage**: `services/storage/` - GCS, S3, or local filesystem
+- **Message Queues**: `services/queue/` - Pub/Sub, SQS, Redis, Kafka, or in-memory
+
+All adapters implement provider-agnostic interfaces, allowing seamless switching between cloud providers via environment variables. See `api/docs/ADAPTER_PATTERN.md` and `api/docs/ADAPTER_USAGE.md` for details.
+
 ## Development Notes
 
 - The codebase is currently in initial setup phase
@@ -52,3 +63,36 @@ This repository demonstrates configuration drift reduction patterns across API s
 - Place database migrations in `api/migrations/`
 - Keep infrastructure documentation in `infra/docs/`
 - Keep API-specific documentation in `api/docs/`
+
+## API Scripts (from /api/package.json)
+
+### Development & Build
+- `npm run dev` - Start development server with nodemon and ts-node
+- `npm run build` - Compile TypeScript to JavaScript (outputs to `dist/`)
+- `npm start` - Run production server from compiled code
+
+### Testing
+- `npm test` - Run Jest tests
+- `npm run test:watch` - Run Jest in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+
+### Code Quality
+- `npm run lint` - Run ESLint on TypeScript files
+- `npm run lint:fix` - Run ESLint and auto-fix issues
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+- `npm run typecheck` - Run TypeScript type checking without emitting files
+
+## API Endpoints
+
+All API routes are versioned under `/api/v1` (except api-docs):
+
+### Documentation
+- `GET /api-docs` - Swagger UI API documentation (no version prefix)
+
+### Root
+- `GET /` - API info (name, version, status, environment)
+
+### Health Check
+- `GET /api/v1/health` - Basic health check (fast, <5ms)
+- `GET /api/v1/health/detailed` - Detailed health check (includes database)
