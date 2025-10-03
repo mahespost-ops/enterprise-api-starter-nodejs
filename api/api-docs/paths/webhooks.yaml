@@ -5,7 +5,7 @@
 /orgs/{orgId}/envs/{envId}/webhooks:
   get:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: List webhooks
     description: List all webhooks for the current environment
     operationId: listWebhooks
@@ -48,7 +48,7 @@
 
   post:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Create webhook
     description: Create a new webhook for the current environment
     operationId: createWebhook
@@ -88,7 +88,7 @@
 /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}:
   get:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Get webhook details
     description: Get details of a specific webhook
     operationId: getWebhook
@@ -118,7 +118,7 @@
 
   put:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Update webhook
     description: Update an existing webhook
     operationId: updateWebhook
@@ -158,7 +158,7 @@
 
   delete:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Delete webhook
     description: Delete a webhook
     operationId: deleteWebhook
@@ -185,7 +185,7 @@
 /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries:
   get:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: List webhook deliveries
     description: List all deliveries for a specific webhook
     operationId: listWebhookDeliveries
@@ -239,7 +239,7 @@
 /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}:
   get:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Get webhook delivery details
     description: Get details of a specific webhook delivery
     operationId: getWebhookDelivery
@@ -271,7 +271,7 @@
 /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry:
   post:
     tags:
-      - Webhooks
+      - Core - Webhooks
     summary: Retry webhook delivery
     description: Manually retry a failed webhook delivery
     operationId: retryWebhookDelivery

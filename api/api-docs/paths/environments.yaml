@@ -3,7 +3,7 @@
 listEnvironments:
   get:
     tags:
-      - Environments
+      - Core - Environments
     summary: List organization environments
     description: Get all environments for a specific organization
     operationId: listEnvironments
@@ -33,7 +33,7 @@ listEnvironments:
 getEnvironment:
   get:
     tags:
-      - Environments
+      - Core - Environments
     summary: Get environment details
     description: Retrieve detailed information about a specific environment
     operationId: getEnvironment
@@ -59,7 +59,7 @@ getEnvironment:
         $ref: '../index.yaml#/components/responses/InternalServerError'
   put:
     tags:
-      - Environments
+      - Core - Environments
     summary: Update environment
     description: Update environment details (requires envs:manage permission)
     operationId: updateEnvironment
@@ -93,7 +93,7 @@ getEnvironment:
         $ref: '../index.yaml#/components/responses/InternalServerError'
   delete:
     tags:
-      - Environments
+      - Core - Environments
     summary: Delete environment
     description: |
       Soft-delete an environment (requires envs:manage permission).
@@ -129,7 +129,7 @@ getEnvironment:
 createEnvironment:
   post:
     tags:
-      - Environments
+      - Core - Environments
     summary: Create environment
     description: Create a new environment for an organization (requires envs:manage permission)
     operationId: createEnvironment

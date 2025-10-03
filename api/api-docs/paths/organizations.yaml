@@ -3,7 +3,7 @@
 listOrganizations:
   get:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: List user's organizations
     description: Get all organizations the authenticated user is a member of
     operationId: listOrganizations
@@ -29,7 +29,7 @@ listOrganizations:
 getOrganization:
   get:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: Get organization details
     description: Retrieve detailed information about a specific organization
     operationId: getOrganization
@@ -54,7 +54,7 @@ getOrganization:
         $ref: '../index.yaml#/components/responses/InternalServerError'
   put:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: Update organization
     description: Update organization details (requires orgs:manage permission)
     operationId: updateOrganization
@@ -87,7 +87,7 @@ getOrganization:
         $ref: '../index.yaml#/components/responses/InternalServerError'
   delete:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: Delete organization
     description: Soft-delete an organization (requires orgs:manage permission)
     operationId: deleteOrganization
@@ -110,7 +110,7 @@ getOrganization:
 createOrganization:
   post:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: Create organization
     description: |
       Create a new organization. The authenticated user becomes the owner.
@@ -151,7 +151,7 @@ createOrganization:
 switchContext:
   post:
     tags:
-      - Organizations
+      - Core - Organizations
     summary: Switch organization/environment context
     description: |
       Switch the user's current organization and environment context.

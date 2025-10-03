@@ -38,25 +38,25 @@ security:
 
 tags:
   # Core API
-  - name: Health
+  - name: Core - Health
     description: Health check endpoints
-  - name: Authentication
+  - name: Core - Authentication
     description: Passwordless authentication with magic tokens
 
   # Tenant-Scoped Resources
-  - name: Users
+  - name: Core - Users
     description: Current user profile and preferences
-  - name: Organizations
+  - name: Core - Organizations
     description: Multi-tenant organization management
-  - name: Environments
+  - name: Core - Environments
     description: Environment management within organizations
-  - name: Members
+  - name: Core - Members
     description: Organization member management, invitations, and organization-scoped impersonation (requires members:manage or members:impersonate)
-  - name: Groups
+  - name: Core - Groups
     description: Hierarchical group management for RBAC
-  - name: Events
+  - name: Core - Events
     description: Activity log and audit trail for environment-scoped events (requires events:read)
-  - name: Webhooks
+  - name: Core - Webhooks
     description: Webhook management and delivery tracking for CloudEvents 1.0.2 (requires webhooks:read or webhooks:manage)
 
   # Admin - System-Wide Management

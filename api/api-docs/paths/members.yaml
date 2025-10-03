@@ -3,7 +3,7 @@
 listMembers:
   get:
     tags:
-      - Members
+      - Core - Members
     summary: List organization members
     description: Get all members of the organization (requires members:read permission)
     operationId: listMembers
@@ -44,7 +44,7 @@ listMembers:
 getMember:
   get:
     tags:
-      - Members
+      - Core - Members
     summary: Get member details
     description: Retrieve detailed information about a specific organization member (requires members:read permission)
     operationId: getMember
@@ -72,7 +72,7 @@ getMember:
 updateMember:
   put:
     tags:
-      - Members
+      - Core - Members
     summary: Update member
     description: Update organization member details (requires members:manage permission)
     operationId: updateMember
@@ -108,7 +108,7 @@ updateMember:
 removeMember:
   delete:
     tags:
-      - Members
+      - Core - Members
     summary: Remove member
     description: |
       Remove a member from the organization (requires members:manage permission).
@@ -134,7 +134,7 @@ removeMember:
 inviteMember:
   post:
     tags:
-      - Members
+      - Core - Members
     summary: Invite member
     description: |
       Invite a new member to the organization (requires members:manage permission).
@@ -180,7 +180,7 @@ inviteMember:
 getMemberOrganizations:
   get:
     tags:
-      - Members
+      - Core - Members
     summary: Get member organizations
     description: |
       Get all organizations that a member belongs to (requires members:manage permission).
@@ -217,7 +217,7 @@ getMemberOrganizations:
 getMemberPermissions:
   get:
     tags:
-      - Members
+      - Core - Members
     summary: Get member permissions
     description: |
       Get effective permissions for a member within the organization/environment context (requires members:manage permission).
@@ -301,7 +301,7 @@ getMemberPermissions:
 startMemberImpersonation:
   post:
     tags:
-      - Members
+      - Core - Members
     summary: Start organization member impersonation
     description: |
       Start impersonating an organization member (requires members:impersonate permission).
@@ -407,7 +407,7 @@ startMemberImpersonation:
 endMemberImpersonation:
   delete:
     tags:
-      - Members
+      - Core - Members
     summary: End organization member impersonation
     description: |
       End an active organization member impersonation session.
@@ -460,7 +460,7 @@ endMemberImpersonation:
 getMemberImpersonationStatus:
   get:
     tags:
-      - Members
+      - Core - Members
     summary: Get organization member impersonation status
     description: |
       Get current impersonation status for a member.

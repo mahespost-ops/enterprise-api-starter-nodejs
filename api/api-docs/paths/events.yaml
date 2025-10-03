@@ -3,7 +3,7 @@
 listEvents:
   get:
     tags:
-      - Events
+      - Core - Events
     summary: List events
     description: |
       Get events (activity log) for a specific environment with optional filters.
@@ -60,7 +60,7 @@ listEvents:
 getEvent:
   get:
     tags:
-      - Events
+      - Core - Events
     summary: Get event details
     description: Retrieve detailed information about a specific event
     operationId: getEvent

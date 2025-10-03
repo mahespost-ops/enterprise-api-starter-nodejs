@@ -3,7 +3,7 @@
 getCurrentUser:
   get:
     tags:
-      - Users
+      - Core - Users
     summary: Get current user profile
     description: Retrieve the authenticated user's profile information
     operationId: getCurrentUser
@@ -24,7 +24,7 @@ getCurrentUser:
 updateCurrentUser:
   put:
     tags:
-      - Users
+      - Core - Users
     summary: Update current user profile
     description: Update the authenticated user's profile information
     operationId: updateCurrentUser
@@ -53,7 +53,7 @@ updateCurrentUser:
 getCurrentUserOrganizations:
   get:
     tags:
-      - Users
+      - Core - Users
     summary: Get user's organizations
     description: Retrieve all organizations the authenticated user is a member of
     operationId: getCurrentUserOrganizations
@@ -78,7 +78,7 @@ getCurrentUserOrganizations:
 getCurrentUserPermissions:
   get:
     tags:
-      - Users
+      - Core - Users
     summary: Get user's effective permissions
     description: |
       Retrieve the authenticated user's effective permissions for the current organization/environment context.
@@ -143,7 +143,7 @@ getCurrentUserPermissions:
 getCurrentUserDevices:
   get:
     tags:
-      - Users
+      - Core - Users
     summary: Get current user's devices
     description: Retrieve all devices for the authenticated user
     operationId: getCurrentUserDevices
@@ -217,7 +217,7 @@ getCurrentUserDevices:
 updateCurrentUserDevice:
   put:
     tags:
-      - Users
+      - Core - Users
     summary: Update current user's device
     description: Update a device owned by the authenticated user
     operationId: updateCurrentUserDevice
@@ -292,7 +292,7 @@ updateCurrentUserDevice:
 revokeCurrentUserDevice:
   delete:
     tags:
-      - Users
+      - Core - Users
     summary: Revoke current user's device
     description: |
       Revoke a device owned by the authenticated user.
@@ -324,7 +324,7 @@ revokeCurrentUserDevice:
 getCurrentUserSessions:
   get:
     tags:
-      - Users
+      - Core - Users
     summary: Get current user's sessions
     description: Retrieve all sessions for the authenticated user
     operationId: getCurrentUserSessions
@@ -398,7 +398,7 @@ getCurrentUserSessions:
 revokeCurrentUserSession:
   delete:
     tags:
-      - Users
+      - Core - Users
     summary: Revoke current user's session
     description: Revoke a specific session owned by the authenticated user
     operationId: revokeCurrentUserSession
@@ -428,7 +428,7 @@ revokeCurrentUserSession:
 revokeAllCurrentUserSessions:
   delete:
     tags:
-      - Users
+      - Core - Users
     summary: Revoke all current user's sessions
     description: |
       Revoke all sessions for the authenticated user except the current one.

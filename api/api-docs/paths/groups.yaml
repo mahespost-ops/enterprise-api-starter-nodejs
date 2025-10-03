@@ -3,7 +3,7 @@
 listGroups:
   get:
     tags:
-      - Groups
+      - Core - Groups
     summary: List groups
     description: |
       Get all groups in the organization (requires groups:read permission).
@@ -42,7 +42,7 @@ listGroups:
 getGroup:
   get:
     tags:
-      - Groups
+      - Core - Groups
     summary: Get group details
     description: Retrieve detailed information about a specific group (requires groups:read permission)
     operationId: getGroup
@@ -70,7 +70,7 @@ getGroup:
 updateGroup:
   put:
     tags:
-      - Groups
+      - Core - Groups
     summary: Update group
     description: |
       Update group details (requires groups:manage permission).
@@ -119,7 +119,7 @@ updateGroup:
 deleteGroup:
   delete:
     tags:
-      - Groups
+      - Core - Groups
     summary: Delete group
     description: |
       Soft-delete a group (requires groups:manage permission).
@@ -146,7 +146,7 @@ deleteGroup:
 createGroup:
   post:
     tags:
-      - Groups
+      - Core - Groups
     summary: Create group
     description: |
       Create a new group in the organization (requires groups:manage permission).
@@ -187,7 +187,7 @@ createGroup:
 listGroupMembers:
   get:
     tags:
-      - Groups
+      - Core - Groups
     summary: List group members
     description: Get all members of a specific group (requires groups:read permission)
     operationId: listGroupMembers
@@ -218,7 +218,7 @@ listGroupMembers:
 addGroupMember:
   post:
     tags:
-      - Groups
+      - Core - Groups
     summary: Add member to group
     description: |
       Add a user to a group (requires groups:manage permission).
@@ -270,7 +270,7 @@ addGroupMember:
 removeGroupMember:
   delete:
     tags:
-      - Groups
+      - Core - Groups
     summary: Remove member from group
     description: Remove a user from a group (requires groups:manage permission)
     operationId: removeGroupMember
@@ -295,7 +295,7 @@ removeGroupMember:
 getGroupChildren:
   get:
     tags:
-      - Groups
+      - Core - Groups
     summary: Get child groups
     description: |
       Get all direct child groups of a specific group (requires groups:read permission).
