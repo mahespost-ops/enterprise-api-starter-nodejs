@@ -83,7 +83,7 @@ EnvironmentList:
       items:
         $ref: '#/Environment'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 EnvironmentCreateRequest:
   type: object

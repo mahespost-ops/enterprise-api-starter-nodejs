@@ -8,8 +8,8 @@ Role:
   required:
     - id
     - name
-    - created_at
-    - updated_at
+    - createdAt
+    - updatedAt
   properties:
     id:
       type: string
@@ -27,7 +27,7 @@ Role:
       description: Role description
       maxLength: 500
       example: 'Full access to device management'
-    is_system:
+    isSystem:
       type: boolean
       description: Whether this is a system-defined role (cannot be deleted)
       default: false
@@ -39,23 +39,23 @@ Role:
       items:
         $ref: '#/Permission'
       readOnly: true
-    permission_count:
+    permissionCount:
       type: integer
       description: Number of permissions (denormalized for performance)
       minimum: 0
       example: 5
       readOnly: true
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when role was created (UTC)
       example: '2025-10-02T14:00:00Z'
-    updated_at:
+    updatedAt:
       type: string
       format: date-time
       description: Timestamp when role was last updated (UTC)
       example: '2025-10-02T14:45:00Z'
-    deleted_at:
+    deletedAt:
       type: string
       format: date-time
       nullable: true
@@ -73,7 +73,7 @@ RoleList:
       items:
         $ref: '#/Role'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 RoleCreateRequest:
   type: object
@@ -148,13 +148,13 @@ Permission:
         - manage
         - assign
       example: 'manage'
-    is_system:
+    isSystem:
       type: boolean
       description: Whether this is a system-defined permission (cannot be deleted)
       default: true
       example: true
       readOnly: true
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when permission was created (UTC)
@@ -175,8 +175,8 @@ RolePermission:
   description: Association between a role and a permission
   required:
     - id
-    - role_id
-    - permission_id
+    - roleId
+    - permissionId
     - permission
   properties:
     id:
@@ -184,12 +184,12 @@ RolePermission:
       format: uuid
       description: Role permission unique identifier
       example: 'e8ff512c-2fcd-7ccc-3356-egb8i0987446'
-    role_id:
+    roleId:
       type: string
       format: uuid
       description: Role ID
       example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
-    permission_id:
+    permissionId:
       type: string
       format: uuid
       description: Permission ID
@@ -197,7 +197,7 @@ RolePermission:
     permission:
       $ref: '#/Permission'
       description: Permission object (denormalized)
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when permission was added to role (UTC)
@@ -216,9 +216,9 @@ RolePermissionList:
 RolePermissionAddRequest:
   type: object
   required:
-    - permission_id
+    - permissionId
   properties:
-    permission_id:
+    permissionId:
       type: string
       format: uuid
       description: Permission ID to add to the role

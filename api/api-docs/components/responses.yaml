@@ -1,3 +1,14 @@
+BadRequestError:
+  description: Bad request - invalid parameters or malformed request
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 400
+        message: Bad Request
+        error: Invalid request parameters
+
 UnauthorizedError:
   description: Authentication token is missing or invalid
   content:

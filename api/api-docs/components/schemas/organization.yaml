@@ -6,9 +6,9 @@ Organization:
     - id
     - name
     - slug
-    - default_env_id
-    - created_at
-    - updated_at
+    - defaultEnvId
+    - createdAt
+    - updatedAt
   properties:
     id:
       type: string
@@ -33,12 +33,12 @@ Organization:
       description: Organization description
       maxLength: 500
       example: 'Leading provider of enterprise solutions'
-    default_env_id:
+    defaultEnvId:
       type: string
       format: uuid
       description: Default environment ID for this organization
       example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
-    logo_url:
+    logoUrl:
       type: string
       format: uri
       description: Organization logo URL
@@ -55,22 +55,22 @@ Organization:
       example:
         industry: 'Technology'
         size: 'Enterprise'
-    is_active:
+    isActive:
       type: boolean
       description: Whether the organization is active
       default: true
       example: true
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when organization was created (UTC)
       example: '2025-01-15T10:30:00Z'
-    updated_at:
+    updatedAt:
       type: string
       format: date-time
       description: Timestamp when organization was last updated (UTC)
       example: '2025-10-02T14:45:00Z'
-    deleted_at:
+    deletedAt:
       type: string
       format: date-time
       nullable: true
@@ -88,7 +88,7 @@ OrganizationList:
       items:
         $ref: '#/Organization'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 OrganizationCreateRequest:
   type: object
@@ -114,7 +114,7 @@ OrganizationCreateRequest:
       description: Organization description
       maxLength: 500
       example: 'Leading provider of enterprise solutions'
-    logo_url:
+    logoUrl:
       type: string
       format: uri
       description: Organization logo URL
@@ -146,7 +146,7 @@ OrganizationUpdateRequest:
       description: Organization description
       maxLength: 500
       example: 'Leading provider of enterprise solutions'
-    logo_url:
+    logoUrl:
       type: string
       format: uri
       description: Organization logo URL
@@ -160,7 +160,7 @@ OrganizationUpdateRequest:
       type: object
       description: Custom metadata for organization
       additionalProperties: true
-    is_active:
+    isActive:
       type: boolean
       description: Whether the organization is active
       example: true
@@ -168,9 +168,9 @@ OrganizationUpdateRequest:
 SwitchContextRequest:
   type: object
   required:
-    - env_id
+    - envId
   properties:
-    env_id:
+    envId:
       type: string
       format: uuid
       description: Environment ID to switch to

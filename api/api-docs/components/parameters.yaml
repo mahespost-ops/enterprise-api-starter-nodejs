@@ -111,12 +111,12 @@ sessionId:
     format: uuid
   example: 'i2dd956a-6dab-1aaa-7790-ikf2m4321880'
 
-# Query Parameters - Pagination
+# Query Parameters - Pagination (Offset-Based)
 limit:
   name: limit
   in: query
   required: false
-  description: Maximum number of results to return
+  description: Maximum number of results to return (1-100, default 20)
   schema:
     type: integer
     minimum: 1
@@ -128,35 +128,44 @@ offset:
   name: offset
   in: query
   required: false
-  description: Number of results to skip for pagination
+  description: Number of results to skip for pagination (default 0)
   schema:
     type: integer
     minimum: 0
     default: 0
   example: 0
 
+# Query Parameters - Pagination (Cursor-Based)
+cursor:
+  name: cursor
+  in: query
+  required: false
+  description: |
+    Opaque cursor for pagination. Use the `nextCursor` value from the previous response.
+    If not provided, returns the first page.
+  schema:
+    type: string
+  example: 'eyJpZCI6IjEyMyIsInRzIjoxNjk...'
+
 # Query Parameters - Sorting
 sort:
   name: sort
   in: query
   required: false
-  description: Field to sort by
-  schema:
-    type: string
-  example: 'created_at'
+  description: |
+    Sort results by one or more fields. Comma-separated list.
+    Prefix field with '-' for descending order, or no prefix/'+' for ascending.
+    Applied in order specified (first field is primary sort).
 
-order:
-  name: order
-  in: query
-  required: false
-  description: Sort order
+    Examples:
+    - `sort=created_at` - Sort by created_at ascending
+    - `sort=-created_at` - Sort by created_at descending (newest first)
+    - `sort=status,-created_at` - Sort by status asc, then created_at desc
+
+    Sortable fields vary by endpoint. See endpoint documentation for details.
   schema:
     type: string
-    enum:
-      - asc
-      - desc
-    default: desc
-  example: 'desc'
+  example: '-created_at'
 
 # Query Parameters - Filtering (Common)
 status:
@@ -172,10 +181,30 @@ search:
   name: search
   in: query
   required: false
-  description: Search query string
+  description: |
+    Full-text search query across searchable fields.
+    Case-insensitive. Searchable fields vary by endpoint.
+
+    Should not be combined with filter params on the same fields.
   schema:
     type: string
   example: 'search term'
+
+fields:
+  name: fields
+  in: query
+  required: false
+  description: |
+    Comma-separated list of fields to include in response.
+    Only specified fields will be returned (plus `id` which is always included).
+    Invalid field names return 400 Bad Request.
+
+    Example: `fields=email,name,status`
+
+    Available fields vary by endpoint. See endpoint documentation for details.
+  schema:
+    type: string
+  example: 'email,name,status'
 
 startDate:
   name: startDate

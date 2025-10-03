@@ -89,7 +89,7 @@ GroupList:
       items:
         $ref: '#/Group'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 GroupWithChildren:
   type: object
@@ -216,7 +216,7 @@ GroupMemberList:
       items:
         $ref: '#/GroupMember'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 GroupMemberAddRequest:
   type: object

@@ -8,30 +8,160 @@ listGroups:
     description: |
       Get all groups in the organization (requires groups:read permission).
       Returns hierarchical list by default, sorted by hierarchy_level then name.
+
+      **Filterable fields:**
+      - `parentId` (eq, ne, in, nin) - Filter by parent group ID (null for root groups)
+      - `hierarchyLevel` (eq, ne, gt, gte, lt, lte) - Filter by hierarchy depth (0=root, increments down)
+      - `isActive` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (not indexed, may be slow for large datasets)
+      - `hierarchyLevel` (indexed)
+      - `memberCount` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across name and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, organizationId, name, description, parentId, hierarchyLevel, metadata, memberCount, isActive, createdAt, updatedAt
+
+      **Examples:**
+      ```
+      # Active root-level groups only, sorted by name
+      ?filter[parentId]=null&filter[isActive]=true&sort=name&limit=50
+
+      # Groups at specific hierarchy level created after Jan 1, 2025
+      ?filter[hierarchyLevel]=1&filter[createdAt][gte]=2025-01-01T00:00:00Z
+
+      # Search for groups and return only id, name, memberCount
+      ?search=engineering&fields=id,name,memberCount
+      ```
     operationId: listGroups
     security:
       - bearerAuth: ["groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
       - $ref: '../components/parameters.yaml#/search'
-      - $ref: '../components/parameters.yaml#/includeChildren'
-      - name: parentId
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[parentId]
         in: query
         required: false
-        description: Filter by parent group ID (null for root groups)
+        description: |
+          Filter by parent group ID (supports: eq, ne, in, nin)
+          Use 'null' for root-level groups
         schema:
           type: string
-          format: uuid
         example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+      - name: filter[hierarchyLevel]
+        in: query
+        required: false
+        description: |
+          Filter by hierarchy level (supports: eq, ne, gt, gte, lt, lte)
+          Values: 0=root, 1=first level, 2=second level, etc.
+        schema:
+          type: integer
+        example: 1
+      - name: filter[isActive]
+        in: query
+        required: false
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: true
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter groups created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter groups created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
     responses:
       '200':
         description: Groups retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/group.yaml#/GroupList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/group.yaml#/Group'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Engineering Team'
+                      description: 'Software engineering department'
+                      parentId: null
+                      hierarchyLevel: 0
+                      memberCount: 15
+                      isActive: true
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                    - id: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Backend Team'
+                      description: 'Backend development team'
+                      parentId: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      hierarchyLevel: 1
+                      memberCount: 8
+                      isActive: true
+                      createdAt: '2025-10-02T15:00:00Z'
+                      updatedAt: '2025-10-02T15:00:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      name: 'Engineering Team'
+                      memberCount: 15
+                    - id: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+                      name: 'Backend Team'
+                      memberCount: 8
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

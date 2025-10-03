@@ -5,58 +5,114 @@ listDevices:
     tags:
       - Admin - Devices
     summary: List all devices
-    description: Get all devices across all users (requires admin:devices:read permission)
+    description: |
+      Get all devices across all users (requires admin:devices:read permission)
+
+      **Filterable fields:**
+      - `userId` (eq, ne, in, nin) - Filter by user ID
+      - `isTrusted` (eq) - Filter by trusted status (boolean)
+      - `isRevoked` (eq) - Filter by revoked status (boolean)
+      - `deviceType` (eq, ne, in, nin) - Values: desktop, mobile, tablet
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastUsedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `lastUsedAt` (indexed)
+      - `name` (not indexed, may be slow for large datasets)
+      - `isTrusted` (indexed)
+      - `isRevoked` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across name, userEmail, fingerprint, ipAddress, browser, os (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, userId, userEmail, fingerprint, name, deviceType, browser, os, ipAddress, isTrusted, isRevoked, lastUsedAt, createdAt, revokedAt
+
+      **Examples:**
+      ```
+      # Active (not revoked) trusted devices, sorted by last used
+      ?filter[isRevoked]=false&filter[isTrusted]=true&sort=-lastUsedAt&limit=50
+
+      # Devices for specific user created after Jan 1, 2025
+      ?filter[userId]=123e4567-e89b-12d3-a456-426614174000&filter[createdAt][gte]=2025-01-01T00:00:00Z
+
+      # Search for devices and return only essential fields
+      ?search=MacBook&fields=id,name,userEmail,lastUsedAt
+      ```
     operationId: adminListDevices
     security:
       - bearerAuth: ["admin:devices:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
-      - name: userId
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[userId]
         in: query
         required: false
-        description: Filter by user ID
+        description: |
+          Filter by user ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: '123e4567-e89b-12d3-a456-426614174000'
-      - name: isTrusted
+      - name: filter[isTrusted]
         in: query
         required: false
-        description: Filter by trusted status
-        schema:
-          type: boolean
-        example: true
-      - name: isRevoked
-        in: query
-        required: false
-        description: Filter by revoked status
-        schema:
-          type: boolean
-        example: false
-      - name: sortBy
-        in: query
-        required: false
-        description: Field to sort by
+        description: |
+          Filter by trusted status (supports: eq)
+          Values: true, false
         schema:
           type: string
-          enum:
-            - created_at
-            - last_used_at
-            - name
-          default: created_at
-        example: 'last_used_at'
-      - name: sortOrder
+        example: 'true'
+      - name: filter[isRevoked]
         in: query
         required: false
-        description: Sort order
+        description: |
+          Filter by revoked status (supports: eq)
+          Values: true, false
         schema:
           type: string
-          enum:
-            - asc
-            - desc
-          default: desc
-        example: 'desc'
+        example: 'false'
+      - name: filter[deviceType]
+        in: query
+        required: false
+        description: |
+          Filter by device type (supports: eq, ne, in, nin)
+          Values: desktop, mobile, tablet
+        schema:
+          type: string
+        example: 'desktop'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter devices created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter devices created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[lastUsedAt][gte]
+        in: query
+        required: false
+        description: Filter devices last used on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
     responses:
       '200':
         description: Devices retrieved successfully
@@ -74,18 +130,18 @@ listDevices:
                     type: object
                     required:
                       - id
-                      - user_id
+                      - userId
                       - fingerprint
-                      - is_trusted
-                      - created_at
+                      - isTrusted
+                      - createdAt
                     properties:
                       id:
                         type: string
                         format: uuid
-                      user_id:
+                      userId:
                         type: string
                         format: uuid
-                      user_email:
+                      userEmail:
                         type: string
                         format: email
                       fingerprint:
@@ -93,7 +149,7 @@ listDevices:
                       name:
                         type: string
                         nullable: true
-                      device_type:
+                      deviceType:
                         type: string
                         nullable: true
                       browser:
@@ -102,24 +158,63 @@ listDevices:
                       os:
                         type: string
                         nullable: true
-                      ip_address:
+                      ipAddress:
                         type: string
-                      is_trusted:
+                      isTrusted:
                         type: boolean
-                      is_revoked:
+                      isRevoked:
                         type: boolean
-                      last_used_at:
+                      lastUsedAt:
                         type: string
                         format: date-time
-                      created_at:
+                      createdAt:
                         type: string
                         format: date-time
-                      revoked_at:
+                      revokedAt:
                         type: string
                         format: date-time
                         nullable: true
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '9a8b7c6d-5e4f-3210-abcd-ef1234567890'
+                      userId: '123e4567-e89b-12d3-a456-426614174000'
+                      userEmail: 'john@example.com'
+                      fingerprint: 'd8f3a1b2c4d5e6f7a8b9c0d1e2f3a4b5'
+                      name: 'MacBook Pro'
+                      deviceType: 'desktop'
+                      browser: 'Chrome 120.0'
+                      os: 'macOS 14.2'
+                      ipAddress: '203.0.113.42'
+                      isTrusted: true
+                      isRevoked: false
+                      lastUsedAt: '2025-10-03T09:30:00Z'
+                      createdAt: '2025-09-15T14:22:00Z'
+                      revokedAt: null
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 1247
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '9a8b7c6d-5e4f-3210-abcd-ef1234567890'
+                      name: 'MacBook Pro'
+                      userEmail: 'john@example.com'
+                      lastUsedAt: '2025-10-03T09:30:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 1247
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':
@@ -154,18 +249,18 @@ getDevice:
               type: object
               required:
                 - id
-                - user_id
+                - userId
                 - fingerprint
-                - is_trusted
-                - created_at
+                - isTrusted
+                - createdAt
               properties:
                 id:
                   type: string
                   format: uuid
-                user_id:
+                userId:
                   type: string
                   format: uuid
-                user_email:
+                userEmail:
                   type: string
                   format: email
                 fingerprint:
@@ -173,7 +268,7 @@ getDevice:
                 name:
                   type: string
                   nullable: true
-                device_type:
+                deviceType:
                   type: string
                   nullable: true
                 browser:
@@ -182,19 +277,19 @@ getDevice:
                 os:
                   type: string
                   nullable: true
-                ip_address:
+                ipAddress:
                   type: string
-                is_trusted:
+                isTrusted:
                   type: boolean
-                is_revoked:
+                isRevoked:
                   type: boolean
-                last_used_at:
+                lastUsedAt:
                   type: string
                   format: date-time
-                created_at:
+                createdAt:
                   type: string
                   format: date-time
-                revoked_at:
+                revokedAt:
                   type: string
                   format: date-time
                   nullable: true
@@ -236,7 +331,7 @@ updateDevice:
                 type: string
                 description: Device name
                 example: 'MacBook Pro'
-              is_trusted:
+              isTrusted:
                 type: boolean
                 description: Whether device is trusted
                 example: true
@@ -249,15 +344,15 @@ updateDevice:
               type: object
               required:
                 - id
-                - user_id
+                - userId
                 - fingerprint
-                - is_trusted
-                - created_at
+                - isTrusted
+                - createdAt
               properties:
                 id:
                   type: string
                   format: uuid
-                user_id:
+                userId:
                   type: string
                   format: uuid
                 fingerprint:
@@ -265,14 +360,14 @@ updateDevice:
                 name:
                   type: string
                   nullable: true
-                is_trusted:
+                isTrusted:
                   type: boolean
-                is_revoked:
+                isRevoked:
                   type: boolean
-                last_used_at:
+                lastUsedAt:
                   type: string
                   format: date-time
-                created_at:
+                createdAt:
                   type: string
                   format: date-time
       '401':

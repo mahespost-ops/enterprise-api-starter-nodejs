@@ -87,7 +87,7 @@ RoleAssignmentList:
       items:
         $ref: '#/RoleAssignment'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 RoleAssignmentCreateRequest:
   type: object

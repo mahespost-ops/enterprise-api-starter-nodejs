@@ -5,22 +5,126 @@ listOrganizations:
     tags:
       - Core - Organizations
     summary: List user's organizations
-    description: Get all organizations the authenticated user is a member of
+    description: |
+      Get all organizations the authenticated user is a member of
+
+      **Filterable fields:**
+      - `isActive` (eq, ne) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (not indexed, may be slow for large datasets)
+
+      **Searchable fields:**
+      - Full-text search across name, slug, description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, name, slug, description, defaultEnvId, logoUrl, website, metadata, isActive, createdAt, updatedAt, deletedAt
+
+      **Examples:**
+      ```
+      # Active organizations only, sorted by name
+      ?filter[isActive]=true&sort=name&limit=50
+
+      # Organizations created after Jan 1, 2025
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&sort=-createdAt
+
+      # Search for organizations and return only id, name, slug
+      ?search=acme&fields=id,name,slug
+      ```
     operationId: listOrganizations
     security:
       - bearerAuth: ["organizations:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
       - $ref: '../components/parameters.yaml#/search'
-      - $ref: '../components/parameters.yaml#/includeInactive'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[isActive]
+        in: query
+        required: false
+        description: |
+          Filter by active status (supports: eq, ne)
+          Values: true, false
+        schema:
+          type: string
+        example: 'true'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter organizations created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter organizations created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
     responses:
       '200':
         description: Organizations retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/organization.yaml#/OrganizationList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/organization.yaml#/Organization'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Acme Corporation'
+                      slug: 'acme-corp'
+                      description: 'Leading provider of enterprise solutions'
+                      defaultEnvId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      logoUrl: 'https://cdn.example.com/logos/acme.png'
+                      website: 'https://acme.com'
+                      isActive: true
+                      createdAt: '2025-01-15T10:30:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 5
+                    hasMore: false
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Acme Corporation'
+                      slug: 'acme-corp'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 5
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '500':

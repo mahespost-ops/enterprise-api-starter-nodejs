@@ -401,6 +401,8 @@ components:
         See individual endpoint `security` sections for specific scope requirements.
 
   responses:
+    BadRequestError:
+      $ref: './components/responses.yaml#/BadRequestError'
     UnauthorizedError:
       $ref: './components/responses.yaml#/UnauthorizedError'
     ForbiddenError:
@@ -415,28 +417,45 @@ components:
       $ref: './components/responses.yaml#/InternalServerError'
 
   schemas:
+    # ========================================
+    # Common Schemas
+    # ========================================
     Error:
       $ref: './components/schemas/common.yaml#/Error'
     ValidationError:
       $ref: './components/schemas/common.yaml#/ValidationError'
-    PaginationInfo:
-      $ref: './components/schemas/common.yaml#/PaginationInfo'
+    OffsetPaginationInfo:
+      $ref: './components/schemas/common.yaml#/OffsetPaginationInfo'
+    CursorPaginationInfo:
+      $ref: './components/schemas/common.yaml#/CursorPaginationInfo'
+
+    # ========================================
+    # Entity Schemas
+    # ========================================
     User:
       $ref: './components/schemas/user.yaml#/User'
-    AuthResponse:
-      $ref: './components/schemas/auth.yaml#/AuthResponse'
+    Device:
+      $ref: './components/schemas/device.yaml#/Device'
+    Session:
+      $ref: './components/schemas/session.yaml#/Session'
     Organization:
       $ref: './components/schemas/organization.yaml#/Organization'
-    Environment:
-      $ref: './components/schemas/environment.yaml#/Environment'
     OrganizationMember:
       $ref: './components/schemas/member.yaml#/OrganizationMember'
+    Environment:
+      $ref: './components/schemas/environment.yaml#/Environment'
     Group:
       $ref: './components/schemas/group.yaml#/Group'
+    GroupMember:
+      $ref: './components/schemas/group.yaml#/GroupMember'
+    GroupWithChildren:
+      $ref: './components/schemas/group.yaml#/GroupWithChildren'
     Role:
       $ref: './components/schemas/role.yaml#/Role'
     Permission:
       $ref: './components/schemas/role.yaml#/Permission'
+    RolePermission:
+      $ref: './components/schemas/role.yaml#/RolePermission'
     RoleAssignment:
       $ref: './components/schemas/role-assignment.yaml#/RoleAssignment'
     Event:
@@ -445,3 +464,122 @@ components:
       $ref: './components/schemas/webhook.yaml#/Webhook'
     WebhookDelivery:
       $ref: './components/schemas/webhook.yaml#/WebhookDelivery'
+
+    # ========================================
+    # Request Schemas
+    # ========================================
+    # Auth Requests
+    RegisterRequest:
+      $ref: './components/schemas/auth.yaml#/RegisterRequest'
+    RequestMagicTokenRequest:
+      $ref: './components/schemas/auth.yaml#/RequestMagicTokenRequest'
+    VerifyMagicTokenRequest:
+      $ref: './components/schemas/auth.yaml#/VerifyMagicTokenRequest'
+    RefreshTokenRequest:
+      $ref: './components/schemas/auth.yaml#/RefreshTokenRequest'
+
+    # User Requests
+    UserUpdate:
+      $ref: './components/schemas/user.yaml#/UserUpdate'
+
+    # Device Requests
+    DeviceUpdate:
+      $ref: './components/schemas/device.yaml#/DeviceUpdate'
+
+    # Session Requests
+    SessionRevocationRequest:
+      $ref: './components/schemas/session.yaml#/SessionRevocationRequest'
+
+    # Organization Requests
+    OrganizationCreateRequest:
+      $ref: './components/schemas/organization.yaml#/OrganizationCreateRequest'
+    OrganizationUpdateRequest:
+      $ref: './components/schemas/organization.yaml#/OrganizationUpdateRequest'
+    SwitchContextRequest:
+      $ref: './components/schemas/organization.yaml#/SwitchContextRequest'
+
+    # Member Requests
+    OrganizationMemberInviteRequest:
+      $ref: './components/schemas/member.yaml#/OrganizationMemberInviteRequest'
+    OrganizationMemberUpdateRequest:
+      $ref: './components/schemas/member.yaml#/OrganizationMemberUpdateRequest'
+
+    # Environment Requests
+    EnvironmentCreateRequest:
+      $ref: './components/schemas/environment.yaml#/EnvironmentCreateRequest'
+    EnvironmentUpdateRequest:
+      $ref: './components/schemas/environment.yaml#/EnvironmentUpdateRequest'
+
+    # Group Requests
+    GroupCreateRequest:
+      $ref: './components/schemas/group.yaml#/GroupCreateRequest'
+    GroupUpdateRequest:
+      $ref: './components/schemas/group.yaml#/GroupUpdateRequest'
+    GroupMemberAddRequest:
+      $ref: './components/schemas/group.yaml#/GroupMemberAddRequest'
+
+    # Role Requests
+    RoleCreateRequest:
+      $ref: './components/schemas/role.yaml#/RoleCreateRequest'
+    RoleUpdateRequest:
+      $ref: './components/schemas/role.yaml#/RoleUpdateRequest'
+    RolePermissionAddRequest:
+      $ref: './components/schemas/role.yaml#/RolePermissionAddRequest'
+
+    # Role Assignment Requests
+    RoleAssignmentCreateRequest:
+      $ref: './components/schemas/role-assignment.yaml#/RoleAssignmentCreateRequest'
+
+    # Webhook Requests
+    CreateWebhookRequest:
+      $ref: './components/schemas/webhook.yaml#/CreateWebhookRequest'
+    UpdateWebhookRequest:
+      $ref: './components/schemas/webhook.yaml#/UpdateWebhookRequest'
+
+    # ========================================
+    # Response Schemas
+    # ========================================
+    AuthResponse:
+      $ref: './components/schemas/auth.yaml#/AuthResponse'
+    RequestMagicTokenResponse:
+      $ref: './components/schemas/auth.yaml#/RequestMagicTokenResponse'
+    RefreshTokenResponse:
+      $ref: './components/schemas/auth.yaml#/RefreshTokenResponse'
+    OrganizationMemberInviteResponse:
+      $ref: './components/schemas/member.yaml#/OrganizationMemberInviteResponse'
+    SwitchContextResponse:
+      $ref: './components/schemas/organization.yaml#/SwitchContextResponse'
+    WebhookDeliveryRetryResponse:
+      $ref: './components/schemas/webhook.yaml#/WebhookDeliveryRetryResponse'
+
+    # ========================================
+    # List Schemas
+    # ========================================
+    DeviceList:
+      $ref: './components/schemas/device.yaml#/DeviceList'
+    SessionList:
+      $ref: './components/schemas/session.yaml#/SessionList'
+    OrganizationList:
+      $ref: './components/schemas/organization.yaml#/OrganizationList'
+    OrganizationMemberList:
+      $ref: './components/schemas/member.yaml#/OrganizationMemberList'
+    EnvironmentList:
+      $ref: './components/schemas/environment.yaml#/EnvironmentList'
+    GroupList:
+      $ref: './components/schemas/group.yaml#/GroupList'
+    GroupMemberList:
+      $ref: './components/schemas/group.yaml#/GroupMemberList'
+    RoleList:
+      $ref: './components/schemas/role.yaml#/RoleList'
+    PermissionList:
+      $ref: './components/schemas/role.yaml#/PermissionList'
+    RolePermissionList:
+      $ref: './components/schemas/role.yaml#/RolePermissionList'
+    RoleAssignmentList:
+      $ref: './components/schemas/role-assignment.yaml#/RoleAssignmentList'
+    EventList:
+      $ref: './components/schemas/event.yaml#/EventList'
+    WebhookList:
+      $ref: './components/schemas/webhook.yaml#/WebhookList'
+    WebhookDeliveryList:
+      $ref: './components/schemas/webhook.yaml#/WebhookDeliveryList'

@@ -208,7 +208,7 @@ getCurrentUserDevices:
                         type: string
                         format: date-time
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '500':
@@ -389,7 +389,7 @@ getCurrentUserSessions:
                         type: string
                         format: date-time
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '500':

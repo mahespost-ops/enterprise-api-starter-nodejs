@@ -64,46 +64,17 @@ ValidationError:
       description: Timestamp of the error
       example: '2025-10-02T12:34:56.789Z'
 
-PaginationMeta:
-  type: object
-  required:
-    - page
-    - limit
-    - total
-    - totalPages
-  properties:
-    page:
-      type: integer
-      description: Current page number
-      example: 1
-      minimum: 1
-    limit:
-      type: integer
-      description: Number of items per page
-      example: 20
-      minimum: 1
-      maximum: 100
-    total:
-      type: integer
-      description: Total number of items
-      example: 150
-      minimum: 0
-    totalPages:
-      type: integer
-      description: Total number of pages
-      example: 8
-      minimum: 0
-
-PaginationInfo:
+OffsetPaginationInfo:
   type: object
   required:
     - limit
     - offset
     - total
+    - hasMore
   properties:
     limit:
       type: integer
-      description: Number of items per page
+      description: Number of items requested per page
       example: 20
       minimum: 1
       maximum: 100
@@ -114,6 +85,34 @@ PaginationInfo:
       minimum: 0
     total:
       type: integer
-      description: Total number of items
+      description: Total number of items available
       example: 150
       minimum: 0
+    hasMore:
+      type: boolean
+      description: Whether there are more items available beyond this page
+      example: true
+
+CursorPaginationInfo:
+  type: object
+  required:
+    - limit
+    - hasMore
+  properties:
+    limit:
+      type: integer
+      description: Number of items requested per page
+      example: 100
+      minimum: 1
+      maximum: 100
+    nextCursor:
+      type: string
+      description: |
+        Opaque cursor to fetch the next page of results.
+        Pass this value as the `cursor` query parameter for the next request.
+        Only present when hasMore is true.
+      example: 'eyJpZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsInRzIjoxNjk2MzQ1Njc4fQ=='
+    hasMore:
+      type: boolean
+      description: Whether there are more items available beyond this page
+      example: true

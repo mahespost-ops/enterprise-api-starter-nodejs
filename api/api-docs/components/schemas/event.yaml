@@ -4,9 +4,9 @@ Event:
   type: object
   required:
     - id
-    - environment_id
+    - environmentId
     - verb
-    - actor_type
+    - actorType
     - actor
     - timestamp
   properties:
@@ -15,7 +15,7 @@ Event:
       format: uuid
       description: Event unique identifier
       example: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
-    environment_id:
+    environmentId:
       type: string
       format: uuid
       description: Environment ID where event occurred
@@ -25,7 +25,7 @@ Event:
       description: Event verb/type (e.g., "auth.login", "device.update", "user.created")
       maxLength: 100
       example: 'auth.login'
-    actor_type:
+    actorType:
       type: string
       enum:
         - User
@@ -66,16 +66,16 @@ Event:
       description: Audit metadata including HTTP request/response/headers/IP/user agent
       additionalProperties: true
       example:
-        ip_address: '192.168.1.100'
-        x_forwarded_for: '203.0.113.45'
-        user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
-        request_method: 'POST'
-        request_path: '/api/v1/auth/login'
-        request_headers:
+        ipAddress: '192.168.1.100'
+        xForwardedFor: '203.0.113.45'
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+        requestMethod: 'POST'
+        requestPath: '/api/v1/auth/login'
+        requestHeaders:
           authorization: '[REDACTED]'
-          content-type: 'application/json'
-        response_status: 200
-        response_time_ms: 145
+          contentType: 'application/json'
+        responseStatus: 200
+        responseTimeMs: 145
     description:
       type: string
       nullable: true
@@ -86,23 +86,23 @@ Event:
       format: date-time
       description: Event timestamp (UTC)
       example: '2025-10-03T14:30:00Z'
-    organization_id:
+    organizationId:
       type: string
       format: uuid
       nullable: true
       description: Organization ID (denormalized for filtering)
       example: '550e8400-e29b-41d4-a716-446655440000'
-    organization_name:
+    organizationName:
       type: string
       nullable: true
       description: Organization name (denormalized for display)
       example: 'Acme Corporation'
-    environment_name:
+    environmentName:
       type: string
       nullable: true
       description: Environment name (denormalized for display)
       example: 'Live'
-    is_webhook_event:
+    isWebhookEvent:
       type: boolean
       description: Whether this event triggers webhooks
       default: false
@@ -119,4 +119,4 @@ EventList:
       items:
         $ref: '#/Event'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/CursorPaginationInfo'

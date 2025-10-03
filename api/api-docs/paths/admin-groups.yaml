@@ -5,62 +5,117 @@ listGroups:
     tags:
       - Admin - Groups
     summary: List all groups
-    description: Get all groups across all organizations (requires admin:groups:read permission)
+    description: |
+      Get all groups across all organizations (requires admin:groups:read permission)
+
+      **Filterable fields:**
+      - `organizationId` (eq, ne, in, nin) - Filter by organization UUID
+      - `parentId` (eq, ne, in, nin) - Filter by parent group UUID (null for root groups)
+      - `hierarchyLevel` (eq, ne, gt, gte, lt, lte) - Filter by hierarchy level (0=root, increments down)
+      - `isActive` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (not indexed, may be slow for large datasets)
+      - `hierarchyLevel` (indexed)
+      - `memberCount` (not indexed, denormalized field)
+
+      **Searchable fields:**
+      - Full-text search across name and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, organizationId, name, description, parentId, hierarchyLevel, metadata, memberCount, isActive, createdAt, updatedAt, deletedAt
+
+      **Examples:**
+      ```
+      # Root-level groups only, sorted by name
+      ?filter[hierarchyLevel]=0&sort=name&limit=50
+
+      # Groups in specific organization created after Jan 1, 2025
+      ?filter[organizationId]=550e8400-e29b-41d4-a716-446655440000&filter[createdAt][gte]=2025-01-01T00:00:00Z
+
+      # Search for groups and return only id, name, memberCount
+      ?search=engineering&fields=id,name,memberCount
+      ```
     operationId: adminListGroups
     security:
       - bearerAuth: ["admin:groups:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
       - $ref: '../components/parameters.yaml#/search'
-      - name: orgId
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[organizationId]
         in: query
         required: false
-        description: Filter by organization ID
+        description: |
+          Filter by organization ID (supports: eq, ne, in, nin)
         schema:
           type: string
           format: uuid
-        example: '123e4567-e89b-12d3-a456-426614174000'
-      - name: parentId
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: filter[parentId]
         in: query
         required: false
-        description: Filter by parent group ID
+        description: |
+          Filter by parent group ID (supports: eq, ne, in, nin)
+          Use 'null' string to filter for root groups (parentId is null)
         schema:
           type: string
           format: uuid
-        example: '123e4567-e89b-12d3-a456-426614174001'
-      - name: hierarchyLevel
+        example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+      - name: filter[hierarchyLevel]
         in: query
         required: false
-        description: Filter by hierarchy level (0=root)
+        description: |
+          Filter by hierarchy level (supports: eq, ne, gt, gte, lt, lte)
+          0=root, increments down the tree
         schema:
           type: integer
           minimum: 0
         example: 0
-      - name: sortBy
+      - name: filter[isActive]
         in: query
         required: false
-        description: Field to sort by
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
         schema:
-          type: string
-          enum:
-            - created_at
-            - updated_at
-            - name
-            - hierarchy_level
-          default: created_at
-        example: 'hierarchy_level'
-      - name: sortOrder
+          type: boolean
+        example: true
+      - name: filter[createdAt][gte]
         in: query
         required: false
-        description: Sort order
+        description: Filter groups created on or after this date (ISO 8601, UTC)
         schema:
           type: string
-          enum:
-            - asc
-            - desc
-          default: desc
-        example: 'asc'
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter groups created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[updatedAt][gte]
+        in: query
+        required: false
+        description: Filter groups updated on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
     responses:
       '200':
         description: Groups retrieved successfully
@@ -77,7 +132,54 @@ listGroups:
                   items:
                     $ref: '../components/schemas/group.yaml#/Group'
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Engineering Team'
+                      description: 'Software engineering department'
+                      parentId: null
+                      hierarchyLevel: 0
+                      memberCount: 15
+                      isActive: true
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                    - id: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      name: 'Backend Team'
+                      description: 'Backend engineering sub-team'
+                      parentId: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      hierarchyLevel: 1
+                      memberCount: 8
+                      isActive: true
+                      createdAt: '2025-10-02T15:00:00Z'
+                      updatedAt: '2025-10-02T15:00:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 47
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      name: 'Engineering Team'
+                      memberCount: 15
+                    - id: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+                      name: 'Backend Team'
+                      memberCount: 8
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 47
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':
@@ -254,7 +356,7 @@ listGroupMembers:
                   items:
                     $ref: '../components/schemas/group.yaml#/GroupMember'
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

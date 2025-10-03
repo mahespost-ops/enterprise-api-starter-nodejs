@@ -7,42 +7,163 @@
     tags:
       - Core - Webhooks
     summary: List webhooks
-    description: List all webhooks for the current environment
+    description: |
+      Get all webhooks for the current environment (requires webhooks:read permission)
+
+      **Filterable fields:**
+      - `isActive` (eq) - Values: true, false
+      - `authMethod` (eq, ne, in, nin) - Values: none, hmac, jwt, basic, digest
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastDeliveryAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastFailureAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `lastDeliveryAt` (indexed)
+      - `lastFailureAt` (indexed)
+      - `successCount` (not indexed, may be slow for large datasets)
+      - `failureCount` (not indexed, may be slow for large datasets)
+
+      **Searchable fields:**
+      - Full-text search across url and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, environmentId, url, eventTypes, description, authMethod, authConfig, isActive, retryConfig, headers, timeout, createdAt, updatedAt, lastDeliveryAt, lastFailureAt, successCount, failureCount
+
+      **Examples:**
+      ```
+      # Active webhooks only, sorted by creation date
+      ?filter[isActive]=true&sort=-createdAt&limit=50
+
+      # Webhooks created after Jan 1, 2025 with HMAC authentication
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[authMethod]=hmac
+
+      # Search for webhooks and return only id, url, isActive
+      ?search=example.com&fields=id,url,isActive
+      ```
     operationId: listWebhooks
     security:
       - BearerAuth: ["webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
-      - name: isActive
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[isActive]
         in: query
-        description: Filter by active status
+        required: false
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
         schema:
           type: boolean
-          example: true
-      - name: eventType
+        example: true
+      - name: filter[authMethod]
         in: query
-        description: Filter by event type
+        required: false
+        description: |
+          Filter by authentication method (supports: eq, ne, in, nin)
+          Values: none, hmac, jwt, basic, digest
         schema:
           type: string
-          example: "user.login"
+        example: 'hmac'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter webhooks created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter webhooks created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[lastDeliveryAt][gte]
+        in: query
+        required: false
+        description: Filter webhooks with last delivery on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
     responses:
       '200':
         description: Webhooks retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/webhook.yaml#/WebhookList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/webhook.yaml#/Webhook'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      environmentId: '660e8400-e29b-41d4-a716-446655440000'
+                      url: 'https://api.example.com/webhooks/receive'
+                      eventTypes: ['user.login', 'device.revoked']
+                      description: 'Notify external system when users login'
+                      authMethod: 'hmac'
+                      isActive: true
+                      retryConfig:
+                        maxRetries: 3
+                        initialDelaySeconds: 60
+                        maxDelaySeconds: 3600
+                        backoffMultiplier: 2.0
+                      timeout: 10000
+                      createdAt: '2025-10-02T14:45:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                      lastDeliveryAt: '2025-10-03T10:30:00Z'
+                      successCount: 142
+                      failureCount: 3
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 15
+                    hasMore: false
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      url: 'https://api.example.com/webhooks/receive'
+                      isActive: true
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 15
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../components/responses.yaml#/UnauthorizedError'
       '403':
         $ref: '../components/responses.yaml#/ForbiddenError'
-      '404':
-        $ref: '../components/responses.yaml#/NotFoundError'
-      '429':
-        $ref: '../components/responses.yaml#/RateLimitError'
       '500':
         $ref: '../components/responses.yaml#/InternalServerError'
 

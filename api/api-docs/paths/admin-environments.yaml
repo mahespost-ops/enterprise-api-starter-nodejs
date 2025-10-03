@@ -5,55 +5,93 @@ listEnvironments:
     tags:
       - Admin - Environments
     summary: List all environments
-    description: Get all environments across all organizations (requires admin:environments:read permission)
+    description: |
+      Get all environments across all organizations (requires admin:environments:read permission)
+
+      **Filterable fields:**
+      - `organizationId` (eq, ne, in, nin) - Filter by organization UUID
+      - `type` (eq, ne, in, nin) - Values: live, sandbox
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (not indexed, may be slow for large datasets)
+      - `type` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across name and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, name, description, type, organizationId, organizationName, createdAt, updatedAt
+
+      **Examples:**
+      ```
+      # Live environments only, sorted by creation date
+      ?filter[type]=live&sort=-createdAt&limit=50
+
+      # Environments created after Jan 1, 2025 for specific organization
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[organizationId]=123e4567-e89b-12d3-a456-426614174000
+
+      # Search for environments and return only id, name, type
+      ?search=production&fields=id,name,type&limit=20
+      ```
     operationId: adminListEnvironments
     security:
       - bearerAuth: ["admin:environments:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
       - $ref: '../components/parameters.yaml#/search'
-      - name: orgId
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[organizationId]
         in: query
         required: false
-        description: Filter by organization ID
+        description: |
+          Filter by organization ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: '123e4567-e89b-12d3-a456-426614174000'
-      - name: type
+      - name: filter[type]
         in: query
         required: false
-        description: Filter by environment type
+        description: |
+          Filter by environment type (supports: eq, ne, in, nin)
+          Values: live, sandbox
         schema:
           type: string
-          enum:
-            - live
-            - sandbox
         example: 'live'
-      - name: sortBy
+      - name: filter[createdAt][gte]
         in: query
         required: false
-        description: Field to sort by
+        description: Filter environments created on or after this date (ISO 8601, UTC)
         schema:
           type: string
-          enum:
-            - created_at
-            - updated_at
-            - name
-          default: created_at
-        example: 'name'
-      - name: sortOrder
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
         in: query
         required: false
-        description: Sort order
+        description: Filter environments created on or before this date (ISO 8601, UTC)
         schema:
           type: string
-          enum:
-            - asc
-            - desc
-          default: desc
-        example: 'asc'
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[updatedAt][gte]
+        in: query
+        required: false
+        description: Filter environments updated on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
     responses:
       '200':
         description: Environments retrieved successfully
@@ -70,7 +108,50 @@ listEnvironments:
                   items:
                     $ref: '../components/schemas/environment.yaml#/Environment'
                 pagination:
-                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '123e4567-e89b-12d3-a456-426614174000'
+                      name: 'Live'
+                      description: 'Production environment'
+                      type: 'live'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corp'
+                      createdAt: '2025-10-02T14:45:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                    - id: '223e4567-e89b-12d3-a456-426614174001'
+                      name: 'Test'
+                      description: 'Testing and development environment'
+                      type: 'sandbox'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corp'
+                      createdAt: '2025-10-02T14:30:00Z'
+                      updatedAt: '2025-10-02T14:30:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 48
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '123e4567-e89b-12d3-a456-426614174000'
+                      name: 'Live'
+                      type: 'live'
+                    - id: '223e4567-e89b-12d3-a456-426614174001'
+                      name: 'Test'
+                      type: 'sandbox'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 48
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

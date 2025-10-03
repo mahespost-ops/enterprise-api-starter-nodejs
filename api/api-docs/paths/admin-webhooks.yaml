@@ -7,54 +7,186 @@
     tags:
       - Admin - Webhooks
     summary: List all webhooks (system-wide)
-    description: List all webhooks across all organizations and environments
+    description: |
+      List all webhooks across all organizations and environments (requires admin:webhooks:read permission)
+
+      **Filterable fields:**
+      - `organizationId` (eq, ne, in, nin) - Filter by organization ID (UUID)
+      - `environmentId` (eq, ne, in, nin) - Filter by environment ID (UUID)
+      - `isActive` (eq) - Filter by active status (boolean)
+      - `authMethod` (eq, ne, in, nin) - Values: none, hmac, jwt, basic, digest
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastDeliveryAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastFailureAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `lastDeliveryAt` (indexed)
+      - `lastFailureAt` (indexed)
+      - `successCount` (indexed)
+      - `failureCount` (indexed)
+      - `url` (not indexed, may be slow for large datasets)
+
+      **Searchable fields:**
+      - Full-text search across url, description, eventTypes (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, environmentId, url, eventTypes, description, authMethod, authConfig, isActive, retryConfig, headers, timeout, createdAt, updatedAt, lastDeliveryAt, lastFailureAt, successCount, failureCount
+
+      **Examples:**
+      ```
+      # Active webhooks only, sorted by creation date
+      ?filter[isActive]=true&sort=-createdAt&limit=50
+
+      # Webhooks for specific environment with failures
+      ?filter[environmentId]=660e8400-e29b-41d4-a716-446655440000&filter[lastFailureAt][gte]=2025-10-01T00:00:00Z
+
+      # Search for webhooks and return only key fields
+      ?search=example.com&fields=id,url,eventTypes,isActive&limit=20
+      ```
     operationId: adminListWebhooks
     security:
       - BearerAuth: ["admin:webhooks:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
-      - name: organizationId
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[organizationId]
         in: query
-        description: Filter by organization ID
+        required: false
+        description: |
+          Filter by organization ID (supports: eq, ne, in, nin)
         schema:
           type: string
           format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
-      - name: environmentId
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: filter[environmentId]
         in: query
-        description: Filter by environment ID
+        required: false
+        description: |
+          Filter by environment ID (supports: eq, ne, in, nin)
         schema:
           type: string
           format: uuid
-          example: "660e8400-e29b-41d4-a716-446655440000"
-      - name: isActive
+        example: '660e8400-e29b-41d4-a716-446655440000'
+      - name: filter[isActive]
         in: query
-        description: Filter by active status
+        required: false
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
         schema:
           type: boolean
-          example: true
-      - name: eventType
+        example: true
+      - name: filter[authMethod]
         in: query
-        description: Filter by event type
+        required: false
+        description: |
+          Filter by authentication method (supports: eq, ne, in, nin)
+          Values: none, hmac, jwt, basic, digest
         schema:
           type: string
-          example: "user.login"
+        example: 'hmac'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter webhooks created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter webhooks created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[lastFailureAt][gte]
+        in: query
+        required: false
+        description: Filter webhooks with failures on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-01T00:00:00Z'
     responses:
       '200':
         description: Webhooks retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/webhook.yaml#/WebhookList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/webhook.yaml#/Webhook'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      environmentId: '660e8400-e29b-41d4-a716-446655440000'
+                      url: 'https://api.example.com/webhooks/receive'
+                      eventTypes: ['user.login', 'device.revoked', 'session.created']
+                      description: 'Notify external system when users login'
+                      authMethod: 'hmac'
+                      isActive: true
+                      retryConfig:
+                        maxRetries: 3
+                        initialDelaySeconds: 60
+                        maxDelaySeconds: 3600
+                        backoffMultiplier: 2.0
+                      timeout: 10000
+                      createdAt: '2025-10-03T12:00:00Z'
+                      updatedAt: '2025-10-03T12:30:00Z'
+                      lastDeliveryAt: '2025-10-03T12:25:00Z'
+                      lastFailureAt: null
+                      successCount: 142
+                      failureCount: 0
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 87
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '550e8400-e29b-41d4-a716-446655440000'
+                      url: 'https://api.example.com/webhooks/receive'
+                      eventTypes: ['user.login', 'device.revoked']
+                      isActive: true
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 87
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
-        $ref: '../components/responses.yaml#/UnauthorizedError'
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':
-        $ref: '../components/responses.yaml#/ForbiddenError'
-      '429':
-        $ref: '../components/responses.yaml#/RateLimitError'
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
       '500':
-        $ref: '../components/responses.yaml#/InternalServerError'
+        $ref: '../index.yaml#/components/responses/InternalServerError'
 
 /admin/webhooks/{webhookId}:
   get:

@@ -6,85 +6,277 @@ listEvents:
       - Admin - Events
     summary: List all events
     description: |
-      Get all events (activity log) across all organizations and environments (requires admin:events:read permission).
-      Filter by verb, actor type, organization, environment, date range, and webhook eligibility.
+      Get all events (activity log) across all organizations and environments.
+      Requires `admin:events:read` permission.
+
+      This is a HIGH-VOLUME endpoint (10M+ records) using cursor-based pagination for optimal performance.
+
+      **Filterable fields:**
+      - `verb` (eq, ne, in, nin) - Event type/action (e.g., "auth.login", "device.update", "user.created")
+      - `actorType` (eq, ne, in, nin) - Values: User, System
+      - `actorId` (eq, ne, in, nin) - Actor user ID (UUID format)
+      - `organizationId` (eq, ne, in, nin) - Organization ID (UUID format)
+      - `environmentId` (eq, ne, in, nin) - Environment ID (UUID format)
+      - `isWebhookEvent` (eq) - Values: true, false
+      - `timestamp` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `timestamp` (default: -timestamp, indexed) - Event occurrence time
+      - `verb` (indexed) - Event type/action
+      - `actorType` (indexed) - Type of actor
+
+      **Searchable fields:**
+      - Full-text search across description, actor name/email, organization name, environment name (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, environmentId, verb, actorType, actor, object, target, audit, description, timestamp, organizationId, organizationName, environmentName, isWebhookEvent
+
+      **Examples:**
+      ```
+      # Example 1: Recent events for a specific organization
+      ?filter[organizationId]=550e8400-e29b-41d4-a716-446655440000&limit=100
+
+      # Example 2: Authentication events in date range
+      ?filter[verb][in]=auth.login,auth.logout&filter[timestamp][gte]=2025-01-01T00:00:00Z&filter[timestamp][lte]=2025-01-31T23:59:59Z
+
+      # Example 3: Webhook-eligible events with field selection
+      ?filter[isWebhookEvent]=true&fields=id,verb,timestamp,description&limit=50
+
+      # Example 4: Search for specific user activity
+      ?search=john.doe@example.com&sort=-timestamp
+      ```
     operationId: adminListEvents
     security:
       - bearerAuth: ["admin:events:read"]
     parameters:
-      - name: verb
+      # Pagination (Cursor-Based for HIGH-VOLUME)
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+
+      # Filters
+      - name: filter[verb]
         in: query
         required: false
-        description: Filter by event verb/type (e.g., "auth.login", "device.update")
+        description: |
+          Filter by event verb/type (supports: eq, ne, in, nin)
+          Examples: "auth.login", "device.update", "user.created"
         schema:
           type: string
         example: 'auth.login'
-      - $ref: '../components/parameters.yaml#/actorType'
-      - name: actorId
+
+      - name: filter[verb][in]
         in: query
         required: false
-        description: Filter by actor user ID
+        description: Filter by multiple event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'auth.login,auth.logout,device.update'
+
+      - name: filter[actorType]
+        in: query
+        required: false
+        description: |
+          Filter by actor type (supports: eq, ne, in, nin)
+          Values: User, System
+        schema:
+          type: string
+          enum:
+            - User
+            - System
+        example: 'User'
+
+      - name: filter[actorId]
+        in: query
+        required: false
+        description: Filter by actor user ID (UUID format)
         schema:
           type: string
           format: uuid
         example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
-      - name: organizationId
+
+      - name: filter[organizationId]
         in: query
         required: false
-        description: Filter by organization ID
+        description: |
+          Filter by organization ID (UUID format, supports: eq, ne, in, nin)
         schema:
           type: string
           format: uuid
         example: '550e8400-e29b-41d4-a716-446655440000'
-      - name: environmentId
+
+      - name: filter[organizationId][in]
         in: query
         required: false
-        description: Filter by environment ID
+        description: Filter by multiple organization IDs (comma-separated UUIDs)
+        schema:
+          type: string
+        example: '550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440001'
+
+      - name: filter[environmentId]
+        in: query
+        required: false
+        description: |
+          Filter by environment ID (UUID format, supports: eq, ne, in, nin)
         schema:
           type: string
           format: uuid
         example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
-      - $ref: '../components/parameters.yaml#/startDate'
-      - $ref: '../components/parameters.yaml#/endDate'
-      - name: isWebhookEvent
+
+      - name: filter[environmentId][in]
         in: query
         required: false
-        description: Filter by webhook eligibility
+        description: Filter by multiple environment IDs (comma-separated UUIDs)
+        schema:
+          type: string
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7,8d9e6679-7425-40de-944b-e07fc1f90ae8'
+
+      - name: filter[isWebhookEvent]
+        in: query
+        required: false
+        description: |
+          Filter by webhook eligibility (supports: eq)
+          Values: true, false
         schema:
           type: boolean
         example: true
-      - $ref: '../components/parameters.yaml#/limit'
-      - $ref: '../components/parameters.yaml#/offset'
-      - name: sortBy
+
+      - name: filter[timestamp][gte]
         in: query
         required: false
-        description: Field to sort by
+        description: Filter events on or after this timestamp (ISO 8601, UTC)
         schema:
           type: string
-          enum:
-            - timestamp
-            - verb
-            - actor_type
-          default: timestamp
-        example: 'timestamp'
-      - name: sortOrder
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[timestamp][lte]
         in: query
         required: false
-        description: Sort order
+        description: Filter events on or before this timestamp (ISO 8601, UTC)
         schema:
           type: string
-          enum:
-            - asc
-            - desc
-          default: desc
-        example: 'desc'
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
+      - name: filter[timestamp][gt]
+        in: query
+        required: false
+        description: Filter events after this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[timestamp][lt]
+        in: query
+        required: false
+        description: Filter events before this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
     responses:
       '200':
         description: Events retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/event.yaml#/EventList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/event.yaml#/Event'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/CursorPaginationInfo'
+            examples:
+              default:
+                summary: First page
+                value:
+                  data:
+                    - id: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'auth.login'
+                      actorType: 'User'
+                      actor:
+                        type: 'User'
+                        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+                        name: 'John Doe'
+                        email: 'john.doe@example.com'
+                        impersonationContext: null
+                      object:
+                        type: 'Device'
+                        id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                        name: 'Chrome on MacBook Pro'
+                      target:
+                        type: 'Organization'
+                        id: '550e8400-e29b-41d4-a716-446655440000'
+                        name: 'Acme Corporation'
+                      audit:
+                        ipAddress: '192.168.1.100'
+                        xForwardedFor: '203.0.113.45'
+                        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                        requestMethod: 'POST'
+                        requestPath: '/api/v1/auth/login'
+                        responseStatus: 200
+                        responseTimeMs: 145
+                      description: 'User John Doe logged in from Chrome on MacBook Pro'
+                      timestamp: '2025-10-03T14:30:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Live'
+                      isWebhookEvent: true
+                  pagination:
+                    limit: 100
+                    nextCursor: 'eyJpZCI6ImY5YWE2MjNkLTNhZGUtOGRkZC00NDY3LWZoYzlqMTA5ODU1NyIsInRpbWVzdGFtcCI6IjIwMjUtMTAtMDNUMTQ6MzA6MDBaIn0='
+                    hasMore: true
+              lastPage:
+                summary: Last page
+                value:
+                  data:
+                    - id: 'a1bb734e-4bef-9eee-5578-gid0k2109668'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'device.created'
+                      actorType: 'System'
+                      actor:
+                        type: 'System'
+                        id: 'system'
+                        name: 'System'
+                      object:
+                        type: 'Device'
+                        id: 'b2cc845f-5cfa-0fff-6689-hje1l3210780'
+                        name: 'Firefox on Ubuntu'
+                      target: null
+                      audit:
+                        ipAddress: '10.0.0.15'
+                        requestMethod: 'POST'
+                        requestPath: '/api/v1/devices'
+                        responseStatus: 201
+                        responseTimeMs: 89
+                      description: 'Device Firefox on Ubuntu created'
+                      timestamp: '2025-10-01T10:00:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Test'
+                      isWebhookEvent: false
+                  pagination:
+                    limit: 100
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

@@ -8,59 +8,185 @@ listRoleAssignments:
     description: |
       Get all role assignments across all environments (requires admin:assignments:read permission).
       Returns assignments for both members and groups.
+
+      **Filterable fields:**
+      - `organizationId` (eq, ne, in, nin) - UUID format
+      - `environmentId` (eq, ne, in, nin) - UUID format
+      - `membershipId` (eq, ne, in, nin) - UUID format, organization member ID
+      - `groupId` (eq, ne, in, nin) - UUID format
+      - `roleId` (eq, ne, in, nin) - UUID format
+      - `assigneeType` (eq, ne, in, nin) - Values: member, group
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `organizationId` (indexed)
+      - `environmentId` (indexed)
+      - `assigneeType` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across role.name, organization.name, environment.name (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, environmentId, membershipId, groupId, roleId, assigneeType, role, member, group, organization, environment, createdAt, updatedAt
+
+      **Examples:**
+      ```
+      # Active assignments for specific organization, sorted by creation date
+      ?filter[organizationId]=123e4567-e89b-12d3-a456-426614174000&sort=-createdAt&limit=50
+
+      # Member assignments created after Jan 1, 2025 in specific environment
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[assigneeType]=member&filter[environmentId]=123e4567-e89b-12d3-a456-426614174001
+
+      # Search for assignments and return only id, role, and assignee type
+      ?search=admin&fields=id,role.name,assigneeType
+      ```
     operationId: listRoleAssignments
     security:
       - bearerAuth: ["admin:assignments:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
-      - name: orgId
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[organizationId]
         in: query
         required: false
-        description: Filter by organization ID
+        description: |
+          Filter by organization ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: '123e4567-e89b-12d3-a456-426614174000'
-      - name: envId
+      - name: filter[environmentId]
         in: query
         required: false
-        description: Filter by environment ID
+        description: |
+          Filter by environment ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: '123e4567-e89b-12d3-a456-426614174001'
-      - name: membership_id
+      - name: filter[membershipId]
         in: query
         required: false
-        description: Filter by organization member ID
+        description: |
+          Filter by organization member ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
-      - name: group_id
+      - name: filter[groupId]
         in: query
         required: false
-        description: Filter by group ID
+        description: |
+          Filter by group ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
-      - name: role_id
+      - name: filter[roleId]
         in: query
         required: false
-        description: Filter by role ID
+        description: |
+          Filter by role ID (supports: eq, ne, in, nin)
         schema:
           type: string
-          format: uuid
         example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+      - name: filter[assigneeType]
+        in: query
+        required: false
+        description: |
+          Filter by assignee type (supports: eq, ne, in, nin)
+          Values: member, group
+        schema:
+          type: string
+        example: 'member'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter assignments created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter assignments created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
     responses:
       '200':
         description: Role assignments retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/role-assignment.yaml#/RoleAssignmentList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/role-assignment.yaml#/RoleAssignment'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a'
+                      environmentId: '123e4567-e89b-12d3-a456-426614174001'
+                      membershipId: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      groupId: null
+                      roleId: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                      assigneeType: 'member'
+                      role:
+                        id: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                        name: 'Admin'
+                      member:
+                        id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                        userId: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                        user:
+                          email: 'admin@example.com'
+                          fullName: 'Admin User'
+                      organization:
+                        id: '123e4567-e89b-12d3-a456-426614174000'
+                        name: 'Acme Corp'
+                      environment:
+                        id: '123e4567-e89b-12d3-a456-426614174001'
+                        name: 'Production'
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:00:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 125
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a'
+                      role:
+                        name: 'Admin'
+                      assigneeType: 'member'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 125
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

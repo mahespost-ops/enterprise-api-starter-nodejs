@@ -5,25 +5,25 @@ OrganizationMember:
   description: Organization member with role assignments and last context tracking
   required:
     - id
-    - organization_id
-    - user_id
+    - organizationId
+    - userId
     - user
-    - last_org_id
-    - joined_at
-    - created_at
-    - updated_at
+    - lastOrgId
+    - joinedAt
+    - createdAt
+    - updatedAt
   properties:
     id:
       type: string
       format: uuid
       description: Organization member unique identifier
       example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
-    organization_id:
+    organizationId:
       type: string
       format: uuid
       description: Organization ID
       example: '550e8400-e29b-41d4-a716-446655440000'
-    user_id:
+    userId:
       type: string
       format: uuid
       description: User ID
@@ -31,12 +31,12 @@ OrganizationMember:
     user:
       $ref: './user.yaml#/User'
       description: Associated user object (denormalized for read performance)
-    last_org_id:
+    lastOrgId:
       type: string
       format: uuid
       description: Last organization context for JWT token
       example: '550e8400-e29b-41d4-a716-446655440000'
-    last_env_id:
+    lastEnvId:
       type: string
       format: uuid
       nullable: true
@@ -61,40 +61,40 @@ OrganizationMember:
         - suspended
       example: 'active'
       default: 'active'
-    invited_by:
+    invitedBy:
       type: string
       format: uuid
       nullable: true
       description: User ID who invited this member
       example: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
-    invitation_token:
+    invitationToken:
       type: string
       nullable: true
       description: Invitation token (only present if status=invited)
       example: 'inv_a7b3c4d5e6f7890123456789abcdef01'
       writeOnly: true
-    invitation_expires_at:
+    invitationExpiresAt:
       type: string
       format: date-time
       nullable: true
       description: Invitation expiration timestamp (UTC)
       example: '2025-10-09T12:00:00Z'
-    joined_at:
+    joinedAt:
       type: string
       format: date-time
       description: Timestamp when user joined (UTC)
       example: '2025-10-02T14:45:00Z'
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when membership was created (UTC)
       example: '2025-10-02T14:00:00Z'
-    updated_at:
+    updatedAt:
       type: string
       format: date-time
       description: Timestamp when membership was last updated (UTC)
       example: '2025-10-02T14:45:00Z'
-    deleted_at:
+    deletedAt:
       type: string
       format: date-time
       nullable: true
@@ -112,7 +112,7 @@ OrganizationMemberList:
       items:
         $ref: '#/OrganizationMember'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 OrganizationMemberInviteRequest:
   type: object
@@ -124,13 +124,13 @@ OrganizationMemberInviteRequest:
       format: email
       description: Email address to invite
       example: 'newmember@example.com'
-    given_name:
+    givenName:
       type: string
       description: Invitee's given name (optional)
       minLength: 1
       maxLength: 50
       example: 'Jane'
-    family_name:
+    familyName:
       type: string
       description: Invitee's family name (optional)
       minLength: 1
@@ -146,12 +146,12 @@ OrganizationMemberInviteRequest:
       example: 'member'
       default: 'member'
       deprecated: true
-    send_email:
+    sendEmail:
       type: boolean
       description: Whether to send invitation email
       example: true
       default: true
-    expires_in_days:
+    expiresInDays:
       type: integer
       description: Invitation validity period in days (1-30)
       minimum: 1
@@ -191,8 +191,8 @@ OrganizationMemberInviteResponse:
       example: 'Member invited successfully'
     member:
       $ref: '#/OrganizationMember'
-    invitation_url:
+    invitationUrl:
       type: string
       format: uri
-      description: Invitation URL (only if send_email=false)
+      description: Invitation URL (only if sendEmail=false)
       example: 'https://app.example.com/accept-invite?token=inv_abc123'

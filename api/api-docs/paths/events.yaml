@@ -7,49 +7,298 @@ listEvents:
     summary: List events
     description: |
       Get events (activity log) for a specific environment with optional filters.
-      Filter by verb, actor type, date range, and webhook eligibility.
+
+      This is a high-volume endpoint (10M+ records) using cursor-based pagination for optimal performance.
+
+      **Filterable fields:**
+      - `verb` (eq, in, nin) - Event type/verb (e.g., "auth.login", "device.update", "user.created")
+      - `actorType` (eq, in, nin) - Values: User, System
+      - `actorId` (eq, in, nin) - Actor user ID (UUID format)
+      - `timestamp` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp (UTC)
+      - `isWebhookEvent` (eq) - Boolean: true, false
+      - `organizationId` (eq, in, nin) - Organization ID (UUID format, denormalized)
+      - `environmentId` (eq, in, nin) - Environment ID (UUID format, denormalized)
+
+      **Sortable fields:**
+      - `timestamp` (default: -timestamp, indexed) - Newest first by default
+      - `verb` (indexed)
+      - `actorType` (indexed)
+      - `isWebhookEvent` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across verb, description (case-insensitive)
+      - Note: JSONB fields (actor, object, target, audit) are not full-text searchable
+
+      **Selectable fields:**
+      - All fields: id, environmentId, verb, actorType, actor, object, target, audit, description, timestamp, organizationId, organizationName, environmentName, isWebhookEvent
+
+      **Examples:**
+      ```
+      # Recent login events
+      ?filter[verb]=auth.login&limit=100
+
+      # User actions in date range
+      ?filter[actorType]=User&filter[timestamp][gte]=2025-10-01T00:00:00Z&filter[timestamp][lte]=2025-10-03T23:59:59Z&sort=-timestamp
+
+      # Webhook-eligible events with field selection
+      ?filter[isWebhookEvent]=true&fields=id,verb,actor,timestamp&limit=50
+
+      # Search for device updates
+      ?search=device&filter[verb][in]=device.update,device.create&limit=100
+
+      # Next page using cursor
+      ?cursor=eyJpZCI6InV1aWQtMTAwIiwidGltZXN0YW1wIjoiMjAyNS0xMC0wM1QxMDowMDowMFoifQ==&limit=100
+      ```
     operationId: listEvents
     security:
       - bearerAuth: ["events:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
-      - name: verb
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+      - $ref: '../components/parameters.yaml#/sort'
+      - $ref: '../components/parameters.yaml#/search'
+      - $ref: '../components/parameters.yaml#/fields'
+
+      # Filters
+      - name: filter[verb]
         in: query
         required: false
-        description: Filter by event verb/type (e.g., "auth.login", "device.update")
+        description: |
+          Filter by event verb/type (supports: eq, in, nin)
+          Examples: "auth.login", "device.update", "user.created"
         schema:
           type: string
         example: 'auth.login'
-      - $ref: '../components/parameters.yaml#/actorType'
-      - name: actorId
+
+      - name: filter[verb][in]
         in: query
         required: false
-        description: Filter by actor user ID
+        description: Filter by multiple event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'auth.login,auth.logout,auth.register'
+
+      - name: filter[verb][nin]
+        in: query
+        required: false
+        description: Exclude specific event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'system.heartbeat'
+
+      - name: filter[actorType]
+        in: query
+        required: false
+        description: |
+          Filter by actor type (supports: eq, in, nin)
+          Values: User, System
+        schema:
+          type: string
+          enum:
+            - User
+            - System
+        example: 'User'
+
+      - name: filter[actorType][in]
+        in: query
+        required: false
+        description: Filter by multiple actor types (comma-separated)
+        schema:
+          type: string
+        example: 'User,System'
+
+      - name: filter[actorId]
+        in: query
+        required: false
+        description: Filter by actor user ID (UUID format)
         schema:
           type: string
           format: uuid
         example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
-      - $ref: '../components/parameters.yaml#/startDate'
-      - $ref: '../components/parameters.yaml#/endDate'
-      - name: isWebhookEvent
+
+      - name: filter[actorId][in]
         in: query
         required: false
-        description: Filter by webhook eligibility
+        description: Filter by multiple actor IDs (comma-separated UUIDs)
+        schema:
+          type: string
+        example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779,a2dd956e-4bcb-1eee-7790-ief2m4321890'
+
+      - name: filter[timestamp][gte]
+        in: query
+        required: false
+        description: Filter events on or after this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-01T00:00:00Z'
+
+      - name: filter[timestamp][lte]
+        in: query
+        required: false
+        description: Filter events on or before this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-03T23:59:59Z'
+
+      - name: filter[timestamp][gt]
+        in: query
+        required: false
+        description: Filter events after this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-01T00:00:00Z'
+
+      - name: filter[timestamp][lt]
+        in: query
+        required: false
+        description: Filter events before this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-03T23:59:59Z'
+
+      - name: filter[isWebhookEvent]
+        in: query
+        required: false
+        description: Filter by webhook eligibility (true/false)
         schema:
           type: boolean
         example: true
-      - $ref: '../components/parameters.yaml#/limit'
-      - $ref: '../components/parameters.yaml#/offset'
-      - $ref: '../components/parameters.yaml#/sort'
-      - $ref: '../components/parameters.yaml#/order'
+
+      - name: filter[organizationId]
+        in: query
+        required: false
+        description: Filter by organization ID (UUID format, denormalized field)
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+
+      - name: filter[environmentId]
+        in: query
+        required: false
+        description: Filter by environment ID (UUID format, denormalized field)
+        schema:
+          type: string
+          format: uuid
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+
     responses:
       '200':
         description: Events retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '../components/schemas/event.yaml#/EventList'
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/event.yaml#/Event'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/CursorPaginationInfo'
+            examples:
+              default:
+                summary: First page
+                value:
+                  data:
+                    - id: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'auth.login'
+                      actorType: 'User'
+                      actor:
+                        type: 'User'
+                        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+                        name: 'John Doe'
+                        email: 'john.doe@example.com'
+                        impersonationContext: null
+                      object:
+                        type: 'Device'
+                        id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                        name: 'Chrome on MacBook Pro'
+                      target:
+                        type: 'Organization'
+                        id: '550e8400-e29b-41d4-a716-446655440000'
+                        name: 'Acme Corporation'
+                      audit:
+                        ipAddress: '192.168.1.100'
+                        xForwardedFor: '203.0.113.45'
+                        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                        requestMethod: 'POST'
+                        requestPath: '/api/v1/auth/login'
+                        responseStatus: 200
+                        responseTimeMs: 145
+                      description: 'User John Doe logged in from Chrome on MacBook Pro'
+                      timestamp: '2025-10-03T14:30:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Live'
+                      isWebhookEvent: true
+                    - id: 'e8bb512c-2bcd-7ccc-3356-egb8i0987446'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'device.update'
+                      actorType: 'User'
+                      actor:
+                        type: 'User'
+                        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+                        name: 'John Doe'
+                        email: 'john.doe@example.com'
+                      object:
+                        type: 'Device'
+                        id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                        name: 'Chrome on MacBook Pro - Updated'
+                      audit:
+                        ipAddress: '192.168.1.100'
+                        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                        requestMethod: 'PUT'
+                        requestPath: '/api/v1/users/me/devices/a3bb189e-8bf9-3888-9912-ace4e6543002'
+                      description: 'User updated device name'
+                      timestamp: '2025-10-03T14:25:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Live'
+                      isWebhookEvent: false
+                  pagination:
+                    limit: 100
+                    nextCursor: 'eyJpZCI6ImU4YmI1MTJjLTJiY2QtN2NjYy0zMzU2LWVnYjhpMDk4NzQ0NiIsInRpbWVzdGFtcCI6IjIwMjUtMTAtMDNUMTQ6MjU6MDBaIn0='
+                    hasMore: true
+
+              lastPage:
+                summary: Last page
+                value:
+                  data:
+                    - id: 'a1aa401a-1abc-5aaa-1123-abc7a8765334'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'auth.register'
+                      actorType: 'System'
+                      actor:
+                        type: 'System'
+                        id: 'system'
+                        name: 'System'
+                      object:
+                        type: 'User'
+                        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+                        email: 'john.doe@example.com'
+                      description: 'User registration completed'
+                      timestamp: '2025-10-01T10:00:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Live'
+                      isWebhookEvent: true
+                  pagination:
+                    limit: 100
+                    hasMore: false
+
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

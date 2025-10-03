@@ -356,7 +356,7 @@ WebhookList:
       items:
         $ref: '#/Webhook'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 WebhookDelivery:
   type: object
@@ -513,7 +513,7 @@ WebhookDeliveryList:
       items:
         $ref: '#/WebhookDelivery'
     pagination:
-      $ref: './common.yaml#/PaginationInfo'
+      $ref: './common.yaml#/OffsetPaginationInfo'
 
 WebhookDeliveryRetryResponse:
   type: object

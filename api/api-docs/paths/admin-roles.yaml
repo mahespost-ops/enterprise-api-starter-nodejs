@@ -5,22 +5,84 @@ listRoles:
     tags:
       - Admin - Roles & Permissions
     summary: List roles
-    description: Get all roles (globally scoped, requires admin:roles:read permission)
+    description: |
+      Get all roles (globally scoped, requires admin:roles:read permission)
+
+      **Filterable fields:**
+      - `isSystem` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (indexed)
+      - `permissionCount` (not indexed, may be slow for large datasets)
+
+      **Searchable fields:**
+      - Full-text search across name and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, name, description, isSystem, permissions, permissionCount, createdAt, updatedAt, deletedAt
+
+      **Examples:**
+      ```
+      # Active custom roles only, sorted by name
+      ?filter[isSystem]=false&sort=name&limit=50
+
+      # Roles created after Jan 1, 2025
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&sort=-createdAt
+
+      # Search for roles and return only essential fields
+      ?search=admin&fields=id,name,description,permissionCount
+      ```
     operationId: listRoles
     security:
       - bearerAuth: ["admin:roles:read"]
     parameters:
+      # Pagination
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
       - $ref: '../components/parameters.yaml#/search'
-      - name: includeSystem
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[isSystem]
         in: query
         required: false
-        description: Include system-defined roles
+        description: |
+          Filter by system role flag (supports: eq)
+          Values: true, false
         schema:
           type: boolean
-          default: true
-        example: true
+        example: false
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter roles created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter roles created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[updatedAt][gte]
+        in: query
+        required: false
+        description: Filter roles updated on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
     responses:
       '200':
         description: Roles retrieved successfully
@@ -28,6 +90,49 @@ listRoles:
           application/json:
             schema:
               $ref: '../components/schemas/role.yaml#/RoleList'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                      name: 'Device Administrator'
+                      description: 'Full access to device management'
+                      isSystem: false
+                      permissionCount: 5
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                      deletedAt: null
+                    - id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                      name: 'System Admin'
+                      description: 'Full system administration access'
+                      isSystem: true
+                      permissionCount: 25
+                      createdAt: '2025-09-15T10:00:00Z'
+                      updatedAt: '2025-09-15T10:00:00Z'
+                      deletedAt: null
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                      name: 'Device Administrator'
+                      permissionCount: 5
+                    - id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                      name: 'System Admin'
+                      permissionCount: 25
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

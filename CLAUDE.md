@@ -25,6 +25,7 @@ You are an enterprise software architect that pays special care to clean code, b
 - **you denormalize database tables where write performance is not as critical as read performance to minimize costly joins to achieve the SLO**
 - **you create reference files in each component directory with the design pattern and best practices and reference that file when creating that type of component to maintain consistency and quality (e.g. routes/STANDARDS.md and controllers/STANDARDS.md)**
 - **when interfacing with external services expect failure as normal and always build in retry with exponential backoff per SRE best practices**
+- **database tables and columns use snake_case naming, but all API responses and OpenAPI documentation use camelCase for field names to follow JavaScript/JSON conventions - the backend transforms between conventions**
 
 
 ## Project Structure
@@ -232,13 +233,68 @@ The application implements the adapter pattern to eliminate cloud provider lock-
 
 All adapters implement provider-agnostic interfaces, allowing seamless switching between cloud providers via environment variables. See `api/docs/ADAPTER_PATTERN.md` and `api/docs/ADAPTER_USAGE.md` for details.
 
+## API Query Parameter Standards
+
+All list/collection endpoints follow standardized query parameter conventions documented in `api/docs/QUERY_PARAMETER_STANDARDS.md`.
+
+### Standard Query Parameters
+
+- **Pagination:**
+  - Offset-based (standard endpoints): `limit` (1-100, default 20), `offset` (default 0)
+  - Cursor-based (high-volume endpoints with 10M+ records): `limit`, `cursor`
+- **Sorting:** `sort=field1,-field2` (prefix `-` for descending, supports multi-field)
+- **Filtering:** `filter[field]=value` or `filter[field][operator]=value`
+  - Operators: eq, ne, gt, gte, lt, lte, in, nin, contains, startsWith, endsWith, exists
+- **Search:** `search=query` (full-text search, fields vary by endpoint)
+- **Field Selection:** `fields=field1,field2,field3` (return only specified fields, `id` always included)
+
+### High-Volume Endpoints (Cursor Pagination Required)
+
+These endpoints use cursor-based pagination for optimal performance with 10M+ records:
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/events`
+- `GET /api/v1/admin/events`
+- (Future) `GET /api/v1/orgs/{orgId}/envs/{envId}/media`
+- (Future) `GET /api/v1/orgs/{orgId}/envs/{envId}/messages`
+
+### Endpoint Documentation Requirements
+
+Every list endpoint MUST document in its OpenAPI description:
+1. **Filterable fields** - Fields that support filtering with operators and value constraints
+2. **Sortable fields** - Fields that support sorting with default sort and index status
+3. **Searchable fields** - Fields included in full-text search
+4. **Selectable fields** - All fields available via `fields` parameter
+5. **Examples** - 2-3 realistic query examples
+
+See `api/api-docs/ENDPOINT_STANDARDIZATION_TEMPLATE.md` for the complete template.
+
+### Response Format
+
+All list endpoints return:
+```json
+{
+  "data": [...],
+  "pagination": {
+    // Offset-based:
+    "limit": 20,
+    "offset": 0,
+    "total": 150,
+    "hasMore": true
+
+    // OR Cursor-based:
+    "limit": 100,
+    "nextCursor": "eyJpZCI6...",
+    "hasMore": true
+  }
+}
+```
+
 ## Development Notes
 
-- The codebase is currently in initial setup phase
 - When adding new components, maintain the separation between API and infrastructure concerns
 - Place database migrations in `api/migrations/`
 - Keep infrastructure documentation in `infra/docs/`
 - Keep API-specific documentation in `api/docs/`
+- All list endpoints must follow the standardization template in `api/api-docs/ENDPOINT_STANDARDIZATION_TEMPLATE.md`
 
 ## API Scripts (from /api/package.json)
 
