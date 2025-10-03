@@ -15,59 +15,71 @@ Each tag group has corresponding files:
 ## Completed ✅
 
 ### Files Created/Updated
-- ✅ `index.yaml` - Main spec with $ref only (updated with Organizations & Environments)
-- ✅ `components/parameters.yaml` - **NEW**: Reusable path/query parameters
+- ✅ `index.yaml` - Main spec with $ref only (updated with all tags and paths, reorganized for intuitive grouping)
+- ✅ `components/parameters.yaml` - Reusable path/query parameters (updated with deliveryId)
 - ✅ `components/responses.yaml` - Common HTTP responses
 - ✅ `components/schemas/common.yaml` - Common schemas (updated with PaginationInfo)
 - ✅ `components/schemas/auth.yaml` - Authentication schemas
-- ✅ `components/schemas/user.yaml` - **UPDATED**: User schemas (OIDC/PortableContacts/Schema.org compliant)
+- ✅ `components/schemas/user.yaml` - User schemas (OIDC/PortableContacts/Schema.org compliant)
 - ✅ `components/schemas/device.yaml` - Device schemas
 - ✅ `components/schemas/session.yaml` - Session schemas
-- ✅ `components/schemas/organization.yaml` - **NEW**: Organization schemas
-- ✅ `components/schemas/environment.yaml` - **NEW**: Environment schemas
-- ✅ `components/schemas/member.yaml` - **NEW**: Organization member schemas
-- ✅ `components/schemas/group.yaml` - **NEW**: Hierarchical group schemas
-- ✅ `components/schemas/role.yaml` - **NEW**: Role and permission schemas (admin-scoped)
+- ✅ `components/schemas/organization.yaml` - Organization schemas
+- ✅ `components/schemas/environment.yaml` - Environment schemas
+- ✅ `components/schemas/member.yaml` - Organization member schemas
+- ✅ `components/schemas/group.yaml` - Hierarchical group schemas
+- ✅ `components/schemas/role.yaml` - Role and permission schemas (admin-scoped)
+- ✅ `components/schemas/role-assignment.yaml` - Role assignment schemas
+- ✅ `components/schemas/event.yaml` - Event schemas (W3C Activity Streams format)
+- ✅ `components/schemas/webhook.yaml` - **NEW**: Webhook and delivery schemas (CloudEvents 1.0.2 format)
 - ✅ `paths/health.yaml` - Health endpoints
 - ✅ `paths/auth.yaml` - Auth endpoints
-- ✅ `paths/organizations.yaml` - **NEW**: Organization endpoints
-- ✅ `paths/environments.yaml` - **NEW**: Environment endpoints
-- ✅ `paths/members.yaml` - **NEW**: Organization member endpoints
-- ✅ `paths/groups.yaml` - **NEW**: Hierarchical group endpoints
-- ✅ `paths/users.yaml` - **NEW**: Tenant-scoped user endpoints
-- ✅ `paths/admin-roles.yaml` - **NEW**: Admin role and permission endpoints
-- ✅ `paths/admin-users.yaml` - **NEW**: Admin user management endpoints
-- ✅ `paths/admin-organizations.yaml` - **NEW**: Admin organization management endpoints
-- ✅ `paths/admin-environments.yaml` - **NEW**: Admin environment management endpoints
-- ✅ `paths/admin-groups.yaml` - **NEW**: Admin group management endpoints
-- ✅ `paths/admin-devices.yaml` - **NEW**: Admin device management endpoints
-- ✅ `paths/admin-sessions.yaml` - **NEW**: Admin session management endpoints
-- ✅ `paths/admin-impersonation.yaml` - **NEW**: Admin impersonation session monitoring endpoints
-- ✅ `paths/admin-role-assignments.yaml` - **NEW**: Admin role assignments management endpoints
-- ✅ `components/schemas/role-assignment.yaml` - **NEW**: Role assignment schemas
-- ✅ `paths/events.yaml` - **NEW**: Tenant-scoped event/audit endpoints
-- ✅ `paths/admin-events.yaml` - **NEW**: Admin event/audit endpoints
-- ✅ `components/schemas/event.yaml` - **NEW**: Event schemas (W3C Activity Streams format)
+- ✅ `paths/organizations.yaml` - Organization endpoints
+- ✅ `paths/environments.yaml` - Environment endpoints
+- ✅ `paths/members.yaml` - Organization member endpoints
+- ✅ `paths/groups.yaml` - Hierarchical group endpoints
+- ✅ `paths/users.yaml` - Tenant-scoped user endpoints
+- ✅ `paths/events.yaml` - Tenant-scoped event/audit endpoints
+- ✅ `paths/webhooks.yaml` - **NEW**: Tenant-scoped webhook endpoints
+- ✅ `paths/admin-roles.yaml` - Admin role and permission endpoints
+- ✅ `paths/admin-role-assignments.yaml` - Admin role assignments management endpoints
+- ✅ `paths/admin-users.yaml` - Admin user management endpoints
+- ✅ `paths/admin-organizations.yaml` - Admin organization management endpoints
+- ✅ `paths/admin-environments.yaml` - Admin environment management endpoints
+- ✅ `paths/admin-groups.yaml` - Admin group management endpoints
+- ✅ `paths/admin-devices.yaml` - Admin device management endpoints
+- ✅ `paths/admin-sessions.yaml` - Admin session management endpoints
+- ✅ `paths/admin-impersonation.yaml` - Admin impersonation session monitoring endpoints
+- ✅ `paths/admin-events.yaml` - Admin event/audit endpoints
+- ✅ `paths/admin-webhooks.yaml` - **NEW**: Admin webhook management endpoints
 
-### Tags Implemented
+### Tags Implemented (Reorganized for Intuitive Navigation)
+
+**Core API:**
 - **Health** - Health checks
 - **Authentication** - Register, login, logout, token management
+
+**Tenant-Scoped Resources:**
+- **Users** - Current user profile and preferences
 - **Organizations** - Multi-tenant organization management
 - **Environments** - Environment management within organizations
 - **Members** - Organization member management, invitations, and organization-scoped impersonation
 - **Groups** - Hierarchical group management for RBAC
-- **Users** - Tenant-scoped user profile, permissions, devices, and sessions
+- **Events** - Activity log and audit trail for environment-scoped events
+- **Webhooks** - Webhook management and delivery tracking (CloudEvents 1.0.2 format)
+
+**Admin - System-Wide Management:**
 - **Admin - Users** - System-wide user management
 - **Admin - Organizations** - System-wide organization management
 - **Admin - Environments** - System-wide environment management
+- **Admin - Members** - System-wide member management
 - **Admin - Groups** - System-wide group management
 - **Admin - Roles & Permissions** - System-wide role and permission management
 - **Admin - Role Assignments** - System-wide role assignment management
 - **Admin - Devices** - System-wide device management
 - **Admin - Sessions** - System-wide session management
 - **Admin - Impersonation** - System-wide user impersonation and session monitoring
-- **Events** - Activity log and audit trail for environment-scoped events
 - **Admin - Events** - System-wide event and audit trail management
+- **Admin - Webhooks** - System-wide webhook management and delivery monitoring
 
 ### Endpoints Implemented
 **Health:**
@@ -198,6 +210,24 @@ Each tag group has corresponding files:
 - `GET /admin/events` - List all events system-wide with filters (verb, actorType, actorId, orgId, envId, date range, isWebhookEvent)
 - `GET /admin/events/{eventId}` - Get event details
 
+**Webhooks:**
+- `GET /orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
+- `POST /orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
+- `PUT /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
+- `DELETE /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery
+- `POST /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+
+**Admin - Webhooks:**
+- `GET /admin/webhooks` - List all webhooks system-wide
+- `GET /admin/webhooks/{webhookId}` - Get webhook
+- `PUT /admin/webhooks/{webhookId}` - Update webhook
+- `DELETE /admin/webhooks/{webhookId}` - Delete webhook
+- `GET /admin/webhooks/{webhookId}/deliveries` - List deliveries
+- `POST /admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+
 ### User Schema Standards Compliance
 The User schema now follows industry standards for maximum OAuth/SSO compatibility:
 - **OpenID Connect (OIDC)**: Standard claims (sub, email, email_verified, phone_number, given_name, family_name, name, picture, profile, etc.)
@@ -305,7 +335,7 @@ Protected by context-specific permissions (e.g., `members:read`, `groups:manage`
 
 ## Pending 📋
 
-**Summary:** 2 remaining endpoint categories for Phase 2 (Webhooks)
+**Summary:** Phase 2 (Webhooks) ✅ COMPLETED
 
 **Out of Scope:**
 - ❌ Tenant-scoped Role Assignments, Roles (read-only), Devices, Sessions
@@ -335,14 +365,9 @@ Protected by context-specific permissions (e.g., `members:read`, `groups:manage`
 
 ---
 
-### Phase 2: Webhook Integration
+### Phase 2: Webhook Integration ✅ COMPLETED
 
-#### 3. Webhooks (Tenant-Scoped)
-**Files to create:**
-- `paths/webhooks.yaml`
-- `components/schemas/webhook.yaml`
-
-**Endpoints:**
+✅ **Webhooks (Tenant-Scoped)** - Implemented
 - `GET /orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
 - `POST /orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
 - `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook details
@@ -351,47 +376,28 @@ Protected by context-specific permissions (e.g., `members:read`, `groups:manage`
 - `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List webhook deliveries
 - `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery details
 - `POST /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry failed delivery
+- **Permissions:** `webhooks:read`, `webhooks:manage`
+- **Files:** `paths/webhooks.yaml`, `components/schemas/webhook.yaml`
 
-**Permissions:** `webhooks:read`, `webhooks:manage`
-
-**Webhook Schema Notes:**
+**Webhook Features:**
 - CloudEvents 1.0.2 format for payload delivery
-- Retry logic with exponential backoff
+- Retry logic with exponential backoff (configurable maxRetries, initialDelaySeconds, maxDelaySeconds, backoffMultiplier)
 - Event type filtering: `event_types` array (e.g., `["user.login", "device.revoked"]`)
 - Authentication methods: `authMethod` enum (`none` | `hmac` | `jwt` | `basic` | `digest`)
-- Dynamic configuration per `event_type` table structure:
-  - `name` (varchar 100, unique) - The event verb/name
-  - `description` (text) - Event description
-  - `status` (enum: Active/Inactive) - Default: Active
-  - `path_pattern` (varchar 255) - API endpoint pattern
-  - `http_method` (varchar 10) - HTTP method
-  - `is_mutation` (boolean) - Default: false (indicates data modification)
-  - `is_webhook_event` (boolean) - Default: false (eligible for webhook delivery)
-  - `priority` (integer) - Default: 100 (processing priority)
-  - `actor_type` (varchar 50) - Expected actor type
-  - `object_type` (varchar 50) - Object type acted upon
-  - `target_type` (varchar 50) - Target type
-  - `object_source` (varchar 20) - Object source identifier
-  - `object_field` (varchar 50) - Object field reference
-  - `target_source` (varchar 20) - Target source identifier
-  - `target_field` (varchar 50) - Target field reference
+- Custom headers support
+- Configurable timeout (1-30 seconds)
+- Delivery tracking with status (pending, success, failed, retrying)
+- Full request/response logging for debugging
 
----
-
-#### 4. Admin - Webhooks (System-Wide)
-**Files to create:**
-- `paths/admin-webhooks.yaml`
-
-**Endpoints:**
+✅ **Admin - Webhooks (System-Wide)** - Implemented
 - `GET /admin/webhooks` - List all webhooks system-wide
 - `GET /admin/webhooks/{webhookId}` - Get webhook details
 - `PUT /admin/webhooks/{webhookId}` - Update webhook
 - `DELETE /admin/webhooks/{webhookId}` - Delete webhook
 - `GET /admin/webhooks/{webhookId}/deliveries` - List webhook deliveries
 - `POST /admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
-
-**Permissions:** `admin:webhooks:read`, `admin:webhooks:manage`
-**Schema:** Reuses `components/schemas/webhook.yaml`
+- **Permissions:** `admin:webhooks:read`, `admin:webhooks:manage`
+- **Files:** `paths/admin-webhooks.yaml` (reuses `components/schemas/webhook.yaml`)
 
 ## Common Patterns
 

@@ -238,3 +238,13 @@ actorType:
       - User
       - System
   example: 'User'
+
+deliveryId:
+  name: deliveryId
+  in: path
+  required: true
+  description: Webhook delivery UUID
+  schema:
+    type: string
+    format: uuid
+  example: 'j3ee067b-7eac-2bbb-8801-jlg3n5432991'

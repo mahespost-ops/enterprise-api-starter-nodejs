@@ -1,0 +1,305 @@
+# Tenant-Scoped Webhook Endpoints
+# Pattern: /orgs/{orgId}/envs/{envId}/webhooks/*
+# Permissions: webhooks:read, webhooks:manage
+
+/orgs/{orgId}/envs/{envId}/webhooks:
+  get:
+    tags:
+      - Webhooks
+    summary: List webhooks
+    description: List all webhooks for the current environment
+    operationId: listWebhooks
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: isActive
+        in: query
+        description: Filter by active status
+        schema:
+          type: boolean
+          example: true
+      - name: eventType
+        in: query
+        description: Filter by event type
+        schema:
+          type: string
+          example: "user.login"
+    responses:
+      '200':
+        description: Webhooks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookList'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  post:
+    tags:
+      - Webhooks
+    summary: Create webhook
+    description: Create a new webhook for the current environment
+    operationId: createWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhook.yaml#/CreateWebhookRequest'
+    responses:
+      '201':
+        description: Webhook created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/Webhook'
+      '400':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}:
+  get:
+    tags:
+      - Webhooks
+    summary: Get webhook details
+    description: Get details of a specific webhook
+    operationId: getWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '200':
+        description: Webhook retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/Webhook'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  put:
+    tags:
+      - Webhooks
+    summary: Update webhook
+    description: Update an existing webhook
+    operationId: updateWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhook.yaml#/UpdateWebhookRequest'
+    responses:
+      '200':
+        description: Webhook updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/Webhook'
+      '400':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  delete:
+    tags:
+      - Webhooks
+    summary: Delete webhook
+    description: Delete a webhook
+    operationId: deleteWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '204':
+        description: Webhook deleted successfully
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries:
+  get:
+    tags:
+      - Webhooks
+    summary: List webhook deliveries
+    description: List all deliveries for a specific webhook
+    operationId: listWebhookDeliveries
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: status
+        in: query
+        description: Filter by delivery status
+        schema:
+          type: string
+          enum: [pending, success, failed, retrying]
+          example: "failed"
+      - name: fromDate
+        in: query
+        description: Filter deliveries from this date (UTC, ISO 8601)
+        schema:
+          type: string
+          format: date-time
+          example: "2025-10-01T00:00:00.000Z"
+      - name: toDate
+        in: query
+        description: Filter deliveries to this date (UTC, ISO 8601)
+        schema:
+          type: string
+          format: date-time
+          example: "2025-10-03T23:59:59.999Z"
+    responses:
+      '200':
+        description: Deliveries retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookDeliveryList'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}:
+  get:
+    tags:
+      - Webhooks
+    summary: Get webhook delivery details
+    description: Get details of a specific webhook delivery
+    operationId: getWebhookDelivery
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - $ref: '../components/parameters.yaml#/deliveryId'
+    responses:
+      '200':
+        description: Delivery retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookDelivery'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry:
+  post:
+    tags:
+      - Webhooks
+    summary: Retry webhook delivery
+    description: Manually retry a failed webhook delivery
+    operationId: retryWebhookDelivery
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - $ref: '../components/parameters.yaml#/deliveryId'
+    responses:
+      '200':
+        description: Delivery retry queued successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookDeliveryRetryResponse'
+      '400':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

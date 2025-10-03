@@ -1,0 +1,234 @@
+# Admin Webhook Endpoints (System-Wide)
+# Pattern: /admin/webhooks/*
+# Permissions: admin:webhooks:read, admin:webhooks:manage
+
+/admin/webhooks:
+  get:
+    tags:
+      - Admin - Webhooks
+    summary: List all webhooks (system-wide)
+    description: List all webhooks across all organizations and environments
+    operationId: adminListWebhooks
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: organizationId
+        in: query
+        description: Filter by organization ID
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      - name: environmentId
+        in: query
+        description: Filter by environment ID
+        schema:
+          type: string
+          format: uuid
+          example: "660e8400-e29b-41d4-a716-446655440000"
+      - name: isActive
+        in: query
+        description: Filter by active status
+        schema:
+          type: boolean
+          example: true
+      - name: eventType
+        in: query
+        description: Filter by event type
+        schema:
+          type: string
+          example: "user.login"
+    responses:
+      '200':
+        description: Webhooks retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookList'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/admin/webhooks/{webhookId}:
+  get:
+    tags:
+      - Admin - Webhooks
+    summary: Get webhook details
+    description: Get details of any webhook (system-wide)
+    operationId: adminGetWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '200':
+        description: Webhook retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/Webhook'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  put:
+    tags:
+      - Admin - Webhooks
+    summary: Update webhook
+    description: Update any webhook (system-wide)
+    operationId: adminUpdateWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/webhookId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/webhook.yaml#/UpdateWebhookRequest'
+    responses:
+      '200':
+        description: Webhook updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/Webhook'
+      '400':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+  delete:
+    tags:
+      - Admin - Webhooks
+    summary: Delete webhook
+    description: Delete any webhook (system-wide)
+    operationId: adminDeleteWebhook
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/webhookId'
+    responses:
+      '204':
+        description: Webhook deleted successfully
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/admin/webhooks/{webhookId}/deliveries:
+  get:
+    tags:
+      - Admin - Webhooks
+    summary: List webhook deliveries
+    description: List all deliveries for a specific webhook (system-wide)
+    operationId: adminListWebhookDeliveries
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: status
+        in: query
+        description: Filter by delivery status
+        schema:
+          type: string
+          enum: [pending, success, failed, retrying]
+          example: "failed"
+      - name: fromDate
+        in: query
+        description: Filter deliveries from this date (UTC, ISO 8601)
+        schema:
+          type: string
+          format: date-time
+          example: "2025-10-01T00:00:00.000Z"
+      - name: toDate
+        in: query
+        description: Filter deliveries to this date (UTC, ISO 8601)
+        schema:
+          type: string
+          format: date-time
+          example: "2025-10-03T23:59:59.999Z"
+    responses:
+      '200':
+        description: Deliveries retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookDeliveryList'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry:
+  post:
+    tags:
+      - Admin - Webhooks
+    summary: Retry webhook delivery
+    description: Manually retry a failed webhook delivery (system-wide)
+    operationId: adminRetryWebhookDelivery
+    security:
+      - BearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/webhookId'
+      - $ref: '../components/parameters.yaml#/deliveryId'
+    responses:
+      '200':
+        description: Delivery retry queued successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/webhook.yaml#/WebhookDeliveryRetryResponse'
+      '400':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '404':
+        $ref: '../components/responses.yaml#/NotFoundError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '429':
+        $ref: '../components/responses.yaml#/RateLimitError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

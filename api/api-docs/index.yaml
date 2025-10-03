@@ -37,10 +37,15 @@ security:
   - bearerAuth: []
 
 tags:
+  # Core API
   - name: Health
     description: Health check endpoints
   - name: Authentication
     description: Passwordless authentication with magic tokens
+
+  # Tenant-Scoped Resources
+  - name: Users
+    description: Current user profile and preferences
   - name: Organizations
     description: Multi-tenant organization management
   - name: Environments
@@ -49,30 +54,36 @@ tags:
     description: Organization member management, invitations, and organization-scoped impersonation (requires members:manage or members:impersonate)
   - name: Groups
     description: Hierarchical group management for RBAC
-  - name: Users
-    description: User management
   - name: Events
     description: Activity log and audit trail for environment-scoped events (requires events:read)
-  - name: Admin - Events
-    description: System-wide event and audit trail management (requires admin:events:read)
-  - name: Admin - Role Assignments
-    description: System-wide role assignment management (requires admin:assignments:read or admin:assignments:manage)
+  - name: Webhooks
+    description: Webhook management and delivery tracking for CloudEvents 1.0.2 (requires webhooks:read or webhooks:manage)
+
+  # Admin - System-Wide Management
   - name: Admin - Users
     description: System-wide user management (requires admin:users:read or admin:users:manage)
   - name: Admin - Organizations
     description: System-wide organization management (requires admin:organizations:read or admin:organizations:manage)
   - name: Admin - Environments
     description: System-wide environment management (requires admin:environments:read or admin:environments:manage)
+  - name: Admin - Members
+    description: System-wide member management (requires admin:members:read or admin:members:manage)
   - name: Admin - Groups
     description: System-wide group management (requires admin:groups:read or admin:groups:manage)
   - name: Admin - Roles & Permissions
     description: System-wide role and permission management (requires admin:roles:read, admin:roles:manage, or admin:permissions:read)
+  - name: Admin - Role Assignments
+    description: System-wide role assignment management (requires admin:assignments:read or admin:assignments:manage)
   - name: Admin - Devices
     description: System-wide device management (requires admin:devices:read or admin:devices:manage)
   - name: Admin - Sessions
     description: System-wide session management (requires admin:sessions:read or admin:sessions:manage)
   - name: Admin - Impersonation
     description: System-wide user impersonation and session monitoring (requires admin:users:impersonate, admin:impersonation:read, or admin:impersonation:manage)
+  - name: Admin - Events
+    description: System-wide event and audit trail management (requires admin:events:read)
+  - name: Admin - Webhooks
+    description: System-wide webhook management and delivery monitoring (requires admin:webhooks:read or admin:webhooks:manage)
 
 paths:
   /health:
@@ -194,35 +205,29 @@ paths:
   /orgs/{orgId}/envs/{envId}/events/{eventId}:
     get:
       $ref: './paths/events.yaml#/getEvent/get'
-  /admin/events:
+  /orgs/{orgId}/envs/{envId}/webhooks:
     get:
-      $ref: './paths/admin-events.yaml#/listEvents/get'
-  /admin/events/{eventId}:
-    get:
-      $ref: './paths/admin-events.yaml#/getEvent/get'
-  /admin/roles:
-    get:
-      $ref: './paths/admin-roles.yaml#/listRoles/get'
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks/get'
     post:
-      $ref: './paths/admin-roles.yaml#/createRole/post'
-  /admin/roles/{roleId}:
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks/post'
+  /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}:
     get:
-      $ref: './paths/admin-roles.yaml#/getRole/get'
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}/get'
     put:
-      $ref: './paths/admin-roles.yaml#/updateRole/put'
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}/put'
     delete:
-      $ref: './paths/admin-roles.yaml#/deleteRole/delete'
-  /admin/roles/{roleId}/permissions:
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}/delete'
+  /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries:
     get:
-      $ref: './paths/admin-roles.yaml#/listRolePermissions/get'
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}~1deliveries/get'
+  /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}:
+    get:
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}~1deliveries~1{deliveryId}/get'
+  /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry:
     post:
-      $ref: './paths/admin-roles.yaml#/addRolePermission/post'
-  /admin/roles/{roleId}/permissions/{permissionId}:
-    delete:
-      $ref: './paths/admin-roles.yaml#/removeRolePermission/delete'
-  /admin/permissions:
-    get:
-      $ref: './paths/admin-roles.yaml#/listPermissions/get'
+      $ref: './paths/webhooks.yaml#/~1orgs~1{orgId}~1envs~1{envId}~1webhooks~1{webhookId}~1deliveries~1{deliveryId}~1retry/post'
+
+  # Admin Endpoints - System-Wide Management
   /admin/users:
     get:
       $ref: './paths/admin-users.yaml#/listUsers/get'
@@ -243,21 +248,6 @@ paths:
       $ref: './paths/admin-organizations.yaml#/updateOrganization/put'
     delete:
       $ref: './paths/admin-organizations.yaml#/deleteOrganization/delete'
-  /admin/users/{userId}/impersonate:
-    post:
-      $ref: './paths/admin-impersonation.yaml#/startUserImpersonation/post'
-  /admin/impersonation/end:
-    delete:
-      $ref: './paths/admin-impersonation.yaml#/endImpersonation/delete'
-  /admin/impersonation/active:
-    get:
-      $ref: './paths/admin-impersonation.yaml#/getActiveImpersonationSessions/get'
-  /admin/impersonation-sessions:
-    get:
-      $ref: './paths/admin-impersonation.yaml#/listImpersonationSessions/get'
-  /admin/impersonation-sessions/{sessionId}:
-    delete:
-      $ref: './paths/admin-impersonation.yaml#/forceEndImpersonationSession/delete'
   /admin/environments:
     get:
       $ref: './paths/admin-environments.yaml#/listEnvironments/get'
@@ -281,6 +271,37 @@ paths:
   /admin/groups/{groupId}/members:
     get:
       $ref: './paths/admin-groups.yaml#/listGroupMembers/get'
+  /admin/roles:
+    get:
+      $ref: './paths/admin-roles.yaml#/listRoles/get'
+    post:
+      $ref: './paths/admin-roles.yaml#/createRole/post'
+  /admin/roles/{roleId}:
+    get:
+      $ref: './paths/admin-roles.yaml#/getRole/get'
+    put:
+      $ref: './paths/admin-roles.yaml#/updateRole/put'
+    delete:
+      $ref: './paths/admin-roles.yaml#/deleteRole/delete'
+  /admin/roles/{roleId}/permissions:
+    get:
+      $ref: './paths/admin-roles.yaml#/listRolePermissions/get'
+    post:
+      $ref: './paths/admin-roles.yaml#/addRolePermission/post'
+  /admin/roles/{roleId}/permissions/{permissionId}:
+    delete:
+      $ref: './paths/admin-roles.yaml#/removeRolePermission/delete'
+  /admin/permissions:
+    get:
+      $ref: './paths/admin-roles.yaml#/listPermissions/get'
+  /admin/role-assignments:
+    get:
+      $ref: './paths/admin-role-assignments.yaml#/listRoleAssignments/get'
+    post:
+      $ref: './paths/admin-role-assignments.yaml#/createRoleAssignment/post'
+  /admin/role-assignments/{assignmentId}:
+    delete:
+      $ref: './paths/admin-role-assignments.yaml#/deleteRoleAssignment/delete'
   /admin/devices:
     get:
       $ref: './paths/admin-devices.yaml#/listDevices/get'
@@ -302,14 +323,43 @@ paths:
   /admin/sessions/user/{userId}:
     delete:
       $ref: './paths/admin-sessions.yaml#/revokeUserSessions/delete'
-  /admin/role-assignments:
-    get:
-      $ref: './paths/admin-role-assignments.yaml#/listRoleAssignments/get'
+  /admin/users/{userId}/impersonate:
     post:
-      $ref: './paths/admin-role-assignments.yaml#/createRoleAssignment/post'
-  /admin/role-assignments/{assignmentId}:
+      $ref: './paths/admin-impersonation.yaml#/startUserImpersonation/post'
+  /admin/impersonation/end:
     delete:
-      $ref: './paths/admin-role-assignments.yaml#/deleteRoleAssignment/delete'
+      $ref: './paths/admin-impersonation.yaml#/endImpersonation/delete'
+  /admin/impersonation/active:
+    get:
+      $ref: './paths/admin-impersonation.yaml#/getActiveImpersonationSessions/get'
+  /admin/impersonation-sessions:
+    get:
+      $ref: './paths/admin-impersonation.yaml#/listImpersonationSessions/get'
+  /admin/impersonation-sessions/{sessionId}:
+    delete:
+      $ref: './paths/admin-impersonation.yaml#/forceEndImpersonationSession/delete'
+  /admin/events:
+    get:
+      $ref: './paths/admin-events.yaml#/listEvents/get'
+  /admin/events/{eventId}:
+    get:
+      $ref: './paths/admin-events.yaml#/getEvent/get'
+  /admin/webhooks:
+    get:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks/get'
+  /admin/webhooks/{webhookId}:
+    get:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}/get'
+    put:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}/put'
+    delete:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}/delete'
+  /admin/webhooks/{webhookId}/deliveries:
+    get:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}~1deliveries/get'
+  /admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry:
+    post:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}~1deliveries~1{deliveryId}~1retry/post'
 
 components:
   securitySchemes:
@@ -360,3 +410,7 @@ components:
       $ref: './components/schemas/role-assignment.yaml#/RoleAssignment'
     Event:
       $ref: './components/schemas/event.yaml#/Event'
+    Webhook:
+      $ref: './components/schemas/webhook.yaml#/Webhook'
+    WebhookDelivery:
+      $ref: './components/schemas/webhook.yaml#/WebhookDelivery'
