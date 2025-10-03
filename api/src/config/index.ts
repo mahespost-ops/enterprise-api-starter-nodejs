@@ -49,6 +49,22 @@ function validateEnv(): void {
 validateEnv();
 
 /**
+ * Validate CORS configuration
+ * Prevents insecure configuration of credentials with wildcard origin
+ */
+function validateCors(): void {
+  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+
+  if (corsOrigin === '*') {
+    // Using wildcard origin - credentials must be disabled
+    // Note: This is enforced in app.ts CORS config
+    console.warn('⚠️  SECURITY WARNING: CORS configured with wildcard origin (*). Credentials will be disabled for security.');
+  }
+}
+
+validateCors();
+
+/**
  * Application configuration object
  */
 export const config = {

@@ -76,10 +76,14 @@ async function createApp(): Promise<Application> {
   );
 
   // CORS - Configure allowed origins
+  // Security: Disable credentials if wildcard origin is used
+  const corsOrigin = config.cors.origin;
+  const allowCredentials = corsOrigin !== '*';
+
   app.use(
     cors({
-      origin: config.cors.origin,
-      credentials: true,
+      origin: corsOrigin,
+      credentials: allowCredentials,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     })
@@ -105,11 +109,19 @@ async function createApp(): Promise<Application> {
   // 6. API Documentation (Swagger UI)
   // ============================================
   if (config.apiDocs.enabled) {
+    // Security Warning: API docs should be disabled in production or protected with authentication
+    if (config.isProduction) {
+      logger.warn('⚠️  SECURITY WARNING: API documentation is enabled in production without authentication. ' +
+        'Set API_DOCS_ENABLED=false or add authentication middleware.');
+    }
+
     try {
       const swaggerDocument = await SwaggerParser.dereference(
         path.join(__dirname, '../api-docs/index.yaml')
       );
 
+      // TODO: Add authentication middleware when implemented
+      // app.use('/api-docs', authMiddleware, requireAdmin, swaggerUi.serve, ...)
       app.use(
         '/api-docs',
         swaggerUi.serve,
@@ -144,7 +156,8 @@ async function createApp(): Promise<Application> {
       name: config.app.name,
       version: '1.0.0',
       status: 'running',
-      environment: config.env,
+      // Security: Don't expose environment in production
+      ...(config.isDevelopment && { environment: config.env }),
       documentation: config.apiDocs.enabled ? '/api-docs' : 'disabled',
     });
   });

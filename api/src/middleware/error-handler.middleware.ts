@@ -67,8 +67,10 @@ export const errorHandler = (
       res.setHeader('Retry-After', err.retryAfter);
     }
 
-    // Include stack trace in non-production environments
-    if (!config.isProduction) {
+    // Include stack trace only in safe development environments
+    // Security: Don't expose stack traces in staging/public dev environments
+    const SAFE_ENVS = ['development', 'test'];
+    if (!config.isProduction && SAFE_ENVS.includes(config.env)) {
       response.stack = err.stack;
     }
 
@@ -87,8 +89,10 @@ export const errorHandler = (
     path: req.path,
   };
 
-  // Include stack trace in non-production environments
-  if (!config.isProduction) {
+  // Include stack trace only in safe development environments
+  // Security: Don't expose stack traces in staging/public dev environments
+  const SAFE_ENVS = ['development', 'test'];
+  if (!config.isProduction && SAFE_ENVS.includes(config.env)) {
     response.stack = err.stack;
   }
 

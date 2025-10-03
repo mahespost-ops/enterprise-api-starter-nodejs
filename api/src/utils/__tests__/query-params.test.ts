@@ -171,6 +171,38 @@ describe('Query Parameter Utilities', () => {
 
       expect(() => parseFilterParams(query)).toThrow('Invalid filter operator: invalid');
     });
+
+    // Security: ReDoS Prevention Test
+    it('should handle malicious input without catastrophic backtracking', () => {
+      // Generate a pathological input that would cause ReDoS with regex
+      const maliciousInput = 'filter[' + 'a'.repeat(100) + '['.repeat(100);
+      const query = { [maliciousInput]: 'value' };
+
+      const startTime = Date.now();
+      const result = parseFilterParams(query);
+      const endTime = Date.now();
+
+      // Should complete in less than 100ms (regex version would hang for seconds)
+      expect(endTime - startTime).toBeLessThan(100);
+      // Should return empty array for malformed input
+      expect(result).toEqual([]);
+    });
+
+    it('should handle various malformed filter keys safely', () => {
+      // These should all return empty results (not matching filter pattern)
+      const invalidQueries = [
+        { 'filter[field': 'value' }, // Missing closing bracket
+        { 'filter]field]': 'value' }, // Wrong bracket order
+        { 'filterfield]': 'value' }, // Missing opening bracket
+        { 'filter[[field]]': 'value' }, // Extra brackets
+      ];
+
+      invalidQueries.forEach((query) => {
+        const result = parseFilterParams(query);
+        // Should return empty array for malformed keys
+        expect(result).toEqual([]);
+      });
+    });
   });
 
   describe('parseSortParam', () => {

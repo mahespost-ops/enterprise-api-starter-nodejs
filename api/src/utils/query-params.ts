@@ -56,6 +56,46 @@ export type PaginationParams =
 const VALID_OPERATORS = Object.values(FilterOperator);
 
 /**
+ * Parse filter key to extract field and operator
+ * Uses iterative parsing instead of regex to prevent ReDoS attacks
+ *
+ * @param key - Query parameter key
+ * @returns Parsed filter info or null if not a filter param
+ */
+function parseFilterKey(key: string): { field: string; operator?: string } | null {
+  // Must start with 'filter['
+  if (!key.startsWith('filter[')) {
+    return null;
+  }
+
+  // Remove 'filter[' prefix
+  const remainder = key.substring(7);
+
+  // Find the closing bracket for the field name
+  const firstCloseBracket = remainder.indexOf(']');
+  if (firstCloseBracket === -1) {
+    return null; // Invalid format
+  }
+
+  const field = remainder.substring(0, firstCloseBracket);
+
+  // Check if there's an operator part
+  const afterField = remainder.substring(firstCloseBracket + 1);
+  if (afterField === '') {
+    // Simple format: filter[field]
+    return { field };
+  }
+
+  // Check for operator format: [operator]
+  if (afterField.startsWith('[') && afterField.endsWith(']')) {
+    const operator = afterField.substring(1, afterField.length - 1);
+    return { field, operator };
+  }
+
+  return null; // Invalid format
+}
+
+/**
  * Parse filter query parameters
  *
  * Supports patterns:
@@ -68,18 +108,17 @@ const VALID_OPERATORS = Object.values(FilterOperator);
  */
 export function parseFilterParams(query: Record<string, any>): ParsedFilter[] {
   const filters: ParsedFilter[] = [];
-  const filterPattern = /^filter\[([^\]]+)\](?:\[([^\]]+)\])?$/;
 
   for (const [key, value] of Object.entries(query)) {
-    const match = key.match(filterPattern);
-    if (!match) continue;
+    const parsed = parseFilterKey(key);
+    if (!parsed) continue;
 
-    const field = match[1];
-    const operator = (match[2] || 'eq') as FilterOperator;
+    const { field, operator: operatorStr } = parsed;
+    const operator = (operatorStr || 'eq') as FilterOperator;
 
     // Validate operator
     if (!VALID_OPERATORS.includes(operator)) {
-      throw new Error(`Invalid filter operator: ${match[2]}`);
+      throw new Error(`Invalid filter operator: ${operatorStr}`);
     }
 
     // Parse value based on operator
