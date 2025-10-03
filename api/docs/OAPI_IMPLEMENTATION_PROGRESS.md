@@ -290,57 +290,122 @@ Protected by context-specific permissions (e.g., `members:read`, `groups:manage`
 
 ## Pending 📋
 
-### Impersonation Tag
+### Tenant-Scoped Endpoints (4 categories)
+
+#### 1. Role Assignments (Tenant-Scoped)
 **Files to create:**
-- `paths/impersonation.yaml`
-- `components/schemas/impersonation.yaml`
+- `paths/role-assignments.yaml`
 
 **Endpoints:**
-- `POST /impersonation/start` - Start impersonating
-- `POST /impersonation/pop` - Pop to parent impersonator
-- `POST /impersonation/end` - End all impersonation
-- `GET /impersonation/current` - Get current context
+- `GET /orgs/{orgId}/envs/{envId}/role-assignments` - List role assignments in environment
+- `POST /orgs/{orgId}/envs/{envId}/role-assignments` - Create role assignment
+- `DELETE /orgs/{orgId}/envs/{envId}/role-assignments/{assignmentId}` - Delete role assignment
 
-**Permissions:** `system:admin` (system), `members:manage` (org with hierarchy check)
-**Note:** Returns JWT with `impersonation` claim including `impersonationChain`
+**Permissions:** `assignments:read`, `assignments:manage`
+**Schema:** Already defined in `components/schemas/role-assignment.yaml`
 
-### Events Tag
+---
+
+#### 2. Roles (Tenant-Scoped, Read-Only)
+**Files to create:**
+- `paths/roles.yaml`
+
+**Endpoints:**
+- `GET /orgs/{orgId}/roles` - List roles available in organization (view-only, filtered by scope)
+
+**Permissions:** `roles:read`
+**Schema:** Already defined in `components/schemas/role.yaml`
+**Note:** Role CRUD remains admin-only. Tenant endpoints provide read-only views.
+
+---
+
+#### 3. Devices (Tenant-Scoped)
+**Files to create:**
+- `paths/devices.yaml`
+
+**Endpoints:**
+- `GET /orgs/{orgId}/envs/{envId}/devices` - List devices in environment
+- `GET /orgs/{orgId}/envs/{envId}/devices/{deviceId}` - Get device details
+- `PUT /orgs/{orgId}/envs/{envId}/devices/{deviceId}` - Update device
+- `DELETE /orgs/{orgId}/envs/{envId}/devices/{deviceId}` - Revoke device
+- `GET /orgs/{orgId}/envs/{envId}/devices/{deviceId}/sessions` - List device sessions
+- `DELETE /orgs/{orgId}/envs/{envId}/devices/{deviceId}/sessions` - Revoke all device sessions
+
+**Permissions:** `devices:read`, `devices:manage`
+**Schema:** Already defined in `components/schemas/device.yaml`
+
+---
+
+#### 4. Sessions (Tenant-Scoped)
+**Files to create:**
+- `paths/sessions.yaml`
+
+**Endpoints:**
+- `GET /orgs/{orgId}/envs/{envId}/sessions` - List active sessions in environment
+- `GET /orgs/{orgId}/envs/{envId}/sessions/{sessionId}` - Get session details
+- `DELETE /orgs/{orgId}/envs/{envId}/sessions/{sessionId}` - Revoke session
+- `DELETE /orgs/{orgId}/envs/{envId}/sessions/user/{userId}` - Revoke all sessions for user
+
+**Permissions:** `sessions:read`, `sessions:manage`
+**Schema:** Already defined in `components/schemas/session.yaml`
+
+---
+
+### Event & Webhook Endpoints (3 categories)
+
+#### 5. Events (Tenant-Scoped)
 **Files to create:**
 - `paths/events.yaml`
 - `components/schemas/event.yaml`
 
 **Endpoints:**
-- `GET /orgs/{orgId}/envs/{envId}/events` - List events (paginated)
-- `GET /orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event
+- `GET /orgs/{orgId}/envs/{envId}/events` - List events (activity log) with filters
+  - Query params: `verb`, `actorType`, `startDate`, `endDate`, `limit`, `offset`
+- `GET /orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details
 
 **Permissions:** `events:read`
-**Note:** W3C Open Social Activity Streams model
+**Note:** W3C Open Social Activity Streams model with fields: `id`, `verb`, `actor_type`, `actor`, `object`, `target`, `audit`, `description`, `timestamp`. Denormalized: `organization_id`, `organization_name`, `environment_name`.
 
-### Webhooks Tag
+---
+
+#### 6. Webhooks (Tenant-Scoped)
 **Files to create:**
 - `paths/webhooks.yaml`
 - `components/schemas/webhook.yaml`
 
 **Endpoints:**
 - `GET /orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
-- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
 - `POST /orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook details
 - `PUT /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
 - `DELETE /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
-- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
-- `POST /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/test` - Test webhook
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List webhook deliveries
+- `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery details
+- `POST /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry failed delivery
 
 **Permissions:** `webhooks:read`, `webhooks:manage`
+**Note:** Webhook payload delivered in CloudEvents 1.0.2 format. Delivery includes retry logic with exponential backoff.
 
-### Admin Additional Categories (Future)
-**Potential future admin endpoints:**
-- `paths/admin-environments.yaml` - Admin environment management
-- `paths/admin-members.yaml` - Admin member management
-- `paths/admin-groups.yaml` - Admin group management
-- `paths/admin-devices.yaml` - Admin device management
-- `paths/admin-sessions.yaml` - Admin session management
+---
 
-**Note:** These follow the same pattern as existing admin endpoints with `/admin/` prefix and `Admin - {Category}` tag naming
+#### 7. Admin - Events & Webhooks (System-Wide)
+**Files to create:**
+- `paths/admin-events.yaml`
+- `paths/admin-webhooks.yaml`
+
+**Endpoints (Events Admin):**
+- `GET /admin/events` - List all events system-wide with filters
+- `GET /admin/events/{eventId}` - Get event details
+
+**Endpoints (Webhooks Admin):**
+- `GET /admin/webhooks` - List all webhooks system-wide
+- `GET /admin/webhooks/{webhookId}` - Get webhook details
+- `PUT /admin/webhooks/{webhookId}` - Update webhook
+- `DELETE /admin/webhooks/{webhookId}` - Delete webhook
+- `GET /admin/webhooks/{webhookId}/deliveries` - List webhook deliveries
+- `POST /admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+
+**Permissions:** `admin:events:read`, `admin:webhooks:read`, `admin:webhooks:manage`
 
 ## Common Patterns
 

@@ -272,3 +272,120 @@ All API routes are versioned under `/api/v1` (except api-docs):
 ### Health Check
 - `GET /api/v1/health` - Basic health check (fast, <5ms)
 - `GET /api/v1/health/detailed` - Detailed health check (includes database)
+
+### Authentication
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/request-token` - Request magic link token
+- `POST /api/v1/auth/verify-token` - Verify magic link and get JWT
+- `POST /api/v1/auth/refresh` - Refresh JWT token
+- `POST /api/v1/auth/logout` - Logout and invalidate session
+
+### Current User (`/users/me`)
+- `GET /api/v1/users/me` - Get current user profile
+- `PUT /api/v1/users/me` - Update current user profile
+- `GET /api/v1/users/me/organizations` - List user's organizations
+- `GET /api/v1/users/me/permissions` - Get user's permissions in current context
+- `GET /api/v1/users/me/devices` - List user's devices
+- `PUT /api/v1/users/me/devices/{deviceId}` - Update device
+- `DELETE /api/v1/users/me/devices/{deviceId}` - Revoke device
+- `GET /api/v1/users/me/sessions` - List user's active sessions
+- `DELETE /api/v1/users/me/sessions/{sessionId}` - Revoke specific session
+- `DELETE /api/v1/users/me/sessions/all` - Revoke all sessions
+
+### Organizations
+- `GET /api/v1/orgs` - List accessible organizations
+- `POST /api/v1/orgs` - Create new organization
+- `GET /api/v1/orgs/{orgId}` - Get organization details
+- `PUT /api/v1/orgs/{orgId}` - Update organization
+- `DELETE /api/v1/orgs/{orgId}` - Delete organization
+- `POST /api/v1/orgs/{orgId}/switch` - Switch organization context (updates JWT)
+
+### Environments (Tenant-Scoped)
+- `GET /api/v1/orgs/{orgId}/envs` - List environments
+- `POST /api/v1/orgs/{orgId}/envs` - Create environment
+- `GET /api/v1/orgs/{orgId}/envs/{envId}` - Get environment details
+- `PUT /api/v1/orgs/{orgId}/envs/{envId}` - Update environment
+- `DELETE /api/v1/orgs/{orgId}/envs/{envId}` - Delete environment
+
+### Members (Tenant-Scoped)
+- `GET /api/v1/orgs/{orgId}/members` - List organization members
+- `POST /api/v1/orgs/{orgId}/members` - Invite member
+- `GET /api/v1/orgs/{orgId}/members/{memberId}` - Get member details
+- `PUT /api/v1/orgs/{orgId}/members/{memberId}` - Update member
+- `DELETE /api/v1/orgs/{orgId}/members/{memberId}` - Remove member
+- `GET /api/v1/orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
+- `GET /api/v1/orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start org-scoped impersonation (requires `members:manage`)
+- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End org-scoped impersonation
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get impersonation status
+
+### Groups (Tenant-Scoped)
+- `GET /api/v1/orgs/{orgId}/groups` - List groups
+- `POST /api/v1/orgs/{orgId}/groups` - Create group
+- `GET /api/v1/orgs/{orgId}/groups/{groupId}` - Get group details
+- `PUT /api/v1/orgs/{orgId}/groups/{groupId}` - Update group
+- `DELETE /api/v1/orgs/{orgId}/groups/{groupId}` - Delete group
+- `GET /api/v1/orgs/{orgId}/groups/{groupId}/members` - List group members
+- `POST /api/v1/orgs/{orgId}/groups/{groupId}/members` - Add member to group
+- `DELETE /api/v1/orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member from group
+- `GET /api/v1/orgs/{orgId}/groups/{groupId}/children` - Get child groups
+
+### Admin - Users
+- `GET /api/v1/admin/users` - List all users (system-wide)
+- `GET /api/v1/admin/users/{userId}` - Get user details
+- `PUT /api/v1/admin/users/{userId}` - Update user
+- `DELETE /api/v1/admin/users/{userId}` - Delete user
+
+### Admin - Organizations
+- `GET /api/v1/admin/organizations` - List all organizations (system-wide)
+- `GET /api/v1/admin/organizations/{orgId}` - Get organization details
+- `PUT /api/v1/admin/organizations/{orgId}` - Update organization
+- `DELETE /api/v1/admin/organizations/{orgId}` - Delete organization
+
+### Admin - Environments
+- `GET /api/v1/admin/environments` - List all environments (system-wide)
+- `GET /api/v1/admin/environments/{envId}` - Get environment details
+- `PUT /api/v1/admin/environments/{envId}` - Update environment
+- `DELETE /api/v1/admin/environments/{envId}` - Delete environment
+
+### Admin - Groups
+- `GET /api/v1/admin/groups` - List all groups (system-wide)
+- `GET /api/v1/admin/groups/{groupId}` - Get group details
+- `PUT /api/v1/admin/groups/{groupId}` - Update group
+- `DELETE /api/v1/admin/groups/{groupId}` - Delete group
+- `GET /api/v1/admin/groups/{groupId}/members` - List group members
+
+### Admin - Roles & Permissions
+- `GET /api/v1/admin/roles` - List all roles
+- `POST /api/v1/admin/roles` - Create role
+- `GET /api/v1/admin/roles/{roleId}` - Get role details
+- `PUT /api/v1/admin/roles/{roleId}` - Update role
+- `DELETE /api/v1/admin/roles/{roleId}` - Delete role
+- `GET /api/v1/admin/roles/{roleId}/permissions` - List role permissions
+- `POST /api/v1/admin/roles/{roleId}/permissions` - Add permission to role
+- `DELETE /api/v1/admin/roles/{roleId}/permissions/{permissionId}` - Remove permission from role
+- `GET /api/v1/admin/permissions` - List all permissions
+
+### Admin - Role Assignments
+- `GET /api/v1/admin/role-assignments` - List all role assignments (system-wide)
+- `POST /api/v1/admin/role-assignments` - Create role assignment
+- `DELETE /api/v1/admin/role-assignments/{assignmentId}` - Delete role assignment
+
+### Admin - Devices
+- `GET /api/v1/admin/devices` - List all devices (system-wide)
+- `GET /api/v1/admin/devices/{deviceId}` - Get device details
+- `PUT /api/v1/admin/devices/{deviceId}` - Update device
+- `DELETE /api/v1/admin/devices/{deviceId}` - Revoke device
+
+### Admin - Sessions
+- `GET /api/v1/admin/sessions` - List all sessions (system-wide)
+- `GET /api/v1/admin/sessions/{sessionId}` - Get session details
+- `DELETE /api/v1/admin/sessions/{sessionId}` - Revoke session
+- `DELETE /api/v1/admin/sessions/user/{userId}` - Revoke all sessions for user
+
+### Admin - Impersonation
+- `POST /api/v1/admin/users/{userId}/impersonate` - Start system-wide impersonation (requires `admin:users:impersonate`)
+- `DELETE /api/v1/admin/impersonation/end` - End impersonation (pop or terminate)
+- `GET /api/v1/admin/impersonation/active` - Get active impersonation sessions for current user
+- `GET /api/v1/admin/impersonation-sessions` - List all impersonation sessions (history)
+- `DELETE /api/v1/admin/impersonation-sessions/{sessionId}` - Force-end impersonation session
