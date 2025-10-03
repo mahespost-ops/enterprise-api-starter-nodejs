@@ -1,21 +1,35 @@
-# Role Assignment Endpoints
+# Admin - Role Assignments Endpoints
 
 listRoleAssignments:
   get:
     tags:
-      - Role Assignments
+      - Admin - Role Assignments
     summary: List role assignments
     description: |
-      Get all role assignments for an environment (requires roles:assign permission).
+      Get all role assignments across all environments (requires admin:assignments:read permission).
       Returns assignments for both members and groups.
     operationId: listRoleAssignments
     security:
       - bearerAuth: []
     parameters:
-      - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
+      - name: orgId
+        in: query
+        required: false
+        description: Filter by organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: envId
+        in: query
+        required: false
+        description: Filter by environment ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174001'
       - name: membership_id
         in: query
         required: false
@@ -57,17 +71,14 @@ listRoleAssignments:
 createRoleAssignment:
   post:
     tags:
-      - Role Assignments
+      - Admin - Role Assignments
     summary: Create role assignment
     description: |
-      Assign a role to a member or group within an environment (requires roles:assign permission).
-      Must specify either membership_id OR group_id (not both).
+      Assign a role to a member or group within an environment (requires admin:assignments:manage permission).
+      Must specify either membership_id OR group_id (not both) and environment_id.
     operationId: createRoleAssignment
     security:
       - bearerAuth: []
-    parameters:
-      - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
     requestBody:
       required: true
       content:
@@ -109,15 +120,13 @@ createRoleAssignment:
 deleteRoleAssignment:
   delete:
     tags:
-      - Role Assignments
+      - Admin - Role Assignments
     summary: Delete role assignment
-    description: Remove a role assignment from a member or group (requires roles:assign permission)
+    description: Remove a role assignment from a member or group (requires admin:assignments:manage permission)
     operationId: deleteRoleAssignment
     security:
       - bearerAuth: []
     parameters:
-      - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
       - $ref: '../components/parameters.yaml#/assignmentId'
     responses:
       '204':

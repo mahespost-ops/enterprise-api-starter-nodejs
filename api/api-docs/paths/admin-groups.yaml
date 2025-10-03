@@ -1,0 +1,265 @@
+# Admin - Groups Endpoints
+
+listGroups:
+  get:
+    tags:
+      - Admin - Groups
+    summary: List all groups
+    description: Get all groups across all organizations (requires admin:groups:read permission)
+    operationId: adminListGroups
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - name: orgId
+        in: query
+        required: false
+        description: Filter by organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: parentId
+        in: query
+        required: false
+        description: Filter by parent group ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174001'
+      - name: hierarchyLevel
+        in: query
+        required: false
+        description: Filter by hierarchy level (0=root)
+        schema:
+          type: integer
+          minimum: 0
+        example: 0
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - created_at
+            - updated_at
+            - name
+            - hierarchy_level
+          default: created_at
+        example: 'hierarchy_level'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'asc'
+    responses:
+      '200':
+        description: Groups retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/group.yaml#/Group'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getGroup:
+  get:
+    tags:
+      - Admin - Groups
+    summary: Get group details
+    description: Retrieve detailed information about a specific group (requires admin:groups:read permission)
+    operationId: adminGetGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: Group ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: Group retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/Group'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateGroup:
+  put:
+    tags:
+      - Admin - Groups
+    summary: Update group
+    description: Update group details (requires admin:groups:manage permission)
+    operationId: adminUpdateGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: Group ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Group name
+                example: 'Engineering Team'
+              description:
+                type: string
+                description: Group description
+                example: 'All engineering department members'
+              parent_id:
+                type: string
+                format: uuid
+                nullable: true
+                description: Parent group ID (null for root groups)
+                example: '123e4567-e89b-12d3-a456-426614174001'
+    responses:
+      '200':
+        description: Group updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/Group'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: Invalid parent relationship (would create cycle)
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: Invalid parent relationship would create a cycle
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteGroup:
+  delete:
+    tags:
+      - Admin - Groups
+    summary: Delete group
+    description: |
+      Soft-delete a group (requires admin:groups:manage permission).
+      Group members are preserved and moved to parent group if exists.
+    operationId: adminDeleteGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: Group ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Group deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listGroupMembers:
+  get:
+    tags:
+      - Admin - Groups
+    summary: List group members
+    description: Get all members of a specific group (requires admin:groups:read permission)
+    operationId: adminListGroupMembers
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        description: Group ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+    responses:
+      '200':
+        description: Group members retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/group.yaml#/GroupMember'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

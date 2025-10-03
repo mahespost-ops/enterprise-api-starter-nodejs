@@ -1,0 +1,224 @@
+# Admin - Users Endpoints
+
+listUsers:
+  get:
+    tags:
+      - Admin - Users
+    summary: List all users
+    description: Get all users across all organizations (requires admin:users:read permission)
+    operationId: listUsers
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - name: orgId
+        in: query
+        required: false
+        description: Filter by organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: status
+        in: query
+        required: false
+        description: Filter by user status
+        schema:
+          type: string
+          enum:
+            - active
+            - inactive
+            - suspended
+        example: 'active'
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - created_at
+            - updated_at
+            - email
+            - name
+          default: created_at
+        example: 'email'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'asc'
+    responses:
+      '200':
+        description: Users retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/user.yaml#/User'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getUser:
+  get:
+    tags:
+      - Admin - Users
+    summary: Get user details
+    description: Retrieve detailed information about a specific user (requires admin:users:read permission)
+    operationId: getUser
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: User retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateUser:
+  put:
+    tags:
+      - Admin - Users
+    summary: Update user
+    description: Update user details (requires admin:users:manage permission)
+    operationId: updateUser
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+                description: User email address
+                example: 'user@example.com'
+              name:
+                type: string
+                description: User full name
+                example: 'John Doe'
+              given_name:
+                type: string
+                description: First/given name
+                example: 'John'
+              family_name:
+                type: string
+                description: Last/family name
+                example: 'Doe'
+              phone_number:
+                type: string
+                description: Phone number in E.164 format
+                example: '+12125551234'
+              picture:
+                type: string
+                format: uri
+                description: Profile picture URL
+                example: 'https://example.com/avatar.jpg'
+              status:
+                type: string
+                enum:
+                  - active
+                  - inactive
+                  - suspended
+                description: User account status
+                example: 'active'
+    responses:
+      '200':
+        description: User updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteUser:
+  delete:
+    tags:
+      - Admin - Users
+    summary: Delete user
+    description: |
+      Soft-delete a user account (requires admin:users:manage permission).
+      This will remove the user from all organizations and deactivate their account.
+    operationId: deleteUser
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: User deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

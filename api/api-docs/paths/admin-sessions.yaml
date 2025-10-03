@@ -1,0 +1,253 @@
+# Admin - Sessions Endpoints
+
+listSessions:
+  get:
+    tags:
+      - Admin - Sessions
+    summary: List all sessions
+    description: Get all sessions across all users and organizations (requires admin:sessions:read permission)
+    operationId: adminListSessions
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: userId
+        in: query
+        required: false
+        description: Filter by user ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: deviceId
+        in: query
+        required: false
+        description: Filter by device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174001'
+      - name: isActive
+        in: query
+        required: false
+        description: Filter by active status
+        schema:
+          type: boolean
+        example: true
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - created_at
+            - last_activity_at
+            - expires_at
+          default: created_at
+        example: 'last_activity_at'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'desc'
+    responses:
+      '200':
+        description: Sessions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - user_id
+                      - device_id
+                      - is_active
+                      - created_at
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      user_id:
+                        type: string
+                        format: uuid
+                      user_email:
+                        type: string
+                        format: email
+                      device_id:
+                        type: string
+                        format: uuid
+                      ip_address:
+                        type: string
+                      user_agent:
+                        type: string
+                      is_active:
+                        type: boolean
+                      last_activity_at:
+                        type: string
+                        format: date-time
+                      expires_at:
+                        type: string
+                        format: date-time
+                      created_at:
+                        type: string
+                        format: date-time
+                      revoked_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getSession:
+  get:
+    tags:
+      - Admin - Sessions
+    summary: Get session details
+    description: Retrieve detailed information about a specific session (requires admin:sessions:read permission)
+    operationId: adminGetSession
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: Session retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - user_id
+                - device_id
+                - is_active
+                - created_at
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                user_email:
+                  type: string
+                  format: email
+                device_id:
+                  type: string
+                  format: uuid
+                ip_address:
+                  type: string
+                user_agent:
+                  type: string
+                is_active:
+                  type: boolean
+                last_activity_at:
+                  type: string
+                  format: date-time
+                expires_at:
+                  type: string
+                  format: date-time
+                created_at:
+                  type: string
+                  format: date-time
+                revoked_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeSession:
+  delete:
+    tags:
+      - Admin - Sessions
+    summary: Revoke session
+    description: Revoke a specific session (requires admin:sessions:manage permission)
+    operationId: adminRevokeSession
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Session revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeUserSessions:
+  delete:
+    tags:
+      - Admin - Sessions
+    summary: Revoke all user sessions
+    description: Revoke all sessions for a specific user (requires admin:sessions:manage permission)
+    operationId: adminRevokeUserSessions
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: User sessions revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

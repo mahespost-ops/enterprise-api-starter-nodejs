@@ -5,7 +5,7 @@ listRoles:
     tags:
       - Admin - Roles & Permissions
     summary: List roles
-    description: Get all roles (globally scoped, requires system:admin or system:support permission)
+    description: Get all roles (globally scoped, requires admin:roles:read permission)
     operationId: listRoles
     security:
       - bearerAuth: []
@@ -40,7 +40,7 @@ getRole:
     tags:
       - Admin - Roles & Permissions
     summary: Get role details
-    description: Retrieve detailed information about a specific role (requires roles:read permission)
+    description: Retrieve detailed information about a specific role (requires admin:roles:read permission)
     operationId: getRole
     security:
       - bearerAuth: []
@@ -68,7 +68,7 @@ updateRole:
       - Admin - Roles & Permissions
     summary: Update role
     description: |
-      Update role details (requires roles:manage permission).
+      Update role details (requires admin:roles:manage permission).
       System-defined roles cannot be updated.
     operationId: updateRole
     security:
@@ -115,7 +115,7 @@ deleteRole:
       - Admin - Roles & Permissions
     summary: Delete role
     description: |
-      Soft-delete a role (requires roles:manage permission).
+      Soft-delete a role (requires admin:roles:manage permission).
       System-defined roles cannot be deleted.
       Role assignments are removed when role is deleted.
     operationId: deleteRole
@@ -150,7 +150,7 @@ createRole:
     tags:
       - Admin - Roles & Permissions
     summary: Create role
-    description: Create a new role (requires roles:manage permission)
+    description: Create a new role (requires admin:roles:manage permission)
     operationId: createRole
     security:
       - bearerAuth: []
@@ -191,7 +191,7 @@ listRolePermissions:
     tags:
       - Admin - Roles & Permissions
     summary: List role permissions
-    description: Get all permissions assigned to a role (requires roles:read permission)
+    description: Get all permissions assigned to a role (requires admin:roles:read permission)
     operationId: listRolePermissions
     security:
       - bearerAuth: []
@@ -219,7 +219,7 @@ addRolePermission:
       - Admin - Roles & Permissions
     summary: Add permission to role
     description: |
-      Assign a permission to a role (requires roles:manage permission).
+      Assign a permission to a role (requires admin:roles:manage permission).
       System-defined roles cannot be modified.
     operationId: addRolePermission
     security:
@@ -270,7 +270,7 @@ removeRolePermission:
       - Admin - Roles & Permissions
     summary: Remove permission from role
     description: |
-      Remove a permission from a role (requires roles:manage permission).
+      Remove a permission from a role (requires admin:roles:manage permission).
       System-defined roles cannot be modified.
     operationId: removeRolePermission
     security:
@@ -305,7 +305,7 @@ listPermissions:
     tags:
       - Admin - Roles & Permissions
     summary: List all permissions
-    description: Get all available permissions in the system (requires permissions:read permission)
+    description: Get all available permissions in the system (requires admin:permissions:read permission)
     operationId: listPermissions
     security:
       - bearerAuth: []

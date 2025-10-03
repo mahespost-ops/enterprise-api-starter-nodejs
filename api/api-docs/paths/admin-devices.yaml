@@ -1,0 +1,319 @@
+# Admin - Devices Endpoints
+
+listDevices:
+  get:
+    tags:
+      - Admin - Devices
+    summary: List all devices
+    description: Get all devices across all users (requires admin:devices:read permission)
+    operationId: adminListDevices
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: userId
+        in: query
+        required: false
+        description: Filter by user ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: isTrusted
+        in: query
+        required: false
+        description: Filter by trusted status
+        schema:
+          type: boolean
+        example: true
+      - name: isRevoked
+        in: query
+        required: false
+        description: Filter by revoked status
+        schema:
+          type: boolean
+        example: false
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - created_at
+            - last_used_at
+            - name
+          default: created_at
+        example: 'last_used_at'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'desc'
+    responses:
+      '200':
+        description: Devices retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - user_id
+                      - fingerprint
+                      - is_trusted
+                      - created_at
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      user_id:
+                        type: string
+                        format: uuid
+                      user_email:
+                        type: string
+                        format: email
+                      fingerprint:
+                        type: string
+                      name:
+                        type: string
+                        nullable: true
+                      device_type:
+                        type: string
+                        nullable: true
+                      browser:
+                        type: string
+                        nullable: true
+                      os:
+                        type: string
+                        nullable: true
+                      ip_address:
+                        type: string
+                      is_trusted:
+                        type: boolean
+                      is_revoked:
+                        type: boolean
+                      last_used_at:
+                        type: string
+                        format: date-time
+                      created_at:
+                        type: string
+                        format: date-time
+                      revoked_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getDevice:
+  get:
+    tags:
+      - Admin - Devices
+    summary: Get device details
+    description: Retrieve detailed information about a specific device (requires admin:devices:read permission)
+    operationId: adminGetDevice
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: Device retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - user_id
+                - fingerprint
+                - is_trusted
+                - created_at
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                user_email:
+                  type: string
+                  format: email
+                fingerprint:
+                  type: string
+                name:
+                  type: string
+                  nullable: true
+                device_type:
+                  type: string
+                  nullable: true
+                browser:
+                  type: string
+                  nullable: true
+                os:
+                  type: string
+                  nullable: true
+                ip_address:
+                  type: string
+                is_trusted:
+                  type: boolean
+                is_revoked:
+                  type: boolean
+                last_used_at:
+                  type: string
+                  format: date-time
+                created_at:
+                  type: string
+                  format: date-time
+                revoked_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateDevice:
+  put:
+    tags:
+      - Admin - Devices
+    summary: Update device
+    description: Update device details (requires admin:devices:manage permission)
+    operationId: adminUpdateDevice
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Device name
+                example: 'MacBook Pro'
+              is_trusted:
+                type: boolean
+                description: Whether device is trusted
+                example: true
+    responses:
+      '200':
+        description: Device updated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - user_id
+                - fingerprint
+                - is_trusted
+                - created_at
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                fingerprint:
+                  type: string
+                name:
+                  type: string
+                  nullable: true
+                is_trusted:
+                  type: boolean
+                is_revoked:
+                  type: boolean
+                last_used_at:
+                  type: string
+                  format: date-time
+                created_at:
+                  type: string
+                  format: date-time
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeDevice:
+  delete:
+    tags:
+      - Admin - Devices
+    summary: Revoke device
+    description: |
+      Revoke a device (requires admin:devices:manage permission).
+      This will also revoke all active sessions for this device.
+    operationId: adminRevokeDevice
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Device revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

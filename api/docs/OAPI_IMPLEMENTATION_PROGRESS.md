@@ -30,15 +30,20 @@ Each tag group has corresponding files:
 - ✅ `components/schemas/role.yaml` - **NEW**: Role and permission schemas (admin-scoped)
 - ✅ `paths/health.yaml` - Health endpoints
 - ✅ `paths/auth.yaml` - Auth endpoints
-- ✅ `paths/devices.yaml` - Device endpoints
-- ✅ `paths/sessions.yaml` - Session endpoints
 - ✅ `paths/organizations.yaml` - **NEW**: Organization endpoints
 - ✅ `paths/environments.yaml` - **NEW**: Environment endpoints
 - ✅ `paths/members.yaml` - **NEW**: Organization member endpoints
 - ✅ `paths/groups.yaml` - **NEW**: Hierarchical group endpoints
 - ✅ `paths/users.yaml` - **NEW**: Tenant-scoped user endpoints
 - ✅ `paths/admin-roles.yaml` - **NEW**: Admin role and permission endpoints
-- ✅ `paths/role-assignments.yaml` - **NEW**: Environment-scoped role assignments
+- ✅ `paths/admin-users.yaml` - **NEW**: Admin user management endpoints
+- ✅ `paths/admin-organizations.yaml` - **NEW**: Admin organization management endpoints
+- ✅ `paths/admin-environments.yaml` - **NEW**: Admin environment management endpoints
+- ✅ `paths/admin-groups.yaml` - **NEW**: Admin group management endpoints
+- ✅ `paths/admin-devices.yaml` - **NEW**: Admin device management endpoints
+- ✅ `paths/admin-sessions.yaml` - **NEW**: Admin session management endpoints
+- ✅ `paths/admin-impersonation.yaml` - **NEW**: Admin impersonation session monitoring endpoints
+- ✅ `paths/admin-role-assignments.yaml` - **NEW**: Admin role assignments management endpoints
 - ✅ `components/schemas/role-assignment.yaml` - **NEW**: Role assignment schemas
 
 ### Tags Implemented
@@ -46,13 +51,18 @@ Each tag group has corresponding files:
 - **Authentication** - Register, login, logout, token management
 - **Organizations** - Multi-tenant organization management
 - **Environments** - Environment management within organizations
-- **Members** - Organization member management and invitations
+- **Members** - Organization member management, invitations, and organization-scoped impersonation
 - **Groups** - Hierarchical group management for RBAC
-- **Users** - Tenant-scoped user profile and permissions
+- **Users** - Tenant-scoped user profile, permissions, devices, and sessions
+- **Admin - Users** - System-wide user management
+- **Admin - Organizations** - System-wide organization management
+- **Admin - Environments** - System-wide environment management
+- **Admin - Groups** - System-wide group management
 - **Admin - Roles & Permissions** - System-wide role and permission management
-- **Role Assignments** - Environment-scoped role assignments to members and groups
-- **Devices** - Device management with fingerprinting
-- **Sessions** - Session management and revocation
+- **Admin - Role Assignments** - System-wide role assignment management
+- **Admin - Devices** - System-wide device management
+- **Admin - Sessions** - System-wide session management
+- **Admin - Impersonation** - System-wide user impersonation and session monitoring
 
 ### Endpoints Implemented
 **Health:**
@@ -86,6 +96,11 @@ Each tag group has corresponding files:
 - `POST /orgs/{orgId}/members` - Invite member
 - `PUT /orgs/{orgId}/members/{memberId}` - Update member
 - `DELETE /orgs/{orgId}/members/{memberId}` - Remove member
+- `GET /orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
+- `GET /orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
+- `POST /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start member impersonation
+- `DELETE /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End member impersonation
+- `GET /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get impersonation status
 
 **Groups:**
 - `GET /orgs/{orgId}/groups` - List groups (hierarchical)
@@ -103,6 +118,29 @@ Each tag group has corresponding files:
 - `PUT /users/me` - Update current user profile
 - `GET /users/me/organizations` - Get user's organizations
 - `GET /users/me/permissions` - Get user's effective permissions
+- `GET /users/me/devices` - Get current user's devices
+- `PUT /users/me/devices/{deviceId}` - Update current user's device
+- `DELETE /users/me/devices/{deviceId}` - Revoke current user's device
+- `GET /users/me/sessions` - Get current user's sessions
+- `DELETE /users/me/sessions/{sessionId}` - Revoke current user's session
+- `DELETE /users/me/sessions/all` - Revoke all current user's sessions
+
+**Admin - Role Assignments:**
+- `GET /admin/role-assignments` - List all role assignments
+- `POST /admin/role-assignments` - Create role assignment
+- `DELETE /admin/role-assignments/{assignmentId}` - Delete assignment
+
+**Admin - Users:**
+- `GET /admin/users` - List all users
+- `GET /admin/users/{userId}` - Get user
+- `PUT /admin/users/{userId}` - Update user
+- `DELETE /admin/users/{userId}` - Delete user
+
+**Admin - Organizations:**
+- `GET /admin/organizations` - List all organizations
+- `GET /admin/organizations/{orgId}` - Get organization
+- `PUT /admin/organizations/{orgId}` - Update organization
+- `DELETE /admin/organizations/{orgId}` - Delete organization
 
 **Admin - Roles & Permissions:**
 - `GET /admin/roles` - List roles
@@ -115,23 +153,37 @@ Each tag group has corresponding files:
 - `DELETE /admin/roles/{roleId}/permissions/{permissionId}` - Remove permission
 - `GET /admin/permissions` - List all permissions
 
-**Role Assignments:**
-- `GET /orgs/{orgId}/envs/{envId}/assignments` - List role assignments
-- `POST /orgs/{orgId}/envs/{envId}/assignments` - Create role assignment
-- `DELETE /orgs/{orgId}/envs/{envId}/assignments/{assignmentId}` - Delete assignment
+**Admin - Environments:**
+- `GET /admin/environments` - List all environments
+- `GET /admin/environments/{envId}` - Get environment
+- `PUT /admin/environments/{envId}` - Update environment
+- `DELETE /admin/environments/{envId}` - Delete environment
 
-**Devices:**
-- `GET /devices` - List devices
-- `PUT /devices/{id}` - Update device
-- `DELETE /devices/{id}` - Revoke device
+**Admin - Groups:**
+- `GET /admin/groups` - List all groups
+- `GET /admin/groups/{groupId}` - Get group
+- `PUT /admin/groups/{groupId}` - Update group
+- `DELETE /admin/groups/{groupId}` - Delete group
+- `GET /admin/groups/{groupId}/members` - List group members
 
-**Sessions:**
-- `GET /sessions` - List sessions
-- `GET /sessions/{id}` - Get session
-- `DELETE /sessions/{id}` - Revoke session
-- `DELETE /sessions/device/{deviceId}` - Revoke device sessions
-- `DELETE /sessions/all` - Revoke all except current
-- `DELETE /sessions/all/force` - Force revoke all
+**Admin - Devices:**
+- `GET /admin/devices` - List all devices
+- `GET /admin/devices/{deviceId}` - Get device
+- `PUT /admin/devices/{deviceId}` - Update device
+- `DELETE /admin/devices/{deviceId}` - Revoke device
+
+**Admin - Sessions:**
+- `GET /admin/sessions` - List all sessions
+- `GET /admin/sessions/{sessionId}` - Get session
+- `DELETE /admin/sessions/{sessionId}` - Revoke session
+- `DELETE /admin/sessions/user/{userId}` - Revoke all user sessions
+
+**Admin - Impersonation:**
+- `POST /admin/users/{userId}/impersonate` - Start system-level user impersonation
+- `DELETE /admin/impersonation/end` - End impersonation session
+- `GET /admin/impersonation/active` - Get all active impersonation sessions
+- `GET /admin/impersonation-sessions` - List all impersonation sessions
+- `DELETE /admin/impersonation-sessions/{sessionId}` - Force end session
 
 ### User Schema Standards Compliance
 The User schema now follows industry standards for maximum OAuth/SSO compatibility:
@@ -151,10 +203,73 @@ None currently.
 - ✅ Enhanced error logging in `app.ts` to show full stack traces for Swagger errors
 - ✅ API documentation now loads successfully at `/api-docs`
 
+## Permission Model
+
+### Scope-Based Permissions
+The API uses a scope-based permission model where permissions are prefixed by their scope:
+
+**User-Scoped Permissions** (org/env context required):
+- `users:read` - Read own user profile
+- `devices:manage` - Manage own devices
+- `sessions:manage` - Manage own sessions
+- `members:read`, `members:manage` - Organization members
+- `members:impersonate` - Impersonate subordinate members (with hierarchy check)
+- `groups:read`, `groups:manage` - Groups within org
+- `organizations:read`, `organizations:manage` - Own organizations
+- `environments:read`, `environments:manage` - Environments within org
+- `roles:assign` - Assign roles within org/env
+
+**Admin-Scoped Permissions** (global, no org/env context):
+- `admin:users:read`, `admin:users:manage` - All users
+- `admin:users:impersonate` - Impersonate any user (system-level, no hierarchy restrictions)
+- `admin:organizations:read`, `admin:organizations:manage` - All organizations
+- `admin:environments:read`, `admin:environments:manage` - All environments
+- `admin:groups:read`, `admin:groups:manage` - All groups
+- `admin:devices:read`, `admin:devices:manage` - All devices
+- `admin:sessions:read`, `admin:sessions:manage` - All sessions
+- `admin:roles:read`, `admin:roles:manage` - All roles
+- `admin:permissions:read` - List all permissions
+- `admin:assignments:read`, `admin:assignments:manage` - All role assignments
+- `admin:impersonation:read`, `admin:impersonation:manage` - Monitor and manage impersonation sessions
+
+### Key Differences:
+- **User permissions** operate within org/env context and only affect user's own resources or resources they have access to
+- **Admin permissions** bypass org/env restrictions and provide global access across all tenants
+- Same resource (e.g., devices) can have both user-scoped (`devices:manage`) and admin-scoped (`admin:devices:manage`) permissions
+
+### Impersonation Architecture
+
+The API supports two types of impersonation with distinct permission models:
+
+**System-Level Impersonation** (`admin:users:impersonate`):
+- **Path**: `POST /admin/users/{userId}/impersonate`
+- **Permission**: `admin:users:impersonate`
+- **Type**: `system`
+- **Restrictions**: None - can impersonate ANY user in ANY organization/environment
+- **Use Case**: System administrators troubleshooting across all tenants
+
+**Organization-Level Impersonation** (`members:impersonate`):
+- **Path**: `POST /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate`
+- **Permission**: `members:impersonate`
+- **Type**: `organization`
+- **Restrictions**:
+  - Can only impersonate members in subordinate groups (lower `hierarchy_level`)
+  - Cannot impersonate self, peers (same level), or superiors (higher level)
+  - Hierarchy validation enforced at group membership level
+- **Use Case**: Department managers impersonating their team members
+
+**Common Features**:
+- Required `reason` field for audit compliance
+- Configurable session duration (default 60min, max 480min)
+- Returns new JWT with impersonation context
+- Full audit trail in `event` table and CloudEvents message queue
+- Session chaining support via `parent_session_id`
+- IP address and user agent captured for forensics
+
 ## Endpoint Architecture
 
 ### Admin-Scoped Tags (System-Level Management)
-Protected by `system:admin` or `system:support` permissions:
+Protected by `admin:*` scoped permissions:
 - **Admin - Organizations** - Manage all organizations
 - **Admin - Environments** - Manage all environments
 - **Admin - Groups** - Manage all groups across organizations
@@ -217,31 +332,15 @@ Protected by context-specific permissions (e.g., `members:read`, `groups:manage`
 
 **Permissions:** `webhooks:read`, `webhooks:manage`
 
-### Admin Tag
-**Files to create:**
-- `paths/admin-users.yaml` - User management
-- `paths/admin-organizations.yaml` - Org management
-- `paths/admin-impersonation.yaml` - Impersonation monitoring
-- `components/schemas/admin.yaml` - All admin schemas
+### Admin Additional Categories (Future)
+**Potential future admin endpoints:**
+- `paths/admin-environments.yaml` - Admin environment management
+- `paths/admin-members.yaml` - Admin member management
+- `paths/admin-groups.yaml` - Admin group management
+- `paths/admin-devices.yaml` - Admin device management
+- `paths/admin-sessions.yaml` - Admin session management
 
-**Endpoints (Users):**
-- `GET /admin/users` - List all users
-- `GET /admin/users/{userId}` - Get user
-- `PUT /admin/users/{userId}` - Update user
-- `DELETE /admin/users/{userId}` - Delete user
-
-**Endpoints (Organizations):**
-- `GET /admin/organizations` - List all orgs
-- `GET /admin/organizations/{orgId}` - Get org
-- `PUT /admin/organizations/{orgId}` - Update org
-- `DELETE /admin/organizations/{orgId}` - Delete org
-
-**Endpoints (Impersonation):**
-- `GET /admin/impersonation-sessions` - List all sessions
-- `GET /admin/impersonation-sessions/active` - List active
-- `DELETE /admin/impersonation-sessions/{sessionId}` - Force end
-
-**Permissions:** `system:admin`, `system:support`
+**Note:** These follow the same pattern as existing admin endpoints with `/admin/` prefix and `Admin - {Category}` tag naming
 
 ## Common Patterns
 

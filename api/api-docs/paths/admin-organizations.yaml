@@ -1,0 +1,220 @@
+# Admin - Organizations Endpoints
+
+listOrganizations:
+  get:
+    tags:
+      - Admin - Organizations
+    summary: List all organizations
+    description: Get all organizations in the system (requires admin:organizations:read permission)
+    operationId: adminListOrganizations
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - name: status
+        in: query
+        required: false
+        description: Filter by organization status
+        schema:
+          type: string
+          enum:
+            - active
+            - inactive
+            - suspended
+        example: 'active'
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - created_at
+            - updated_at
+            - name
+          default: created_at
+        example: 'name'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'asc'
+    responses:
+      '200':
+        description: Organizations retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/organization.yaml#/Organization'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/PaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getOrganization:
+  get:
+    tags:
+      - Admin - Organizations
+    summary: Get organization details
+    description: Retrieve detailed information about a specific organization (requires admin:organizations:read permission)
+    operationId: adminGetOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: Organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: Organization retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateOrganization:
+  put:
+    tags:
+      - Admin - Organizations
+    summary: Update organization
+    description: Update organization details (requires admin:organizations:manage permission)
+    operationId: adminUpdateOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: Organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Organization name
+                example: 'Acme Corporation'
+              slug:
+                type: string
+                pattern: '^[a-z0-9-]+$'
+                description: URL-friendly organization identifier
+                example: 'acme-corp'
+              default_env_id:
+                type: string
+                format: uuid
+                description: Default environment ID for the organization
+                example: '123e4567-e89b-12d3-a456-426614174001'
+              status:
+                type: string
+                enum:
+                  - active
+                  - inactive
+                  - suspended
+                description: Organization status
+                example: 'active'
+              metadata:
+                type: object
+                additionalProperties: true
+                description: Additional organization metadata
+                example:
+                  industry: 'Technology'
+                  size: 'Enterprise'
+    responses:
+      '200':
+        description: Organization updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: Slug already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: Organization with this slug already exists
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteOrganization:
+  delete:
+    tags:
+      - Admin - Organizations
+    summary: Delete organization
+    description: |
+      Soft-delete an organization (requires admin:organizations:manage permission).
+      This will cascade delete all associated environments, members, and data.
+    operationId: adminDeleteOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: orgId
+        in: path
+        required: true
+        description: Organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Organization deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
