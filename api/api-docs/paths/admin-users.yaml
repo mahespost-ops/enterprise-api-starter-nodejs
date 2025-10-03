@@ -8,7 +8,7 @@ listUsers:
     description: Get all users across all organizations (requires admin:users:read permission)
     operationId: listUsers
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -88,7 +88,7 @@ getUser:
     description: Retrieve detailed information about a specific user (requires admin:users:read permission)
     operationId: getUser
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:read"]
     parameters:
       - name: userId
         in: path
@@ -122,7 +122,7 @@ updateUser:
     description: Update user details (requires admin:users:manage permission)
     operationId: updateUser
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:manage"]
     parameters:
       - name: userId
         in: path
@@ -201,7 +201,7 @@ deleteUser:
       This will remove the user from all organizations and deactivate their account.
     operationId: deleteUser
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:manage"]
     parameters:
       - name: userId
         in: path

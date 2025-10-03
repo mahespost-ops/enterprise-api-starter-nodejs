@@ -10,7 +10,7 @@ listGroups:
       Returns hierarchical list by default, sorted by hierarchy_level then name.
     operationId: listGroups
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/limit'
@@ -47,7 +47,7 @@ getGroup:
     description: Retrieve detailed information about a specific group (requires groups:read permission)
     operationId: getGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -78,7 +78,7 @@ updateGroup:
       Cannot create circular references.
     operationId: updateGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -127,7 +127,7 @@ deleteGroup:
       All group_member records are removed.
     operationId: deleteGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -153,7 +153,7 @@ createGroup:
       hierarchy_level is automatically calculated based on parent_id.
     operationId: createGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     requestBody:
@@ -192,7 +192,7 @@ listGroupMembers:
     description: Get all members of a specific group (requires groups:read permission)
     operationId: listGroupMembers
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -225,7 +225,7 @@ addGroupMember:
       User must already be an organization member.
     operationId: addGroupMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -275,7 +275,7 @@ removeGroupMember:
     description: Remove a user from a group (requires groups:manage permission)
     operationId: removeGroupMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'
@@ -302,7 +302,7 @@ getGroupChildren:
       Returns hierarchical structure with nested children.
     operationId: getGroupChildren
     security:
-      - bearerAuth: []
+      - bearerAuth: ["groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/groupId'

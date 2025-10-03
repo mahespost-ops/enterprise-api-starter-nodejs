@@ -8,7 +8,7 @@ listOrganizations:
     description: Get all organizations the authenticated user is a member of
     operationId: listOrganizations
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -34,7 +34,7 @@ getOrganization:
     description: Retrieve detailed information about a specific organization
     operationId: getOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     responses:
@@ -59,7 +59,7 @@ getOrganization:
     description: Update organization details (requires orgs:manage permission)
     operationId: updateOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     requestBody:
@@ -92,7 +92,7 @@ getOrganization:
     description: Soft-delete an organization (requires orgs:manage permission)
     operationId: deleteOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     responses:
@@ -117,7 +117,7 @@ createOrganization:
       Automatically creates default 'Live' and 'Test' environments.
     operationId: createOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:manage"]
     requestBody:
       required: true
       content:
@@ -159,7 +159,7 @@ switchContext:
       Returns new JWT with updated orgId and envId claims.
     operationId: switchContext
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     requestBody:

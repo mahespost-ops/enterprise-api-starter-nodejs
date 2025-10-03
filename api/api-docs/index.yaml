@@ -367,7 +367,38 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT token for authenticated requests
+      description: |
+        JWT Bearer token for API authentication and authorization.
+
+        ## JWT Payload Structure
+
+        The JWT payload **must** contain the following custom claims for authorization and context:
+        - `sub` (Subject): User ID (UUID string) - Standard JWT claim
+        - `orgId`: Organization context ID (UUID string) - Required for tenant-scoped operations
+        - `envId`: Environment context ID (UUID string) - Required for environment-scoped operations
+        - `user`: Object containing user details (`fullName`, `email`) for convenience
+
+        **Optional impersonation claims** (present when user is impersonating another user):
+        - `impersonation.originalUserId`: ID of the user performing impersonation
+        - `impersonation.effectiveUserId`: ID of the impersonated user (same as `sub`)
+        - `impersonation.impersonationChain`: Array tracking the impersonation hierarchy
+
+        Standard JWT claims (`iss`, `aud`, `exp`, `iat`) are also expected.
+
+        ## Authorization
+
+        The `orgId` and `envId` claims are validated server-side to ensure:
+        1. The user has access to the requested organization/environment
+        2. Path parameters `{orgId}` and `{envId}` match the JWT claims
+        3. The user has the required permission scopes for the operation
+
+        ## Permission Scopes
+
+        Each endpoint specifies required permission scopes. Scopes are categorized as:
+        - **Tenant-scoped**: Operate within org/env context (e.g., `users:read`, `webhooks:manage`)
+        - **Admin-scoped**: Global system access (e.g., `admin:users:read`, `admin:webhooks:manage`)
+
+        See individual endpoint `security` sections for specific scope requirements.
 
   responses:
     UnauthorizedError:

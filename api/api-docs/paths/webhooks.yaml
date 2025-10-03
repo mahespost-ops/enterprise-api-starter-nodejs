@@ -10,7 +10,7 @@
     description: List all webhooks for the current environment
     operationId: listWebhooks
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -53,7 +53,7 @@
     description: Create a new webhook for the current environment
     operationId: createWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -93,7 +93,7 @@
     description: Get details of a specific webhook
     operationId: getWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -123,7 +123,7 @@
     description: Update an existing webhook
     operationId: updateWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -163,7 +163,7 @@
     description: Delete a webhook
     operationId: deleteWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -190,7 +190,7 @@
     description: List all deliveries for a specific webhook
     operationId: listWebhookDeliveries
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -244,7 +244,7 @@
     description: Get details of a specific webhook delivery
     operationId: getWebhookDelivery
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -276,7 +276,7 @@
     description: Manually retry a failed webhook delivery
     operationId: retryWebhookDelivery
     security:
-      - BearerAuth: []
+      - BearerAuth: ["webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'

@@ -10,7 +10,7 @@ listEvents:
       Filter by verb, actor type, organization, environment, date range, and webhook eligibility.
     operationId: adminListEvents
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:events:read"]
     parameters:
       - name: verb
         in: query
@@ -100,7 +100,7 @@ getEvent:
     description: Retrieve detailed information about a specific event (requires admin:events:read permission)
     operationId: adminGetEvent
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:events:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/eventId'
     responses:

@@ -10,7 +10,7 @@ listEvents:
       Filter by verb, actor type, date range, and webhook eligibility.
     operationId: listEvents
     security:
-      - bearerAuth: []
+      - bearerAuth: ["events:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -65,7 +65,7 @@ getEvent:
     description: Retrieve detailed information about a specific event
     operationId: getEvent
     security:
-      - bearerAuth: []
+      - bearerAuth: ["events:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'

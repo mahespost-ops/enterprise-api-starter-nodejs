@@ -8,7 +8,7 @@ listEnvironments:
     description: Get all environments across all organizations (requires admin:environments:read permission)
     operationId: adminListEnvironments
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:environments:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -86,7 +86,7 @@ getEnvironment:
     description: Retrieve detailed information about a specific environment (requires admin:environments:read permission)
     operationId: adminGetEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:environments:read"]
     parameters:
       - name: envId
         in: path
@@ -120,7 +120,7 @@ updateEnvironment:
     description: Update environment details (requires admin:environments:manage permission)
     operationId: adminUpdateEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:environments:manage"]
     parameters:
       - name: envId
         in: path
@@ -180,7 +180,7 @@ deleteEnvironment:
       Cannot delete default environments (Live, Test).
     operationId: adminDeleteEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:environments:manage"]
     parameters:
       - name: envId
         in: path

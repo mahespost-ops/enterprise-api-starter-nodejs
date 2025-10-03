@@ -8,7 +8,7 @@ getCurrentUser:
     description: Retrieve the authenticated user's profile information
     operationId: getCurrentUser
     security:
-      - bearerAuth: []
+      - bearerAuth: ["users:read"]
     responses:
       '200':
         description: User profile retrieved successfully
@@ -29,7 +29,7 @@ updateCurrentUser:
     description: Update the authenticated user's profile information
     operationId: updateCurrentUser
     security:
-      - bearerAuth: []
+      - bearerAuth: ["users:manage"]
     requestBody:
       required: true
       content:
@@ -58,7 +58,7 @@ getCurrentUserOrganizations:
     description: Retrieve all organizations the authenticated user is a member of
     operationId: getCurrentUserOrganizations
     security:
-      - bearerAuth: []
+      - bearerAuth: ["organizations:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -86,7 +86,7 @@ getCurrentUserPermissions:
       based on member and group assignments.
     operationId: getCurrentUserPermissions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["users:read"]
     parameters:
       - name: orgId
         in: query
@@ -148,7 +148,7 @@ getCurrentUserDevices:
     description: Retrieve all devices for the authenticated user
     operationId: getCurrentUserDevices
     security:
-      - bearerAuth: []
+      - bearerAuth: ["devices:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -222,7 +222,7 @@ updateCurrentUserDevice:
     description: Update a device owned by the authenticated user
     operationId: updateCurrentUserDevice
     security:
-      - bearerAuth: []
+      - bearerAuth: ["devices:manage"]
     parameters:
       - name: deviceId
         in: path
@@ -299,7 +299,7 @@ revokeCurrentUserDevice:
       This will also revoke all active sessions for this device.
     operationId: revokeCurrentUserDevice
     security:
-      - bearerAuth: []
+      - bearerAuth: ["devices:manage"]
     parameters:
       - name: deviceId
         in: path
@@ -329,7 +329,7 @@ getCurrentUserSessions:
     description: Retrieve all sessions for the authenticated user
     operationId: getCurrentUserSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["sessions:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -403,7 +403,7 @@ revokeCurrentUserSession:
     description: Revoke a specific session owned by the authenticated user
     operationId: revokeCurrentUserSession
     security:
-      - bearerAuth: []
+      - bearerAuth: ["sessions:manage"]
     parameters:
       - name: sessionId
         in: path
@@ -435,7 +435,7 @@ revokeAllCurrentUserSessions:
       Useful for "Sign out everywhere else" functionality.
     operationId: revokeAllCurrentUserSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["sessions:manage"]
     responses:
       '204':
         description: All sessions revoked successfully (except current)

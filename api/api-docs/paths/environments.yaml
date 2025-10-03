@@ -8,7 +8,7 @@ listEnvironments:
     description: Get all environments for a specific organization
     operationId: listEnvironments
     security:
-      - bearerAuth: []
+      - bearerAuth: ["environments:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/limit'
@@ -38,7 +38,7 @@ getEnvironment:
     description: Retrieve detailed information about a specific environment
     operationId: getEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["environments:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -64,7 +64,7 @@ getEnvironment:
     description: Update environment details (requires envs:manage permission)
     operationId: updateEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["environments:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -100,7 +100,7 @@ getEnvironment:
       Cannot delete default environment or last remaining environment.
     operationId: deleteEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["environments:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -134,7 +134,7 @@ createEnvironment:
     description: Create a new environment for an organization (requires envs:manage permission)
     operationId: createEnvironment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["environments:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     requestBody:

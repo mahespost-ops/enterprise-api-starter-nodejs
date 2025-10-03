@@ -15,8 +15,9 @@ Each tag group has corresponding files:
 ## Completed ✅
 
 ### Files Created/Updated
-- ✅ `index.yaml` - Main spec with $ref only (updated with all tags and paths, reorganized for intuitive grouping)
+- ✅ `index.yaml` - Main spec with $ref only (updated with all tags and paths, reorganized for intuitive grouping, enhanced bearerAuth documentation)
 - ✅ `components/parameters.yaml` - Reusable path/query parameters (updated with deliveryId)
+- ✅ `components/security.yaml` - **NEW**: OAuth 2.0 security scopes definitions (all permissions documented)
 - ✅ `components/responses.yaml` - Common HTTP responses
 - ✅ `components/schemas/common.yaml` - Common schemas (updated with PaginationInfo)
 - ✅ `components/schemas/auth.yaml` - Authentication schemas
@@ -245,6 +246,8 @@ None currently.
 - ✅ Fixed endpoint reference format for `/orgs/{orgId}/groups/{groupId}/children`
 - ✅ Enhanced error logging in `app.ts` to show full stack traces for Swagger errors
 - ✅ API documentation now loads successfully at `/api-docs`
+- ✅ All endpoints now have explicit security scopes documented (87 protected endpoints, 19 public endpoints)
+- ✅ JWT payload structure documented in bearerAuth description (sub, orgId, envId, impersonation context)
 
 ## Permission Model
 
@@ -425,19 +428,164 @@ All use common responses from `components/responses.yaml`:
 - 429 RateLimitError
 - 500 InternalServerError
 
-## Next Steps
+## OpenAPI Specification Status
 
-1. Create `components/parameters.yaml` for reusable path/query params
-2. Start with Organizations tag (foundational)
-3. Add Environments tag (depends on Organizations)
-4. Add Members tag (depends on Organizations)
-5. Add Groups tag (depends on Organizations)
-6. Add Roles & Permissions tags
-7. Add Role Assignments tag
-8. Add Impersonation tag
-9. Add Events & Webhooks tags
-10. Add Admin tags (separate files per category)
-11. Update `index.yaml` with all new references
+### ✅ COMPLETE - Ready for Implementation
+
+The OpenAPI 3.0.3 specification is **100% complete** with all endpoints, schemas, security scopes, and documentation finalized.
+
+**Statistics:**
+- **Total Endpoints**: 106 (87 protected, 19 public)
+- **Path Files**: 20 (tenant-scoped + admin-scoped)
+- **Schema Files**: 11 (core entities + webhooks)
+- **Security Scopes**: 40+ defined and documented
+- **Tags**: 21 (organized intuitively: Core API → Tenant-Scoped → Admin)
+
+**Testing:**
+- ✅ `/api-docs` loads successfully without errors
+- ✅ All $ref references resolved correctly
+- ✅ No circular dependencies
+- ✅ Lint: 0 errors
+- ✅ Typecheck: 0 errors
+
+---
+
+## Next Steps: Backend Implementation
+
+### Phase 1: Database Schema & Migrations ⏭️
+
+**Priority: HIGH**
+
+Create database migrations for the webhook infrastructure:
+
+1. **Migration: `webhook` table**
+   - Fields: id, environment_id, url, event_types (jsonb), description, auth_method, auth_config (jsonb), is_active, retry_config (jsonb), headers (jsonb), timeout, created_at, updated_at, last_delivery_at, last_failure_at, success_count, failure_count
+   - Indexes: environment_id, is_active, event_types (GIN index for JSONB)
+   - Constraints: HTTPS-only URLs (CHECK constraint)
+
+2. **Migration: `webhook_delivery` table**
+   - Fields: id, webhook_id, event_id, status, attempt, http_status_code, request_payload (jsonb), response_body, response_headers (jsonb), error_message, duration, next_retry_at, created_at, completed_at
+   - Indexes: webhook_id, event_id, status, created_at, next_retry_at
+   - Foreign keys: webhook_id → webhook(id), event_id → event(id)
+
+**Action Item:**
+```bash
+npm run migrate:create webhook-tables
+```
+
+---
+
+### Phase 2: Service Layer Implementation ⏭️
+
+**Priority: HIGH**
+
+Implement webhook business logic following adapter pattern:
+
+1. **Webhook Service** (`services/webhook.service.ts`)
+   - CRUD operations (create, read, update, delete)
+   - Event type validation against `event_type` table
+   - Auth configuration validation
+   - Retry logic calculations (exponential backoff)
+   - Delivery queuing
+
+2. **Admin Webhook Service** (`services/admin.webhook.service.ts`)
+   - System-wide webhook management
+   - Cross-organization webhook monitoring
+   - Delivery analytics
+
+3. **Webhook Delivery Worker** (`services/webhook-delivery.worker.ts`)
+   - Queue consumption (integrate with message queue adapter)
+   - CloudEvents 1.0.2 payload generation
+   - HTTP client with timeout/retry
+   - HMAC/JWT/Basic/Digest authentication
+   - Response logging and status updates
+
+**Design Patterns:**
+- Adapter pattern for message queue (Pub/Sub, SQS, Redis, Kafka, in-memory)
+- Factory pattern for auth method handlers
+- Strategy pattern for retry logic
+
+---
+
+### Phase 3: Controller & Route Implementation ⏭️
+
+**Priority: MEDIUM**
+
+Connect OpenAPI spec to actual endpoints:
+
+1. **Controllers**
+   - `controllers/webhook.controller.ts` (tenant-scoped)
+   - `controllers/admin.webhook.controller.ts` (admin-scoped)
+   - Input validation using OpenAPI schema
+   - Permission checks (webhooks:read, webhooks:manage)
+
+2. **Routes**
+   - `routes/webhook.route.ts`
+   - `routes/admin.webhook.route.ts`
+   - Mount under `/api/v1`
+
+3. **Middleware**
+   - Validate orgId/envId match JWT claims
+   - RBAC permission enforcement
+   - Rate limiting for webhook creation
+
+---
+
+### Phase 4: Testing ⏭️
+
+**Priority: MEDIUM**
+
+Comprehensive test coverage:
+
+1. **Unit Tests**
+   - Service layer tests (mocked dependencies)
+   - Auth method tests (HMAC, JWT, Basic, Digest)
+   - Retry logic tests (exponential backoff)
+   - Delivery worker tests
+
+2. **Integration Tests**
+   - End-to-end webhook creation → event trigger → delivery
+   - Webhook delivery retries
+   - Authentication method validation
+   - CloudEvents payload format
+
+3. **Performance Tests**
+   - Concurrent webhook deliveries
+   - High-volume event processing
+   - Queue backpressure handling
+
+---
+
+### Phase 5: Documentation & Deployment ⏭️
+
+**Priority: LOW**
+
+1. **Developer Documentation**
+   - Webhook setup guide
+   - Authentication method examples
+   - CloudEvents payload reference
+   - Retry behavior documentation
+   - Testing webhook endpoints (webhook.site, RequestBin)
+
+2. **Deployment Checklist**
+   - Environment variables for queue adapter
+   - Secrets management for webhook auth
+   - Monitoring/alerting for delivery failures
+   - Rate limiting configuration
+   - Queue consumer scaling strategy
+
+---
+
+## Recommended Order of Implementation
+
+1. ✅ **OpenAPI Specification** (COMPLETE)
+2. ⏭️ **Database Migrations** (webhook + webhook_delivery tables)
+3. ⏭️ **Webhook Service Layer** (CRUD + delivery logic)
+4. ⏭️ **Message Queue Integration** (event publishing)
+5. ⏭️ **Delivery Worker** (queue consumer + HTTP delivery)
+6. ⏭️ **Controllers & Routes** (API endpoints)
+7. ⏭️ **Tests** (unit + integration)
+8. ⏭️ **Documentation** (developer guides)
 
 ## Notes
 

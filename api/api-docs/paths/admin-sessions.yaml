@@ -8,7 +8,7 @@ listSessions:
     description: Get all sessions across all users and organizations (requires admin:sessions:read permission)
     operationId: adminListSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:sessions:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -128,7 +128,7 @@ getSession:
     description: Retrieve detailed information about a specific session (requires admin:sessions:read permission)
     operationId: adminGetSession
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:sessions:read"]
     parameters:
       - name: sessionId
         in: path
@@ -200,7 +200,7 @@ revokeSession:
     description: Revoke a specific session (requires admin:sessions:manage permission)
     operationId: adminRevokeSession
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:sessions:manage"]
     parameters:
       - name: sessionId
         in: path
@@ -230,7 +230,7 @@ revokeUserSessions:
     description: Revoke all sessions for a specific user (requires admin:sessions:manage permission)
     operationId: adminRevokeUserSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:sessions:manage"]
     parameters:
       - name: userId
         in: path

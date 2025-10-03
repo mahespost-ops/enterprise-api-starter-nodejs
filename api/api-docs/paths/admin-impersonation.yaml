@@ -15,7 +15,7 @@ startUserImpersonation:
       Returns a new JWT token with impersonation context.
     operationId: adminStartUserImpersonation
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:impersonate"]
     parameters:
       - name: userId
         in: path
@@ -126,7 +126,7 @@ endImpersonation:
       Returns original admin user's JWT token.
     operationId: adminEndImpersonation
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:users:impersonate"]
     responses:
       '200':
         description: Impersonation session ended successfully
@@ -173,7 +173,7 @@ getActiveImpersonationSessions:
     description: Get all currently active impersonation sessions (requires admin:impersonation:read permission)
     operationId: adminGetActiveImpersonationSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:impersonation:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -262,7 +262,7 @@ listImpersonationSessions:
     description: Get all impersonation sessions across the system (requires admin:impersonation:read permission)
     operationId: adminListImpersonationSessions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:impersonation:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -431,7 +431,7 @@ forceEndImpersonationSession:
     description: Forcibly end an active impersonation session (requires admin:impersonation:manage permission)
     operationId: adminForceEndImpersonationSession
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:impersonation:manage"]
     parameters:
       - name: sessionId
         in: path

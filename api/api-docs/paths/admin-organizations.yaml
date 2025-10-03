@@ -8,7 +8,7 @@ listOrganizations:
     description: Get all organizations in the system (requires admin:organizations:read permission)
     operationId: adminListOrganizations
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:organizations:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -79,7 +79,7 @@ getOrganization:
     description: Retrieve detailed information about a specific organization (requires admin:organizations:read permission)
     operationId: adminGetOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:organizations:read"]
     parameters:
       - name: orgId
         in: path
@@ -113,7 +113,7 @@ updateOrganization:
     description: Update organization details (requires admin:organizations:manage permission)
     operationId: adminUpdateOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:organizations:manage"]
     parameters:
       - name: orgId
         in: path
@@ -197,7 +197,7 @@ deleteOrganization:
       This will cascade delete all associated environments, members, and data.
     operationId: adminDeleteOrganization
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:organizations:manage"]
     parameters:
       - name: orgId
         in: path

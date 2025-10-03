@@ -8,7 +8,7 @@ listRoles:
     description: Get all roles (globally scoped, requires admin:roles:read permission)
     operationId: listRoles
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -43,7 +43,7 @@ getRole:
     description: Retrieve detailed information about a specific role (requires admin:roles:read permission)
     operationId: getRole
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
     responses:
@@ -72,7 +72,7 @@ updateRole:
       System-defined roles cannot be updated.
     operationId: updateRole
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
     requestBody:
@@ -120,7 +120,7 @@ deleteRole:
       Role assignments are removed when role is deleted.
     operationId: deleteRole
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
     responses:
@@ -153,7 +153,7 @@ createRole:
     description: Create a new role (requires admin:roles:manage permission)
     operationId: createRole
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:manage"]
     requestBody:
       required: true
       content:
@@ -194,7 +194,7 @@ listRolePermissions:
     description: Get all permissions assigned to a role (requires admin:roles:read permission)
     operationId: listRolePermissions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
     responses:
@@ -223,7 +223,7 @@ addRolePermission:
       System-defined roles cannot be modified.
     operationId: addRolePermission
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
     requestBody:
@@ -274,7 +274,7 @@ removeRolePermission:
       System-defined roles cannot be modified.
     operationId: removeRolePermission
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:roles:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/roleId'
       - $ref: '../components/parameters.yaml#/permissionId'
@@ -308,7 +308,7 @@ listPermissions:
     description: Get all available permissions in the system (requires admin:permissions:read permission)
     operationId: listPermissions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:permissions:read"]
     parameters:
       - name: resource
         in: query

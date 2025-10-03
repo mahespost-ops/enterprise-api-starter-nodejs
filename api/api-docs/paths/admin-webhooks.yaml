@@ -10,7 +10,7 @@
     description: List all webhooks across all organizations and environments
     operationId: adminListWebhooks
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -64,7 +64,7 @@
     description: Get details of any webhook (system-wide)
     operationId: adminGetWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/webhookId'
     responses:
@@ -92,7 +92,7 @@
     description: Update any webhook (system-wide)
     operationId: adminUpdateWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/webhookId'
     requestBody:
@@ -130,7 +130,7 @@
     description: Delete any webhook (system-wide)
     operationId: adminDeleteWebhook
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/webhookId'
     responses:
@@ -155,7 +155,7 @@
     description: List all deliveries for a specific webhook (system-wide)
     operationId: adminListWebhookDeliveries
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/webhookId'
       - $ref: '../components/parameters.yaml#/limit'
@@ -207,7 +207,7 @@
     description: Manually retry a failed webhook delivery (system-wide)
     operationId: adminRetryWebhookDelivery
     security:
-      - BearerAuth: []
+      - BearerAuth: ["admin:webhooks:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/webhookId'
       - $ref: '../components/parameters.yaml#/deliveryId'

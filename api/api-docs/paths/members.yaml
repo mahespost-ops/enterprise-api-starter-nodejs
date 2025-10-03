@@ -8,7 +8,7 @@ listMembers:
     description: Get all members of the organization (requires members:read permission)
     operationId: listMembers
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/limit'
@@ -49,7 +49,7 @@ getMember:
     description: Retrieve detailed information about a specific organization member (requires members:read permission)
     operationId: getMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/memberId'
@@ -77,7 +77,7 @@ updateMember:
     description: Update organization member details (requires members:manage permission)
     operationId: updateMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/memberId'
@@ -115,7 +115,7 @@ removeMember:
       Soft-deletes the organization_member record and all associated group memberships.
     operationId: removeMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/memberId'
@@ -142,7 +142,7 @@ inviteMember:
       If user doesn't exist, creates user account with status='invited'.
     operationId: inviteMember
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
     requestBody:
@@ -187,7 +187,7 @@ getMemberOrganizations:
       Allows member managers to see what organizations their managed members are in.
     operationId: getMemberOrganizations
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/memberId'
@@ -224,7 +224,7 @@ getMemberPermissions:
       Returns computed permissions based on role assignments and group memberships.
     operationId: getMemberPermissions
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/memberId'
@@ -316,7 +316,7 @@ startMemberImpersonation:
       Returns a new JWT token with impersonation context.
     operationId: startMemberImpersonation
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -414,7 +414,7 @@ endMemberImpersonation:
       Returns original user's JWT token.
     operationId: endMemberImpersonation
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'
@@ -467,7 +467,7 @@ getMemberImpersonationStatus:
       Shows if currently impersonating, who is being impersonated, and session details.
     operationId: getMemberImpersonationStatus
     security:
-      - bearerAuth: []
+      - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
       - $ref: '../components/parameters.yaml#/envId'

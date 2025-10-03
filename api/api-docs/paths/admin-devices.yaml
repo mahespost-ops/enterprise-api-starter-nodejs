@@ -8,7 +8,7 @@ listDevices:
     description: Get all devices across all users (requires admin:devices:read permission)
     operationId: adminListDevices
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:devices:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -135,7 +135,7 @@ getDevice:
     description: Retrieve detailed information about a specific device (requires admin:devices:read permission)
     operationId: adminGetDevice
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:devices:read"]
     parameters:
       - name: deviceId
         in: path
@@ -215,7 +215,7 @@ updateDevice:
     description: Update device details (requires admin:devices:manage permission)
     operationId: adminUpdateDevice
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:devices:manage"]
     parameters:
       - name: deviceId
         in: path
@@ -296,7 +296,7 @@ revokeDevice:
       This will also revoke all active sessions for this device.
     operationId: adminRevokeDevice
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:devices:manage"]
     parameters:
       - name: deviceId
         in: path

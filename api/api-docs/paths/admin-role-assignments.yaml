@@ -10,7 +10,7 @@ listRoleAssignments:
       Returns assignments for both members and groups.
     operationId: listRoleAssignments
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:assignments:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -78,7 +78,7 @@ createRoleAssignment:
       Must specify either membership_id OR group_id (not both) and environment_id.
     operationId: createRoleAssignment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:assignments:manage"]
     requestBody:
       required: true
       content:
@@ -125,7 +125,7 @@ deleteRoleAssignment:
     description: Remove a role assignment from a member or group (requires admin:assignments:manage permission)
     operationId: deleteRoleAssignment
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:assignments:manage"]
     parameters:
       - $ref: '../components/parameters.yaml#/assignmentId'
     responses:

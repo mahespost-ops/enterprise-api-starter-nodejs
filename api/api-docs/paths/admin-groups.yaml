@@ -8,7 +8,7 @@ listGroups:
     description: Get all groups across all organizations (requires admin:groups:read permission)
     operationId: adminListGroups
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:groups:read"]
     parameters:
       - $ref: '../components/parameters.yaml#/limit'
       - $ref: '../components/parameters.yaml#/offset'
@@ -93,7 +93,7 @@ getGroup:
     description: Retrieve detailed information about a specific group (requires admin:groups:read permission)
     operationId: adminGetGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:groups:read"]
     parameters:
       - name: groupId
         in: path
@@ -127,7 +127,7 @@ updateGroup:
     description: Update group details (requires admin:groups:manage permission)
     operationId: adminUpdateGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:groups:manage"]
     parameters:
       - name: groupId
         in: path
@@ -196,7 +196,7 @@ deleteGroup:
       Group members are preserved and moved to parent group if exists.
     operationId: adminDeleteGroup
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:groups:manage"]
     parameters:
       - name: groupId
         in: path
@@ -226,7 +226,7 @@ listGroupMembers:
     description: Get all members of a specific group (requires admin:groups:read permission)
     operationId: adminListGroupMembers
     security:
-      - bearerAuth: []
+      - bearerAuth: ["admin:groups:read"]
     parameters:
       - name: groupId
         in: path

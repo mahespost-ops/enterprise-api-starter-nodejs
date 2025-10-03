@@ -147,7 +147,7 @@ logout:
     description: Invalidate current session and refresh token
     operationId: logout
     security:
-      - bearerAuth: []
+      - bearerAuth: ["sessions:manage"]
     requestBody:
       required: false
       content:
