@@ -35,8 +35,12 @@ This is a reduce-config-drift-demo project with two main components:
 - **Purpose**: Backend API service
 - **Structure**:
   - `src/`: Source code
+    - `constants/`: Centralized constants (error messages, HTTP status codes)
+    - `services/`: Business logic with adapter pattern for external services
+    - `utils/`: Utility functions and helpers
   - `migrations/`: Database migrations
   - `docs/`: API documentation
+  - `api-docs/`: OpenAPI/Swagger specifications
 
 ### `/infra`
 - **Purpose**: Infrastructure as Code (IaC) definitions
@@ -46,6 +50,176 @@ This is a reduce-config-drift-demo project with two main components:
 ## Architecture
 
 This repository demonstrates configuration drift reduction patterns across API services and infrastructure. The project is organized to maintain separation between application code (`api/`) and infrastructure definitions (`infra/`).
+
+### Multi-Tenant Architecture
+
+The system implements a comprehensive multi-tenant architecture with the following core entities:
+
+#### Core Entities
+
+**User & Authentication:**
+- `user` - Core user entity
+- `external_identity` - OAuth/SSO identity providers
+- `magic_link_token` - Passwordless authentication tokens
+- `user_session` - Active user sessions
+- `user_impersonation_session` - Tracks user impersonation sessions with chaining support
+  - Fields: `id` (UUID), `original_user_id` (UUID), `impersonated_user_id` (UUID), `parent_session_id` (UUID, nullable for chaining), `environment_id` (UUID), `impersonation_type` (ENUM: 'system' | 'organization'), `permissions` (JSONB), `reason` (TEXT), `ip_address` (TEXT), `user_agent` (TEXT), `started_at` (TIMESTAMP), `expires_at` (TIMESTAMP), `ended_at` (TIMESTAMP, nullable), `is_active` (BOOLEAN), `metadata` (JSONB)
+  - Constraint: `original_user_id <> impersonated_user_id` (cannot impersonate self)
+
+**Organization & Tenancy:**
+- `organization` - Tenant entity with `default_env_id`
+- `environment` - Organizational spaces/environments (Live, Test)
+  - Each org gets 2 default environments: 'Live' (type=live), 'Test' (type=sandbox)
+- `organization_member` - User membership in organizations (tracks `last_org_id`, `last_env_id` for JWT context)
+- `group` - Hierarchical groups with `parent_id` and `hierarchy_level` (0=root, increments down)
+- `group_member` - User membership in groups
+
+**RBAC & Permissions:**
+- `role` - Named roles (e.g., "Admin", "Member", "Viewer")
+- `permission` - Granular permissions (e.g., "devices:read", "devices:manage", "sessions:read", "sessions:manage")
+- `role_permission` - Maps permissions to roles
+- `environment_role_assignment` - Assigns roles to groups or organization members within environment context
+
+**Event Logging & Webhooks:**
+- `event` - Activity log following W3C Open Social Activity Streams model
+  - Fields: `id` (UUID), `environment_id` (UUID), `verb` (VARCHAR), `actor_type` (ENUM: 'User' | 'System'), `actor` (JSONB), `object` (JSONB), `target` (JSONB), `audit` (JSONB), `description` (TEXT), `timestamp`, `organization_id` (denormalized), `organization_name` (denormalized), `environment_name` (denormalized), `is_webhook_event` (BOOLEAN)
+  - Audit field includes: HTTP request/response/headers/IP (including X-Forwarded-For)/user agent and other available data
+  - Published to message queue in CloudEvents 1.0.2 standard format
+- `event_type` - Maps API endpoints (path, method) to event verbs (e.g., "auth.logout", "device.update", "auth.register")
+- `webhook` - Webhook configurations
+- `webhook_delivery` - Webhook delivery history
+
+**Future Entities (prepared but not priority):**
+- `partner` - Partner organizations
+- `partner_user` - Partner user associations
+- `partner_branding` - Partner customization
+- `billing_account`, `billing_contract`, `plan`, `invoice`, `invoice_line_item`, `usage_record`
+
+#### API Endpoint Structure
+
+**Tenant-Scoped Endpoints:**
+- Pattern: `/orgs/{orgId}/envs/{envId}/[resource]`
+- Middleware validates `orgId` and `envId` from path against JWT token values
+- Protected by RBAC with permissions like "devices:read", "devices:manage", "sessions:read", "sessions:manage"
+
+**Administration Endpoints:**
+- Pattern: `/admin/[resource]`
+- Protected by system-level permissions: "system:admin", "system:support"
+- Separation of concerns maintained:
+  - OAPI specs: `admin-[name].yaml`
+  - Controllers: `admin.[category].controller.ts`
+  - Routes: `admin.[category].route.ts`
+  - Services: `admin.[category].service.ts`
+- Enables easy factoring out into separate service if needed
+
+#### JWT Token Structure
+
+**Standard Token (Non-Impersonation):**
+```json
+{
+  "sub": "userId",
+  "orgId": "organizationId",
+  "envId": "environmentId",
+  "user": {
+    "fullName": "User Full Name",
+    "email": "user@example.com"
+  },
+  "iat": 1234567890,
+  "exp": 1234654290
+}
+```
+
+**Impersonation Token:**
+```json
+{
+  "sub": "effectiveUserId",
+  "orgId": "organizationId",
+  "envId": "environmentId",
+  "user": {
+    "fullName": "Impersonated User Name",
+    "email": "impersonated@example.com"
+  },
+  "iat": 1234567890,
+  "exp": 1234654290,
+  "impersonation": {
+    "originalUserId": "impersonatorUserId",
+    "effectiveUserId": "impersonatedUserId",
+    "impersonationChain": [
+      {
+        "sessionId": "uuid",
+        "userId": "impersonatedUserId",
+        "startedAt": "2025-10-03T03:44:10.592Z",
+        "impersonationType": "system|organization",
+        "permissions": null
+      }
+    ]
+  }
+}
+```
+
+**Token Fields:**
+- `sub` - User ID (effective/impersonated user ID when impersonating)
+- `orgId` - Organization ID (from user's `last_org_id`)
+- `envId` - Environment ID (from user's `last_env_id`)
+- `user` - Object with `fullName` and `email` (of effective user)
+- `iat` - Issued at timestamp (Unix epoch)
+- `exp` - Expiration timestamp (Unix epoch)
+- `impersonation` (optional) - Present only when impersonating:
+  - `originalUserId` - ID of the user performing impersonation
+  - `effectiveUserId` - ID of the impersonated user (same as `sub`)
+  - `impersonationChain` - Array of impersonation session objects tracking the chain:
+    - `sessionId` - UUID of the impersonation session
+    - `userId` - User ID for this level of the chain
+    - `startedAt` - ISO 8601 timestamp when impersonation started
+    - `impersonationType` - Either 'system' or 'organization'
+    - `permissions` - Reserved for future permission overrides (currently null)
+
+#### User Impersonation
+
+The system supports hierarchical user impersonation with full audit trails for compliance and security:
+
+**Impersonation Types:**
+1. **System Impersonation** (`impersonation_type: 'system'`):
+   - Users with `system:admin` permission can impersonate ANY user across ANY organization/environment
+   - No hierarchy restrictions apply
+
+2. **Organization Impersonation** (`impersonation_type: 'organization'`):
+   - Users with `members:manage` permission can impersonate users in subordinate groups only
+   - Hierarchy rules enforced: Can only impersonate users in child groups (lower `hierarchy_level`)
+   - Cannot impersonate self, peers (same level), or superiors (higher level)
+
+**Impersonation Operations:**
+- **Start Impersonation**: Creates new `user_impersonation_session` with required `reason`, configurable `expires_at`, captures `ip_address`, `user_agent`
+- **Pop Impersonation**: Supports chained impersonation via `parent_session_id` - ends current session and reverts to parent impersonator
+- **End Impersonation**: Terminates active impersonation session(s), sets `ended_at`, `is_active = false`
+
+**Session Chaining:**
+- Multi-level impersonation supported: Admin → Manager → User
+- Each level tracked via `parent_session_id` forming a chain
+- `chainDepth` increments with each level
+- Pop operation ends current session and reissues JWT for parent session
+- Full chain preserved in `impersonationChain` array for audit trail
+
+**Event & Audit Integration:**
+- Event `actor` JSONB includes full `impersonationContext` showing the chain
+- CloudEvents 1.0.2 published to message queue include complete impersonation metadata
+- Event records capture `originalUserId` (impersonator) and `effectiveUserId` (impersonated)
+- All HTTP context preserved in `audit` field: request/response/headers/IP/user agent
+- `actor_type` remains 'User' (not 'System') during impersonation
+- `operationMetadata` tracks `requiredPermissions` and `grantedPermissions` for the operation
+
+**Security & Compliance:**
+- `reason` field required for all impersonation sessions (audit compliance)
+- Configurable session duration with system-enforced maximum
+- Cannot impersonate self (database constraint enforced)
+- Complete audit trail maintained in both `event` table and message queue
+- IP address and user agent captured for forensic analysis
+
+#### Database Conventions
+
+- Entity names: Singular, snake_case (e.g., `organization_member`, `group_member`)
+- Field names: All lowercase, snake_case
+- Denormalization strategy: Denormalize for read performance where write frequency is lower to achieve <200ms SLO
 
 ### Adapter Pattern for External Services
 

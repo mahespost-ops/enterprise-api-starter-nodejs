@@ -1,0 +1,150 @@
+# Environment Schemas
+
+Environment:
+  type: object
+  required:
+    - id
+    - organization_id
+    - name
+    - type
+    - is_default
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Environment unique identifier
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    organization_id:
+      type: string
+      format: uuid
+      description: Parent organization ID
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    name:
+      type: string
+      description: Environment name
+      minLength: 1
+      maxLength: 50
+      example: 'Live'
+    type:
+      type: string
+      enum:
+        - live
+        - sandbox
+      description: Environment type
+      example: 'live'
+    description:
+      type: string
+      description: Environment description
+      maxLength: 500
+      example: 'Production environment for live operations'
+    is_default:
+      type: boolean
+      description: Whether this is the default environment for the organization
+      example: true
+    metadata:
+      type: object
+      description: Custom metadata for environment
+      additionalProperties: true
+      example:
+        region: 'us-east-1'
+        tier: 'production'
+    is_active:
+      type: boolean
+      description: Whether the environment is active
+      default: true
+      example: true
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when environment was created (UTC)
+      example: '2025-01-15T10:30:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      description: Timestamp when environment was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when environment was soft-deleted (UTC)
+      example: null
+
+EnvironmentList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Environment'
+    pagination:
+      $ref: './common.yaml#/PaginationInfo'
+
+EnvironmentCreateRequest:
+  type: object
+  required:
+    - name
+    - type
+  properties:
+    name:
+      type: string
+      description: Environment name
+      minLength: 1
+      maxLength: 50
+      example: 'Staging'
+    type:
+      type: string
+      enum:
+        - live
+        - sandbox
+      description: Environment type
+      example: 'sandbox'
+    description:
+      type: string
+      description: Environment description
+      maxLength: 500
+      example: 'Staging environment for testing'
+    is_default:
+      type: boolean
+      description: Set as default environment for organization
+      default: false
+      example: false
+    metadata:
+      type: object
+      description: Custom metadata for environment
+      additionalProperties: true
+      example:
+        region: 'us-west-2'
+        tier: 'staging'
+
+EnvironmentUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Environment name
+      minLength: 1
+      maxLength: 50
+      example: 'Staging'
+    description:
+      type: string
+      description: Environment description
+      maxLength: 500
+      example: 'Staging environment for testing'
+    is_default:
+      type: boolean
+      description: Set as default environment for organization
+      example: false
+    metadata:
+      type: object
+      description: Custom metadata for environment
+      additionalProperties: true
+    is_active:
+      type: boolean
+      description: Whether the environment is active
+      example: true

@@ -1,0 +1,162 @@
+# Environment Endpoints
+
+listEnvironments:
+  get:
+    tags:
+      - Environments
+    summary: List organization environments
+    description: Get all environments for a specific organization
+    operationId: listEnvironments
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/includeInactive'
+    responses:
+      '200':
+        description: Environments retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/environment.yaml#/EnvironmentList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getEnvironment:
+  get:
+    tags:
+      - Environments
+    summary: Get environment details
+    description: Retrieve detailed information about a specific environment
+    operationId: getEnvironment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+    responses:
+      '200':
+        description: Environment retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/environment.yaml#/Environment'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+  put:
+    tags:
+      - Environments
+    summary: Update environment
+    description: Update environment details (requires envs:manage permission)
+    operationId: updateEnvironment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/environment.yaml#/EnvironmentUpdateRequest'
+    responses:
+      '200':
+        description: Environment updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/environment.yaml#/Environment'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+  delete:
+    tags:
+      - Environments
+    summary: Delete environment
+    description: |
+      Soft-delete an environment (requires envs:manage permission).
+      Cannot delete default environment or last remaining environment.
+    operationId: deleteEnvironment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+    responses:
+      '204':
+        description: Environment deleted successfully
+      '400':
+        description: Cannot delete default or last environment
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 400
+              message: Bad Request
+              error: Cannot delete default environment or last remaining environment
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createEnvironment:
+  post:
+    tags:
+      - Environments
+    summary: Create environment
+    description: Create a new environment for an organization (requires envs:manage permission)
+    operationId: createEnvironment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/environment.yaml#/EnvironmentCreateRequest'
+    responses:
+      '201':
+        description: Environment created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/environment.yaml#/Environment'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

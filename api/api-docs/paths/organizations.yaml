@@ -1,0 +1,187 @@
+# Organization Endpoints
+
+listOrganizations:
+  get:
+    tags:
+      - Organizations
+    summary: List user's organizations
+    description: Get all organizations the authenticated user is a member of
+    operationId: listOrganizations
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - $ref: '../components/parameters.yaml#/includeInactive'
+    responses:
+      '200':
+        description: Organizations retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/OrganizationList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getOrganization:
+  get:
+    tags:
+      - Organizations
+    summary: Get organization details
+    description: Retrieve detailed information about a specific organization
+    operationId: getOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    responses:
+      '200':
+        description: Organization retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+  put:
+    tags:
+      - Organizations
+    summary: Update organization
+    description: Update organization details (requires orgs:manage permission)
+    operationId: updateOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/organization.yaml#/OrganizationUpdateRequest'
+    responses:
+      '200':
+        description: Organization updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+  delete:
+    tags:
+      - Organizations
+    summary: Delete organization
+    description: Soft-delete an organization (requires orgs:manage permission)
+    operationId: deleteOrganization
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    responses:
+      '204':
+        description: Organization deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createOrganization:
+  post:
+    tags:
+      - Organizations
+    summary: Create organization
+    description: |
+      Create a new organization. The authenticated user becomes the owner.
+      Automatically creates default 'Live' and 'Test' environments.
+    operationId: createOrganization
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/organization.yaml#/OrganizationCreateRequest'
+    responses:
+      '201':
+        description: Organization created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '409':
+        description: Organization slug already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: Organization with this slug already exists
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+switchContext:
+  post:
+    tags:
+      - Organizations
+    summary: Switch organization/environment context
+    description: |
+      Switch the user's current organization and environment context.
+      Updates last_org_id and last_env_id on organization_member.
+      Returns new JWT with updated orgId and envId claims.
+    operationId: switchContext
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/organization.yaml#/SwitchContextRequest'
+    responses:
+      '200':
+        description: Context switched successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/SwitchContextResponse'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

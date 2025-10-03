@@ -37,16 +37,20 @@ security:
   - bearerAuth: []
 
 tags:
+  - name: Health
+    description: Health check endpoints
   - name: Authentication
     description: Passwordless authentication with magic tokens
+  - name: Organizations
+    description: Multi-tenant organization management
+  - name: Environments
+    description: Environment management within organizations
+  - name: Users
+    description: User management
   - name: Devices
     description: Device management and fingerprinting
   - name: Sessions
     description: Session management and monitoring
-  - name: Users
-    description: User management
-  - name: Health
-    description: Health check endpoints
 
 paths:
   /health:
@@ -61,6 +65,32 @@ paths:
     $ref: './paths/auth.yaml#/refresh'
   /auth/logout:
     $ref: './paths/auth.yaml#/logout'
+  /orgs:
+    get:
+      $ref: './paths/organizations.yaml#/listOrganizations/get'
+    post:
+      $ref: './paths/organizations.yaml#/createOrganization/post'
+  /orgs/{orgId}:
+    get:
+      $ref: './paths/organizations.yaml#/getOrganization/get'
+    put:
+      $ref: './paths/organizations.yaml#/getOrganization/put'
+    delete:
+      $ref: './paths/organizations.yaml#/getOrganization/delete'
+  /orgs/{orgId}/switch:
+    $ref: './paths/organizations.yaml#/switchContext'
+  /orgs/{orgId}/envs:
+    get:
+      $ref: './paths/environments.yaml#/listEnvironments/get'
+    post:
+      $ref: './paths/environments.yaml#/createEnvironment/post'
+  /orgs/{orgId}/envs/{envId}:
+    get:
+      $ref: './paths/environments.yaml#/getEnvironment/get'
+    put:
+      $ref: './paths/environments.yaml#/getEnvironment/put'
+    delete:
+      $ref: './paths/environments.yaml#/getEnvironment/delete'
   /devices:
     $ref: './paths/devices.yaml#/listDevices'
   /devices/{id}:
@@ -109,7 +139,13 @@ components:
       $ref: './components/schemas/common.yaml#/Error'
     ValidationError:
       $ref: './components/schemas/common.yaml#/ValidationError'
+    PaginationInfo:
+      $ref: './components/schemas/common.yaml#/PaginationInfo'
     User:
       $ref: './components/schemas/user.yaml#/User'
     AuthResponse:
       $ref: './components/schemas/auth.yaml#/AuthResponse'
+    Organization:
+      $ref: './components/schemas/organization.yaml#/Organization'
+    Environment:
+      $ref: './components/schemas/environment.yaml#/Environment'
