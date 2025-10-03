@@ -1,0 +1,198 @@
+# Organization Member Schemas
+
+OrganizationMember:
+  type: object
+  description: Organization member with role assignments and last context tracking
+  required:
+    - id
+    - organization_id
+    - user_id
+    - user
+    - last_org_id
+    - joined_at
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Organization member unique identifier
+      example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+    organization_id:
+      type: string
+      format: uuid
+      description: Organization ID
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    user_id:
+      type: string
+      format: uuid
+      description: User ID
+      example: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+    user:
+      $ref: './user.yaml#/User'
+      description: Associated user object (denormalized for read performance)
+    last_org_id:
+      type: string
+      format: uuid
+      description: Last organization context for JWT token
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    last_env_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Last environment context for JWT token
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    role:
+      type: string
+      description: Member role (legacy, use environment_role_assignment instead)
+      enum:
+        - owner
+        - admin
+        - member
+        - viewer
+      example: 'member'
+      deprecated: true
+    status:
+      type: string
+      description: Member status
+      enum:
+        - active
+        - invited
+        - suspended
+      example: 'active'
+      default: 'active'
+    invited_by:
+      type: string
+      format: uuid
+      nullable: true
+      description: User ID who invited this member
+      example: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
+    invitation_token:
+      type: string
+      nullable: true
+      description: Invitation token (only present if status=invited)
+      example: 'inv_a7b3c4d5e6f7890123456789abcdef01'
+      writeOnly: true
+    invitation_expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Invitation expiration timestamp (UTC)
+      example: '2025-10-09T12:00:00Z'
+    joined_at:
+      type: string
+      format: date-time
+      description: Timestamp when user joined (UTC)
+      example: '2025-10-02T14:45:00Z'
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when membership was created (UTC)
+      example: '2025-10-02T14:00:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      description: Timestamp when membership was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when membership was soft-deleted (UTC)
+      example: null
+
+OrganizationMemberList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/OrganizationMember'
+    pagination:
+      $ref: './common.yaml#/PaginationInfo'
+
+OrganizationMemberInviteRequest:
+  type: object
+  required:
+    - email
+  properties:
+    email:
+      type: string
+      format: email
+      description: Email address to invite
+      example: 'newmember@example.com'
+    given_name:
+      type: string
+      description: Invitee's given name (optional)
+      minLength: 1
+      maxLength: 50
+      example: 'Jane'
+    family_name:
+      type: string
+      description: Invitee's family name (optional)
+      minLength: 1
+      maxLength: 50
+      example: 'Smith'
+    role:
+      type: string
+      description: Initial role (legacy)
+      enum:
+        - admin
+        - member
+        - viewer
+      example: 'member'
+      default: 'member'
+      deprecated: true
+    send_email:
+      type: boolean
+      description: Whether to send invitation email
+      example: true
+      default: true
+    expires_in_days:
+      type: integer
+      description: Invitation validity period in days (1-30)
+      minimum: 1
+      maximum: 30
+      example: 7
+      default: 7
+
+OrganizationMemberUpdateRequest:
+  type: object
+  properties:
+    role:
+      type: string
+      description: Member role (legacy)
+      enum:
+        - admin
+        - member
+        - viewer
+      example: 'admin'
+      deprecated: true
+    status:
+      type: string
+      description: Member status
+      enum:
+        - active
+        - suspended
+      example: 'active'
+
+OrganizationMemberInviteResponse:
+  type: object
+  required:
+    - message
+    - member
+  properties:
+    message:
+      type: string
+      description: Success message
+      example: 'Member invited successfully'
+    member:
+      $ref: '#/OrganizationMember'
+    invitation_url:
+      type: string
+      format: uri
+      description: Invitation URL (only if send_email=false)
+      example: 'https://app.example.com/accept-invite?token=inv_abc123'

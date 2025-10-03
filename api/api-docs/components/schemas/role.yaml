@@ -1,0 +1,225 @@
+# Role and Permission Schemas
+
+Role:
+  type: object
+  description: |
+    Named role for RBAC (globally scoped, not environment-scoped).
+    Future: CustomRole may be added for tenant-scoped roles.
+  required:
+    - id
+    - name
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Role unique identifier
+      example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+    name:
+      type: string
+      description: Role name
+      minLength: 1
+      maxLength: 50
+      example: 'Device Administrator'
+    description:
+      type: string
+      description: Role description
+      maxLength: 500
+      example: 'Full access to device management'
+    is_system:
+      type: boolean
+      description: Whether this is a system-defined role (cannot be deleted)
+      default: false
+      example: false
+      readOnly: true
+    permissions:
+      type: array
+      description: Array of permissions granted to this role (denormalized)
+      items:
+        $ref: '#/Permission'
+      readOnly: true
+    permission_count:
+      type: integer
+      description: Number of permissions (denormalized for performance)
+      minimum: 0
+      example: 5
+      readOnly: true
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when role was created (UTC)
+      example: '2025-10-02T14:00:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      description: Timestamp when role was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when role was soft-deleted (UTC)
+      example: null
+
+RoleList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Role'
+    pagination:
+      $ref: './common.yaml#/PaginationInfo'
+
+RoleCreateRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: Role name
+      minLength: 1
+      maxLength: 50
+      example: 'Device Administrator'
+    description:
+      type: string
+      description: Role description
+      maxLength: 500
+      example: 'Full access to device management'
+
+RoleUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Role name
+      minLength: 1
+      maxLength: 50
+      example: 'Device Administrator'
+    description:
+      type: string
+      description: Role description
+      maxLength: 500
+      example: 'Full access to device management'
+
+Permission:
+  type: object
+  description: Granular permission for access control (globally scoped)
+  required:
+    - id
+    - key
+    - name
+    - resource
+    - action
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Permission unique identifier
+      example: 'd7ee401b-1ebc-6bbb-2245-dfa7h9876335'
+    key:
+      type: string
+      description: 'Permission key in format resource:action'
+      pattern: '^[a-z_]+:[a-z_]+$'
+      example: 'devices:manage'
+    name:
+      type: string
+      description: Human-readable permission name
+      example: 'Manage Devices'
+    description:
+      type: string
+      description: Permission description
+      maxLength: 500
+      example: 'Create, update, and delete devices'
+    resource:
+      type: string
+      description: Resource type this permission applies to
+      example: 'devices'
+    action:
+      type: string
+      description: Action allowed by this permission
+      enum:
+        - read
+        - manage
+        - assign
+      example: 'manage'
+    is_system:
+      type: boolean
+      description: Whether this is a system-defined permission (cannot be deleted)
+      default: true
+      example: true
+      readOnly: true
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when permission was created (UTC)
+      example: '2025-10-02T14:00:00Z'
+
+PermissionList:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Permission'
+
+RolePermission:
+  type: object
+  description: Association between a role and a permission
+  required:
+    - id
+    - role_id
+    - permission_id
+    - permission
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Role permission unique identifier
+      example: 'e8ff512c-2fcd-7ccc-3356-egb8i0987446'
+    role_id:
+      type: string
+      format: uuid
+      description: Role ID
+      example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+    permission_id:
+      type: string
+      format: uuid
+      description: Permission ID
+      example: 'd7ee401b-1ebc-6bbb-2245-dfa7h9876335'
+    permission:
+      $ref: '#/Permission'
+      description: Permission object (denormalized)
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when permission was added to role (UTC)
+      example: '2025-10-02T14:45:00Z'
+
+RolePermissionList:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/RolePermission'
+
+RolePermissionAddRequest:
+  type: object
+  required:
+    - permission_id
+  properties:
+    permission_id:
+      type: string
+      format: uuid
+      description: Permission ID to add to the role
+      example: 'd7ee401b-1ebc-6bbb-2245-dfa7h9876335'

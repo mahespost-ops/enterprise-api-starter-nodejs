@@ -1,0 +1,178 @@
+# Organization Member Endpoints
+
+listMembers:
+  get:
+    tags:
+      - Members
+    summary: List organization members
+    description: Get all members of the organization (requires members:read permission)
+    operationId: listMembers
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - $ref: '../components/parameters.yaml#/status'
+      - name: role
+        in: query
+        required: false
+        description: Filter by member role (legacy)
+        schema:
+          type: string
+          enum:
+            - owner
+            - admin
+            - member
+            - viewer
+        example: 'member'
+    responses:
+      '200':
+        description: Members retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMemberList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getMember:
+  get:
+    tags:
+      - Members
+    summary: Get member details
+    description: Retrieve detailed information about a specific organization member (requires members:read permission)
+    operationId: getMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '200':
+        description: Member retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMember'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateMember:
+  put:
+    tags:
+      - Members
+    summary: Update member
+    description: Update organization member details (requires members:manage permission)
+    operationId: updateMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/member.yaml#/OrganizationMemberUpdateRequest'
+    responses:
+      '200':
+        description: Member updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMember'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+removeMember:
+  delete:
+    tags:
+      - Members
+    summary: Remove member
+    description: |
+      Remove a member from the organization (requires members:manage permission).
+      Soft-deletes the organization_member record and all associated group memberships.
+    operationId: removeMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '204':
+        description: Member removed successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+inviteMember:
+  post:
+    tags:
+      - Members
+    summary: Invite member
+    description: |
+      Invite a new member to the organization (requires members:manage permission).
+      Creates organization_member with status='invited' and sends invitation email.
+      If user doesn't exist, creates user account with status='invited'.
+    operationId: inviteMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/member.yaml#/OrganizationMemberInviteRequest'
+    responses:
+      '201':
+        description: Member invited successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMemberInviteResponse'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '409':
+        description: Member already exists in organization
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: User is already a member of this organization
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

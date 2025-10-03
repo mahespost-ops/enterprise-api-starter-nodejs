@@ -1,0 +1,230 @@
+# Group Schemas
+
+Group:
+  type: object
+  description: Hierarchical group within an organization for role-based access control
+  required:
+    - id
+    - organization_id
+    - name
+    - hierarchy_level
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Group unique identifier
+      example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+    organization_id:
+      type: string
+      format: uuid
+      description: Organization ID
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    name:
+      type: string
+      description: Group name
+      minLength: 1
+      maxLength: 100
+      example: 'Engineering Team'
+    description:
+      type: string
+      description: Group description
+      maxLength: 500
+      example: 'Software engineering department'
+    parent_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Parent group ID (null for root-level groups)
+      example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+    hierarchy_level:
+      type: integer
+      description: Hierarchy level (0=root, increments down the tree)
+      minimum: 0
+      example: 1
+    metadata:
+      type: object
+      description: Custom metadata for group
+      additionalProperties: true
+      example:
+        department: 'Engineering'
+        cost_center: 'TECH-001'
+    member_count:
+      type: integer
+      description: Number of direct members (denormalized for performance)
+      minimum: 0
+      example: 15
+      readOnly: true
+    is_active:
+      type: boolean
+      description: Whether the group is active
+      default: true
+      example: true
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when group was created (UTC)
+      example: '2025-10-02T14:00:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      description: Timestamp when group was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when group was soft-deleted (UTC)
+      example: null
+
+GroupList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Group'
+    pagination:
+      $ref: './common.yaml#/PaginationInfo'
+
+GroupWithChildren:
+  type: object
+  description: |
+    Group with nested children (hierarchical representation).
+    Note: Children property may contain nested groups (recursive structure).
+  allOf:
+    - $ref: '#/Group'
+    - type: object
+      properties:
+        children:
+          type: array
+          description: Child groups (may be recursively nested)
+          items:
+            type: object
+            description: Nested group object (same structure as Group)
+
+GroupCreateRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: Group name
+      minLength: 1
+      maxLength: 100
+      example: 'Engineering Team'
+    description:
+      type: string
+      description: Group description
+      maxLength: 500
+      example: 'Software engineering department'
+    parent_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Parent group ID (null for root-level group)
+      example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+    metadata:
+      type: object
+      description: Custom metadata for group
+      additionalProperties: true
+      example:
+        department: 'Engineering'
+
+GroupUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Group name
+      minLength: 1
+      maxLength: 100
+      example: 'Engineering Team'
+    description:
+      type: string
+      description: Group description
+      maxLength: 500
+      example: 'Software engineering department'
+    parent_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Parent group ID (null to move to root, cannot create circular references)
+      example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+    metadata:
+      type: object
+      description: Custom metadata for group
+      additionalProperties: true
+    is_active:
+      type: boolean
+      description: Whether the group is active
+      example: true
+
+GroupMember:
+  type: object
+  description: Association between a user and a group
+  required:
+    - id
+    - group_id
+    - user_id
+    - user
+    - created_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Group member unique identifier
+      example: 'c5dd301a-0dab-5aaa-1134-cef6g8765224'
+    group_id:
+      type: string
+      format: uuid
+      description: Group ID
+      example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+    user_id:
+      type: string
+      format: uuid
+      description: User ID
+      example: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+    user:
+      $ref: './user.yaml#/User'
+      description: Associated user object (denormalized for performance)
+    added_by:
+      type: string
+      format: uuid
+      nullable: true
+      description: User ID who added this member
+      example: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when member was added (UTC)
+      example: '2025-10-02T14:45:00Z'
+
+GroupMemberList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/GroupMember'
+    pagination:
+      $ref: './common.yaml#/PaginationInfo'
+
+GroupMemberAddRequest:
+  type: object
+  required:
+    - user_id
+  properties:
+    user_id:
+      type: string
+      format: uuid
+      description: User ID to add to the group (must be an organization member)
+      example: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'

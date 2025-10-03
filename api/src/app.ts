@@ -121,7 +121,11 @@ async function createApp(): Promise<Application> {
 
       logger.info('API documentation enabled at /api-docs');
     } catch (error) {
-      logger.warn('Failed to load API documentation', { error });
+      logger.error('Failed to load API documentation', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        details: error,
+      });
     }
   }
 

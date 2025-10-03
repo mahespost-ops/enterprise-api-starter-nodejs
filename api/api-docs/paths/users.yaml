@@ -1,0 +1,141 @@
+# User Endpoints (Tenant-Scoped)
+
+getCurrentUser:
+  get:
+    tags:
+      - Users
+    summary: Get current user profile
+    description: Retrieve the authenticated user's profile information
+    operationId: getCurrentUser
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: User profile retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateCurrentUser:
+  put:
+    tags:
+      - Users
+    summary: Update current user profile
+    description: Update the authenticated user's profile information
+    operationId: updateCurrentUser
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user.yaml#/UserUpdate'
+    responses:
+      '200':
+        description: User profile updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserOrganizations:
+  get:
+    tags:
+      - Users
+    summary: Get user's organizations
+    description: Retrieve all organizations the authenticated user is a member of
+    operationId: getCurrentUserOrganizations
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/includeInactive'
+    responses:
+      '200':
+        description: User organizations retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/OrganizationList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserPermissions:
+  get:
+    tags:
+      - Users
+    summary: Get user's effective permissions
+    description: |
+      Retrieve the authenticated user's effective permissions for the current organization/environment context.
+      Permissions are calculated by merging Role permissions and future CustomRole permissions
+      based on member and group assignments.
+    operationId: getCurrentUserPermissions
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: orgId
+        in: query
+        required: false
+        description: Filter permissions for specific organization (defaults to JWT orgId)
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: envId
+        in: query
+        required: false
+        description: Filter permissions for specific environment (defaults to JWT envId)
+        schema:
+          type: string
+          format: uuid
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    responses:
+      '200':
+        description: User permissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - context
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/role.yaml#/Permission'
+                context:
+                  type: object
+                  description: Context for which permissions were calculated
+                  properties:
+                    organization_id:
+                      type: string
+                      format: uuid
+                    organization_name:
+                      type: string
+                    environment_id:
+                      type: string
+                      format: uuid
+                    environment_name:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

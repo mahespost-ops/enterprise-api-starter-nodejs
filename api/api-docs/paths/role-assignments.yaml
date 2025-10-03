@@ -1,0 +1,132 @@
+# Role Assignment Endpoints
+
+listRoleAssignments:
+  get:
+    tags:
+      - Role Assignments
+    summary: List role assignments
+    description: |
+      Get all role assignments for an environment (requires roles:assign permission).
+      Returns assignments for both members and groups.
+    operationId: listRoleAssignments
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: membership_id
+        in: query
+        required: false
+        description: Filter by organization member ID
+        schema:
+          type: string
+          format: uuid
+        example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+      - name: group_id
+        in: query
+        required: false
+        description: Filter by group ID
+        schema:
+          type: string
+          format: uuid
+        example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+      - name: role_id
+        in: query
+        required: false
+        description: Filter by role ID
+        schema:
+          type: string
+          format: uuid
+        example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+    responses:
+      '200':
+        description: Role assignments retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role-assignment.yaml#/RoleAssignmentList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createRoleAssignment:
+  post:
+    tags:
+      - Role Assignments
+    summary: Create role assignment
+    description: |
+      Assign a role to a member or group within an environment (requires roles:assign permission).
+      Must specify either membership_id OR group_id (not both).
+    operationId: createRoleAssignment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/role-assignment.yaml#/RoleAssignmentCreateRequest'
+    responses:
+      '201':
+        description: Role assignment created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role-assignment.yaml#/RoleAssignment'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: Role, member, or group not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '409':
+        description: Role already assigned to this member/group
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: Role is already assigned to this member/group
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteRoleAssignment:
+  delete:
+    tags:
+      - Role Assignments
+    summary: Delete role assignment
+    description: Remove a role assignment from a member or group (requires roles:assign permission)
+    operationId: deleteRoleAssignment
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/assignmentId'
+    responses:
+      '204':
+        description: Role assignment deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

@@ -45,6 +45,14 @@ tags:
     description: Multi-tenant organization management
   - name: Environments
     description: Environment management within organizations
+  - name: Members
+    description: Organization member management and invitations
+  - name: Groups
+    description: Hierarchical group management for RBAC
+  - name: Admin - Roles & Permissions
+    description: System-wide role and permission management (requires system:admin or system:support)
+  - name: Role Assignments
+    description: Environment-scoped role assignments to members and groups
   - name: Users
     description: User management
   - name: Devices
@@ -65,6 +73,17 @@ paths:
     $ref: './paths/auth.yaml#/refresh'
   /auth/logout:
     $ref: './paths/auth.yaml#/logout'
+  /users/me:
+    get:
+      $ref: './paths/users.yaml#/getCurrentUser/get'
+    put:
+      $ref: './paths/users.yaml#/updateCurrentUser/put'
+  /users/me/organizations:
+    get:
+      $ref: './paths/users.yaml#/getCurrentUserOrganizations/get'
+  /users/me/permissions:
+    get:
+      $ref: './paths/users.yaml#/getCurrentUserPermissions/get'
   /orgs:
     get:
       $ref: './paths/organizations.yaml#/listOrganizations/get'
@@ -91,6 +110,71 @@ paths:
       $ref: './paths/environments.yaml#/getEnvironment/put'
     delete:
       $ref: './paths/environments.yaml#/getEnvironment/delete'
+  /orgs/{orgId}/members:
+    get:
+      $ref: './paths/members.yaml#/listMembers/get'
+    post:
+      $ref: './paths/members.yaml#/inviteMember/post'
+  /orgs/{orgId}/members/{memberId}:
+    get:
+      $ref: './paths/members.yaml#/getMember/get'
+    put:
+      $ref: './paths/members.yaml#/updateMember/put'
+    delete:
+      $ref: './paths/members.yaml#/removeMember/delete'
+  /orgs/{orgId}/groups:
+    get:
+      $ref: './paths/groups.yaml#/listGroups/get'
+    post:
+      $ref: './paths/groups.yaml#/createGroup/post'
+  /orgs/{orgId}/groups/{groupId}:
+    get:
+      $ref: './paths/groups.yaml#/getGroup/get'
+    put:
+      $ref: './paths/groups.yaml#/updateGroup/put'
+    delete:
+      $ref: './paths/groups.yaml#/deleteGroup/delete'
+  /orgs/{orgId}/groups/{groupId}/members:
+    get:
+      $ref: './paths/groups.yaml#/listGroupMembers/get'
+    post:
+      $ref: './paths/groups.yaml#/addGroupMember/post'
+  /orgs/{orgId}/groups/{groupId}/members/{userId}:
+    delete:
+      $ref: './paths/groups.yaml#/removeGroupMember/delete'
+  /orgs/{orgId}/groups/{groupId}/children:
+    $ref: './paths/groups.yaml#/getGroupChildren'
+  /admin/roles:
+    get:
+      $ref: './paths/admin-roles.yaml#/listRoles/get'
+    post:
+      $ref: './paths/admin-roles.yaml#/createRole/post'
+  /admin/roles/{roleId}:
+    get:
+      $ref: './paths/admin-roles.yaml#/getRole/get'
+    put:
+      $ref: './paths/admin-roles.yaml#/updateRole/put'
+    delete:
+      $ref: './paths/admin-roles.yaml#/deleteRole/delete'
+  /admin/roles/{roleId}/permissions:
+    get:
+      $ref: './paths/admin-roles.yaml#/listRolePermissions/get'
+    post:
+      $ref: './paths/admin-roles.yaml#/addRolePermission/post'
+  /admin/roles/{roleId}/permissions/{permissionId}:
+    delete:
+      $ref: './paths/admin-roles.yaml#/removeRolePermission/delete'
+  /admin/permissions:
+    get:
+      $ref: './paths/admin-roles.yaml#/listPermissions/get'
+  /orgs/{orgId}/envs/{envId}/assignments:
+    get:
+      $ref: './paths/role-assignments.yaml#/listRoleAssignments/get'
+    post:
+      $ref: './paths/role-assignments.yaml#/createRoleAssignment/post'
+  /orgs/{orgId}/envs/{envId}/assignments/{assignmentId}:
+    delete:
+      $ref: './paths/role-assignments.yaml#/deleteRoleAssignment/delete'
   /devices:
     $ref: './paths/devices.yaml#/listDevices'
   /devices/{id}:
@@ -149,3 +233,13 @@ components:
       $ref: './components/schemas/organization.yaml#/Organization'
     Environment:
       $ref: './components/schemas/environment.yaml#/Environment'
+    OrganizationMember:
+      $ref: './components/schemas/member.yaml#/OrganizationMember'
+    Group:
+      $ref: './components/schemas/group.yaml#/Group'
+    Role:
+      $ref: './components/schemas/role.yaml#/Role'
+    Permission:
+      $ref: './components/schemas/role.yaml#/Permission'
+    RoleAssignment:
+      $ref: './components/schemas/role-assignment.yaml#/RoleAssignment'

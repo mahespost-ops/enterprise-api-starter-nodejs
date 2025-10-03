@@ -25,19 +25,32 @@ Each tag group has corresponding files:
 - ✅ `components/schemas/session.yaml` - Session schemas
 - ✅ `components/schemas/organization.yaml` - **NEW**: Organization schemas
 - ✅ `components/schemas/environment.yaml` - **NEW**: Environment schemas
+- ✅ `components/schemas/member.yaml` - **NEW**: Organization member schemas
+- ✅ `components/schemas/group.yaml` - **NEW**: Hierarchical group schemas
+- ✅ `components/schemas/role.yaml` - **NEW**: Role and permission schemas (admin-scoped)
 - ✅ `paths/health.yaml` - Health endpoints
 - ✅ `paths/auth.yaml` - Auth endpoints
 - ✅ `paths/devices.yaml` - Device endpoints
 - ✅ `paths/sessions.yaml` - Session endpoints
 - ✅ `paths/organizations.yaml` - **NEW**: Organization endpoints
 - ✅ `paths/environments.yaml` - **NEW**: Environment endpoints
+- ✅ `paths/members.yaml` - **NEW**: Organization member endpoints
+- ✅ `paths/groups.yaml` - **NEW**: Hierarchical group endpoints
+- ✅ `paths/users.yaml` - **NEW**: Tenant-scoped user endpoints
+- ✅ `paths/admin-roles.yaml` - **NEW**: Admin role and permission endpoints
+- ✅ `paths/role-assignments.yaml` - **NEW**: Environment-scoped role assignments
+- ✅ `components/schemas/role-assignment.yaml` - **NEW**: Role assignment schemas
 
 ### Tags Implemented
 - **Health** - Health checks
 - **Authentication** - Register, login, logout, token management
 - **Organizations** - Multi-tenant organization management
 - **Environments** - Environment management within organizations
-- **Users** - User profiles (OIDC compliant)
+- **Members** - Organization member management and invitations
+- **Groups** - Hierarchical group management for RBAC
+- **Users** - Tenant-scoped user profile and permissions
+- **Admin - Roles & Permissions** - System-wide role and permission management
+- **Role Assignments** - Environment-scoped role assignments to members and groups
 - **Devices** - Device management with fingerprinting
 - **Sessions** - Session management and revocation
 
@@ -67,6 +80,46 @@ Each tag group has corresponding files:
 - `PUT /orgs/{orgId}/envs/{envId}` - Update environment
 - `DELETE /orgs/{orgId}/envs/{envId}` - Delete environment
 
+**Members:**
+- `GET /orgs/{orgId}/members` - List members
+- `GET /orgs/{orgId}/members/{memberId}` - Get member
+- `POST /orgs/{orgId}/members` - Invite member
+- `PUT /orgs/{orgId}/members/{memberId}` - Update member
+- `DELETE /orgs/{orgId}/members/{memberId}` - Remove member
+
+**Groups:**
+- `GET /orgs/{orgId}/groups` - List groups (hierarchical)
+- `GET /orgs/{orgId}/groups/{groupId}` - Get group
+- `POST /orgs/{orgId}/groups` - Create group
+- `PUT /orgs/{orgId}/groups/{groupId}` - Update group
+- `DELETE /orgs/{orgId}/groups/{groupId}` - Delete group
+- `GET /orgs/{orgId}/groups/{groupId}/members` - List group members
+- `POST /orgs/{orgId}/groups/{groupId}/members` - Add member
+- `DELETE /orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member
+- `GET /orgs/{orgId}/groups/{groupId}/children` - Get child groups
+
+**Users:**
+- `GET /users/me` - Get current user profile
+- `PUT /users/me` - Update current user profile
+- `GET /users/me/organizations` - Get user's organizations
+- `GET /users/me/permissions` - Get user's effective permissions
+
+**Admin - Roles & Permissions:**
+- `GET /admin/roles` - List roles
+- `GET /admin/roles/{roleId}` - Get role
+- `POST /admin/roles` - Create role
+- `PUT /admin/roles/{roleId}` - Update role
+- `DELETE /admin/roles/{roleId}` - Delete role
+- `GET /admin/roles/{roleId}/permissions` - List role permissions
+- `POST /admin/roles/{roleId}/permissions` - Add permission
+- `DELETE /admin/roles/{roleId}/permissions/{permissionId}` - Remove permission
+- `GET /admin/permissions` - List all permissions
+
+**Role Assignments:**
+- `GET /orgs/{orgId}/envs/{envId}/assignments` - List role assignments
+- `POST /orgs/{orgId}/envs/{envId}/assignments` - Create role assignment
+- `DELETE /orgs/{orgId}/envs/{envId}/assignments/{assignmentId}` - Delete assignment
+
 **Devices:**
 - `GET /devices` - List devices
 - `PUT /devices/{id}` - Update device
@@ -91,80 +144,36 @@ The User schema now follows industry standards for maximum OAuth/SSO compatibili
 
 None currently.
 
+## Bug Fixes 🐛
+
+- ✅ Fixed circular reference in `GroupWithChildren` schema (removed self-referencing `$ref`)
+- ✅ Fixed endpoint reference format for `/orgs/{orgId}/groups/{groupId}/children`
+- ✅ Enhanced error logging in `app.ts` to show full stack traces for Swagger errors
+- ✅ API documentation now loads successfully at `/api-docs`
+
+## Endpoint Architecture
+
+### Admin-Scoped Tags (System-Level Management)
+Protected by `system:admin` or `system:support` permissions:
+- **Admin - Organizations** - Manage all organizations
+- **Admin - Environments** - Manage all environments
+- **Admin - Groups** - Manage all groups across organizations
+- **Admin - Members** - Manage all members across organizations
+- **Admin - Users** - Manage all user accounts
+- **Admin - Devices** - Manage all devices
+- **Admin - Sessions** - Manage all sessions
+- **Admin - Roles & Permissions** - Manage global roles and permissions
+
+### Tenant-Scoped Tags (Organization/Environment Context)
+Protected by context-specific permissions (e.g., `members:read`, `groups:manage`):
+- **Authentication** - Register, login, logout, token management
+- **Users** - Current user profile (`/users/me/*`)
+- **Members** - Organization member management (`/orgs/{orgId}/members/*`) - requires `members:manage`
+- **Groups** - Hierarchical groups (`/orgs/{orgId}/groups/*`) - requires `groups:manage`
+
+**Note:** Members and Groups may be consolidated as they both manage member associations with `members:manage` permission scope.
+
 ## Pending 📋
-
-### Members Tag
-**Files to create:**
-- `paths/members.yaml`
-- `components/schemas/member.yaml`
-
-**Endpoints:**
-- `GET /orgs/{orgId}/members` - List members
-- `GET /orgs/{orgId}/members/{memberId}` - Get member
-- `POST /orgs/{orgId}/members` - Invite member
-- `PUT /orgs/{orgId}/members/{memberId}` - Update member
-- `DELETE /orgs/{orgId}/members/{memberId}` - Remove member
-
-**Permissions:** `members:read`, `members:manage`
-
-### Groups Tag
-**Files to create:**
-- `paths/groups.yaml`
-- `components/schemas/group.yaml`
-
-**Endpoints:**
-- `GET /orgs/{orgId}/groups` - List groups (hierarchical)
-- `GET /orgs/{orgId}/groups/{groupId}` - Get group
-- `POST /orgs/{orgId}/groups` - Create group
-- `PUT /orgs/{orgId}/groups/{groupId}` - Update group
-- `DELETE /orgs/{orgId}/groups/{groupId}` - Delete group
-- `GET /orgs/{orgId}/groups/{groupId}/members` - List group members
-- `POST /orgs/{orgId}/groups/{groupId}/members` - Add member
-- `DELETE /orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member
-- `GET /orgs/{orgId}/groups/{groupId}/children` - Get child groups
-
-**Permissions:** `groups:read`, `groups:manage`
-**Note:** Hierarchy with `parent_id` and `hierarchy_level`
-
-### Roles Tag
-**Files to create:**
-- `paths/roles.yaml`
-- `components/schemas/role.yaml`
-
-**Endpoints:**
-- `GET /orgs/{orgId}/envs/{envId}/roles` - List roles
-- `GET /orgs/{orgId}/envs/{envId}/roles/{roleId}` - Get role
-- `POST /orgs/{orgId}/envs/{envId}/roles` - Create role
-- `PUT /orgs/{orgId}/envs/{envId}/roles/{roleId}` - Update role
-- `DELETE /orgs/{orgId}/envs/{envId}/roles/{roleId}` - Delete role
-- `GET /orgs/{orgId}/envs/{envId}/roles/{roleId}/permissions` - List role permissions
-- `POST /orgs/{orgId}/envs/{envId}/roles/{roleId}/permissions` - Add permission
-- `DELETE /orgs/{orgId}/envs/{envId}/roles/{roleId}/permissions/{permissionId}` - Remove permission
-
-**Permissions:** `roles:read`, `roles:manage`
-
-### Permissions Tag
-**Files to create:**
-- `paths/permissions.yaml`
-- `components/schemas/permission.yaml`
-
-**Endpoints:**
-- `GET /permissions` - List all permissions (system-wide)
-
-**Permissions:** `permissions:read`
-
-### Role Assignments Tag
-**Files to create:**
-- `paths/role-assignments.yaml`
-- `components/schemas/role-assignment.yaml`
-
-**Endpoints:**
-- `GET /orgs/{orgId}/envs/{envId}/assignments` - List assignments
-- `POST /orgs/{orgId}/envs/{envId}/assignments` - Create assignment
-- `DELETE /orgs/{orgId}/envs/{envId}/assignments/{assignmentId}` - Delete assignment
-
-**Permissions:** `roles:assign`
-**Note:** Polymorphic - `membership_id` OR `group_id` (nullable, one required)
 
 ### Impersonation Tag
 **Files to create:**

@@ -1,0 +1,336 @@
+# Group Endpoints
+
+listGroups:
+  get:
+    tags:
+      - Groups
+    summary: List groups
+    description: |
+      Get all groups in the organization (requires groups:read permission).
+      Returns hierarchical list by default, sorted by hierarchy_level then name.
+    operationId: listGroups
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+      - $ref: '../components/parameters.yaml#/includeChildren'
+      - name: parentId
+        in: query
+        required: false
+        description: Filter by parent group ID (null for root groups)
+        schema:
+          type: string
+          format: uuid
+        example: 'b4cc290f-9cfa-4999-0023-bdf5f7654113'
+    responses:
+      '200':
+        description: Groups retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/GroupList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getGroup:
+  get:
+    tags:
+      - Groups
+    summary: Get group details
+    description: Retrieve detailed information about a specific group (requires groups:read permission)
+    operationId: getGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+    responses:
+      '200':
+        description: Group retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/Group'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateGroup:
+  put:
+    tags:
+      - Groups
+    summary: Update group
+    description: |
+      Update group details (requires groups:manage permission).
+      When moving groups via parent_id, hierarchy_level is automatically recalculated.
+      Cannot create circular references.
+    operationId: updateGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/group.yaml#/GroupUpdateRequest'
+    responses:
+      '200':
+        description: Group updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/Group'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: Circular reference detected
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: Cannot move group - would create circular reference
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteGroup:
+  delete:
+    tags:
+      - Groups
+    summary: Delete group
+    description: |
+      Soft-delete a group (requires groups:manage permission).
+      Child groups are NOT deleted but moved to parent (or root if no parent).
+      All group_member records are removed.
+    operationId: deleteGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+    responses:
+      '204':
+        description: Group deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createGroup:
+  post:
+    tags:
+      - Groups
+    summary: Create group
+    description: |
+      Create a new group in the organization (requires groups:manage permission).
+      hierarchy_level is automatically calculated based on parent_id.
+    operationId: createGroup
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/group.yaml#/GroupCreateRequest'
+    responses:
+      '201':
+        description: Group created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/Group'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: Parent group not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listGroupMembers:
+  get:
+    tags:
+      - Groups
+    summary: List group members
+    description: Get all members of a specific group (requires groups:read permission)
+    operationId: listGroupMembers
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/search'
+    responses:
+      '200':
+        description: Group members retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/GroupMemberList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+addGroupMember:
+  post:
+    tags:
+      - Groups
+    summary: Add member to group
+    description: |
+      Add a user to a group (requires groups:manage permission).
+      User must already be an organization member.
+    operationId: addGroupMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/group.yaml#/GroupMemberAddRequest'
+    responses:
+      '201':
+        description: Member added to group successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/group.yaml#/GroupMember'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: Group or user not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '409':
+        description: User is already a member of this group
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Conflict
+              error: User is already a member of this group
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+removeGroupMember:
+  delete:
+    tags:
+      - Groups
+    summary: Remove member from group
+    description: Remove a user from a group (requires groups:manage permission)
+    operationId: removeGroupMember
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+      - $ref: '../components/parameters.yaml#/userId'
+    responses:
+      '204':
+        description: Member removed from group successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getGroupChildren:
+  get:
+    tags:
+      - Groups
+    summary: Get child groups
+    description: |
+      Get all direct child groups of a specific group (requires groups:read permission).
+      Returns hierarchical structure with nested children.
+    operationId: getGroupChildren
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/groupId'
+      - name: recursive
+        in: query
+        required: false
+        description: Include all descendants (not just direct children)
+        schema:
+          type: boolean
+          default: false
+        example: true
+    responses:
+      '200':
+        description: Child groups retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/group.yaml#/GroupWithChildren'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
