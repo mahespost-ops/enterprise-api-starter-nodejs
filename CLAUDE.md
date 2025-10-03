@@ -389,3 +389,29 @@ All API routes are versioned under `/api/v1` (except api-docs):
 - `GET /api/v1/admin/impersonation/active` - Get active impersonation sessions for current user
 - `GET /api/v1/admin/impersonation-sessions` - List all impersonation sessions (history)
 - `DELETE /api/v1/admin/impersonation-sessions/{sessionId}` - Force-end impersonation session
+
+### Events (Tenant-Scoped) - **PENDING**
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/events` - List events with filters
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details
+
+### Admin - Events - **PENDING**
+- `GET /api/v1/admin/events` - List all events system-wide
+- `GET /api/v1/admin/events/{eventId}` - Get event details
+
+### Webhooks (Tenant-Scoped) - **PENDING**
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
+- `PUT /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
+- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+
+### Admin - Webhooks - **PENDING**
+- `GET /api/v1/admin/webhooks` - List all webhooks system-wide
+- `GET /api/v1/admin/webhooks/{webhookId}` - Get webhook
+- `PUT /api/v1/admin/webhooks/{webhookId}` - Update webhook
+- `DELETE /api/v1/admin/webhooks/{webhookId}` - Delete webhook
+- `GET /api/v1/admin/webhooks/{webhookId}/deliveries` - List deliveries
+- `POST /api/v1/admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery

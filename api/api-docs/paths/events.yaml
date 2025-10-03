@@ -1,0 +1,87 @@
+# Events Endpoints (Tenant-Scoped)
+
+listEvents:
+  get:
+    tags:
+      - Events
+    summary: List events
+    description: |
+      Get events (activity log) for a specific environment with optional filters.
+      Filter by verb, actor type, date range, and webhook eligibility.
+    operationId: listEvents
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - name: verb
+        in: query
+        required: false
+        description: Filter by event verb/type (e.g., "auth.login", "device.update")
+        schema:
+          type: string
+        example: 'auth.login'
+      - $ref: '../components/parameters.yaml#/actorType'
+      - name: actorId
+        in: query
+        required: false
+        description: Filter by actor user ID
+        schema:
+          type: string
+          format: uuid
+        example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+      - $ref: '../components/parameters.yaml#/startDate'
+      - $ref: '../components/parameters.yaml#/endDate'
+      - name: isWebhookEvent
+        in: query
+        required: false
+        description: Filter by webhook eligibility
+        schema:
+          type: boolean
+        example: true
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/sort'
+      - $ref: '../components/parameters.yaml#/order'
+    responses:
+      '200':
+        description: Events retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event.yaml#/EventList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getEvent:
+  get:
+    tags:
+      - Events
+    summary: Get event details
+    description: Retrieve detailed information about a specific event
+    operationId: getEvent
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/envId'
+      - $ref: '../components/parameters.yaml#/eventId'
+    responses:
+      '200':
+        description: Event retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event.yaml#/Event'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

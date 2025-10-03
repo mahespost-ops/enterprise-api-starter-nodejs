@@ -51,6 +51,10 @@ tags:
     description: Hierarchical group management for RBAC
   - name: Users
     description: User management
+  - name: Events
+    description: Activity log and audit trail for environment-scoped events (requires events:read)
+  - name: Admin - Events
+    description: System-wide event and audit trail management (requires admin:events:read)
   - name: Admin - Role Assignments
     description: System-wide role assignment management (requires admin:assignments:read or admin:assignments:manage)
   - name: Admin - Users
@@ -184,6 +188,18 @@ paths:
       $ref: './paths/groups.yaml#/removeGroupMember/delete'
   /orgs/{orgId}/groups/{groupId}/children:
     $ref: './paths/groups.yaml#/getGroupChildren'
+  /orgs/{orgId}/envs/{envId}/events:
+    get:
+      $ref: './paths/events.yaml#/listEvents/get'
+  /orgs/{orgId}/envs/{envId}/events/{eventId}:
+    get:
+      $ref: './paths/events.yaml#/getEvent/get'
+  /admin/events:
+    get:
+      $ref: './paths/admin-events.yaml#/listEvents/get'
+  /admin/events/{eventId}:
+    get:
+      $ref: './paths/admin-events.yaml#/getEvent/get'
   /admin/roles:
     get:
       $ref: './paths/admin-roles.yaml#/listRoles/get'
@@ -342,3 +358,5 @@ components:
       $ref: './components/schemas/role.yaml#/Permission'
     RoleAssignment:
       $ref: './components/schemas/role-assignment.yaml#/RoleAssignment'
+    Event:
+      $ref: './components/schemas/event.yaml#/Event'

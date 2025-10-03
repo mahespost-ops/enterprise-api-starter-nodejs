@@ -1,0 +1,120 @@
+# Admin - Events Endpoints
+
+listEvents:
+  get:
+    tags:
+      - Admin - Events
+    summary: List all events
+    description: |
+      Get all events (activity log) across all organizations and environments (requires admin:events:read permission).
+      Filter by verb, actor type, organization, environment, date range, and webhook eligibility.
+    operationId: adminListEvents
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: verb
+        in: query
+        required: false
+        description: Filter by event verb/type (e.g., "auth.login", "device.update")
+        schema:
+          type: string
+        example: 'auth.login'
+      - $ref: '../components/parameters.yaml#/actorType'
+      - name: actorId
+        in: query
+        required: false
+        description: Filter by actor user ID
+        schema:
+          type: string
+          format: uuid
+        example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+      - name: organizationId
+        in: query
+        required: false
+        description: Filter by organization ID
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: environmentId
+        in: query
+        required: false
+        description: Filter by environment ID
+        schema:
+          type: string
+          format: uuid
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+      - $ref: '../components/parameters.yaml#/startDate'
+      - $ref: '../components/parameters.yaml#/endDate'
+      - name: isWebhookEvent
+        in: query
+        required: false
+        description: Filter by webhook eligibility
+        schema:
+          type: boolean
+        example: true
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: sortBy
+        in: query
+        required: false
+        description: Field to sort by
+        schema:
+          type: string
+          enum:
+            - timestamp
+            - verb
+            - actor_type
+          default: timestamp
+        example: 'timestamp'
+      - name: sortOrder
+        in: query
+        required: false
+        description: Sort order
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: desc
+        example: 'desc'
+    responses:
+      '200':
+        description: Events retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event.yaml#/EventList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getEvent:
+  get:
+    tags:
+      - Admin - Events
+    summary: Get event details
+    description: Retrieve detailed information about a specific event (requires admin:events:read permission)
+    operationId: adminGetEvent
+    security:
+      - bearerAuth: []
+    parameters:
+      - $ref: '../components/parameters.yaml#/eventId'
+    responses:
+      '200':
+        description: Event retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event.yaml#/Event'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
