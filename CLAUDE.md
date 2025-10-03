@@ -415,6 +415,7 @@ All API routes are versioned under `/api/v1` (except api-docs). Groupings match 
 - `POST /api/v1/auth/verify-token` - Verify magic link and get JWT
 - `POST /api/v1/auth/refresh` - Refresh JWT token
 - `POST /api/v1/auth/logout` - Logout and invalidate session
+- `POST /api/v1/auth/switch-context` - Switch organization/environment context (with device fingerprinting)
 
 ### Core - Users
 - `GET /api/v1/users/me` - Get current user profile
@@ -429,12 +430,8 @@ All API routes are versioned under `/api/v1` (except api-docs). Groupings match 
 - `DELETE /api/v1/users/me/sessions/all` - Revoke all sessions
 
 ### Core - Organizations
-- `GET /api/v1/orgs` - List accessible organizations
-- `POST /api/v1/orgs` - Create new organization
 - `GET /api/v1/orgs/{orgId}` - Get organization details
-- `PUT /api/v1/orgs/{orgId}` - Update organization
-- `DELETE /api/v1/orgs/{orgId}` - Delete organization
-- `POST /api/v1/orgs/{orgId}/switch` - Switch organization context (updates JWT)
+- `PATCH /api/v1/orgs/{orgId}` - Update organization details (tenant self-service for contact info, branding, etc.)
 
 ### Core - Environments
 - `GET /api/v1/orgs/{orgId}/envs` - List environments
@@ -499,14 +496,19 @@ All API routes are versioned under `/api/v1` (except api-docs). Groupings match 
 - `DELETE /api/v1/admin/environments/{envId}` - Delete environment (requires `admin:environments:manage`)
 
 ### Admin - Members
-- System-wide member management endpoints (requires `admin:members:read` or `admin:members:manage`)
+- `GET /api/v1/admin/organizations/{orgId}/members` - List organization members (requires `admin:members:read`)
+- `GET /api/v1/admin/organizations/{orgId}/members/{memberId}` - Get organization member details (requires `admin:members:read`)
+- `PUT /api/v1/admin/organizations/{orgId}/members/{memberId}` - Update organization member (requires `admin:members:manage`)
+- `DELETE /api/v1/admin/organizations/{orgId}/members/{memberId}` - Remove organization member (requires `admin:members:manage`)
+- `GET /api/v1/admin/groups/{groupId}/members` - List group members (requires `admin:members:read`)
+- `POST /api/v1/admin/groups/{groupId}/members` - Add member to group (requires `admin:members:manage`)
+- `DELETE /api/v1/admin/groups/{groupId}/members/{userId}` - Remove member from group (requires `admin:members:manage`)
 
 ### Admin - Groups
 - `GET /api/v1/admin/groups` - List all groups (requires `admin:groups:read`)
 - `GET /api/v1/admin/groups/{groupId}` - Get group details (requires `admin:groups:read`)
 - `PUT /api/v1/admin/groups/{groupId}` - Update group (requires `admin:groups:manage`)
 - `DELETE /api/v1/admin/groups/{groupId}` - Delete group (requires `admin:groups:manage`)
-- `GET /api/v1/admin/groups/{groupId}/members` - List group members (requires `admin:groups:read`)
 
 ### Admin - Roles & Permissions
 - `GET /api/v1/admin/roles` - List all roles (requires `admin:roles:read`)

@@ -67,7 +67,7 @@ tags:
   - name: Admin - Environments
     description: System-wide environment management (requires admin:environments:read or admin:environments:manage)
   - name: Admin - Members
-    description: System-wide member management (requires admin:members:read or admin:members:manage)
+    description: System-wide organization and group member management (requires admin:members:read or admin:members:manage)
   - name: Admin - Groups
     description: System-wide group management (requires admin:groups:read or admin:groups:manage)
   - name: Admin - Roles & Permissions
@@ -98,6 +98,8 @@ paths:
     $ref: './paths/auth.yaml#/refresh'
   /auth/logout:
     $ref: './paths/auth.yaml#/logout'
+  /auth/switch-context:
+    $ref: './paths/auth.yaml#/switchContext'
   /users/me:
     get:
       $ref: './paths/users.yaml#/getCurrentUser/get'
@@ -126,20 +128,11 @@ paths:
   /users/me/sessions/all:
     delete:
       $ref: './paths/users.yaml#/revokeAllCurrentUserSessions/delete'
-  /orgs:
-    get:
-      $ref: './paths/organizations.yaml#/listOrganizations/get'
-    post:
-      $ref: './paths/organizations.yaml#/createOrganization/post'
   /orgs/{orgId}:
     get:
       $ref: './paths/organizations.yaml#/getOrganization/get'
-    put:
-      $ref: './paths/organizations.yaml#/getOrganization/put'
-    delete:
-      $ref: './paths/organizations.yaml#/getOrganization/delete'
-  /orgs/{orgId}/switch:
-    $ref: './paths/organizations.yaml#/switchContext'
+    patch:
+      $ref: './paths/organizations.yaml#/getOrganization/patch'
   /orgs/{orgId}/envs:
     get:
       $ref: './paths/environments.yaml#/listEnvironments/get'
@@ -258,6 +251,16 @@ paths:
       $ref: './paths/admin-environments.yaml#/updateEnvironment/put'
     delete:
       $ref: './paths/admin-environments.yaml#/deleteEnvironment/delete'
+  /admin/organizations/{orgId}/members:
+    get:
+      $ref: './paths/admin-members.yaml#/listOrganizationMembers/get'
+  /admin/organizations/{orgId}/members/{memberId}:
+    get:
+      $ref: './paths/admin-members.yaml#/getOrganizationMember/get'
+    put:
+      $ref: './paths/admin-members.yaml#/updateOrganizationMember/put'
+    delete:
+      $ref: './paths/admin-members.yaml#/removeOrganizationMember/delete'
   /admin/groups:
     get:
       $ref: './paths/admin-groups.yaml#/listGroups/get'
@@ -270,7 +273,12 @@ paths:
       $ref: './paths/admin-groups.yaml#/deleteGroup/delete'
   /admin/groups/{groupId}/members:
     get:
-      $ref: './paths/admin-groups.yaml#/listGroupMembers/get'
+      $ref: './paths/admin-members.yaml#/listGroupMembers/get'
+    post:
+      $ref: './paths/admin-members.yaml#/addGroupMember/post'
+  /admin/groups/{groupId}/members/{userId}:
+    delete:
+      $ref: './paths/admin-members.yaml#/removeGroupMember/delete'
   /admin/roles:
     get:
       $ref: './paths/admin-roles.yaml#/listRoles/get'
@@ -491,12 +499,12 @@ components:
       $ref: './components/schemas/session.yaml#/SessionRevocationRequest'
 
     # Organization Requests
-    OrganizationCreateRequest:
-      $ref: './components/schemas/organization.yaml#/OrganizationCreateRequest'
     OrganizationUpdateRequest:
       $ref: './components/schemas/organization.yaml#/OrganizationUpdateRequest'
+
+    # Auth Requests (including context switching)
     SwitchContextRequest:
-      $ref: './components/schemas/organization.yaml#/SwitchContextRequest'
+      $ref: './components/schemas/auth.yaml#/SwitchContextRequest'
 
     # Member Requests
     OrganizationMemberInviteRequest:
@@ -545,10 +553,10 @@ components:
       $ref: './components/schemas/auth.yaml#/RequestMagicTokenResponse'
     RefreshTokenResponse:
       $ref: './components/schemas/auth.yaml#/RefreshTokenResponse'
+    SwitchContextResponse:
+      $ref: './components/schemas/auth.yaml#/SwitchContextResponse'
     OrganizationMemberInviteResponse:
       $ref: './components/schemas/member.yaml#/OrganizationMemberInviteResponse'
-    SwitchContextResponse:
-      $ref: './components/schemas/organization.yaml#/SwitchContextResponse'
     WebhookDeliveryRetryResponse:
       $ref: './components/schemas/webhook.yaml#/WebhookDeliveryRetryResponse'
 

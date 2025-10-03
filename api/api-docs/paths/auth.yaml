@@ -172,3 +172,41 @@ logout:
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '500':
         $ref: '../index.yaml#/components/responses/InternalServerError'
+
+switchContext:
+  post:
+    tags:
+      - Core - Authentication
+    summary: Switch organization/environment context
+    description: |
+      Switch the user's current organization and environment context.
+      Updates last_org_id and last_env_id on organization_member.
+      Returns new JWT with updated orgId and envId claims.
+
+      Includes device fingerprinting for security tracking, consistent with other auth endpoints.
+    operationId: switchContext
+    security:
+      - bearerAuth: ["organizations:read"]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/SwitchContextRequest'
+    responses:
+      '200':
+        description: Context switched successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/SwitchContextResponse'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

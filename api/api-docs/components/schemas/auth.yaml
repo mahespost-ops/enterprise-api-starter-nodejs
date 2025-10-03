@@ -247,3 +247,75 @@ RefreshTokenResponse:
       description: Token type
       example: Bearer
       default: Bearer
+
+SwitchContextRequest:
+  type: object
+  required:
+    - organizationId
+    - environmentId
+  properties:
+    organizationId:
+      type: string
+      format: uuid
+      description: Target organization ID
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    environmentId:
+      type: string
+      format: uuid
+      description: Target environment ID
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    deviceFingerprint:
+      type: object
+      description: Device fingerprint for security tracking
+      properties:
+        userAgent:
+          type: string
+        timezone:
+          type: string
+        acceptLanguage:
+          type: string
+        screenResolution:
+          type: string
+        colorDepth:
+          type: integer
+
+SwitchContextResponse:
+  type: object
+  required:
+    - accessToken
+    - organization
+    - environment
+  properties:
+    accessToken:
+      type: string
+      description: New JWT with updated orgId and envId claims
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    organization:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+    environment:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - live
+            - sandbox
