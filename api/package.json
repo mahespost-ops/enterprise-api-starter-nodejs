@@ -31,6 +31,7 @@
     "@aws-sdk/client-secrets-manager": "^3.901.0",
     "@aws-sdk/client-sqs": "^3.901.0",
     "@aws-sdk/lib-storage": "^3.901.0",
+    "@aws-sdk/s3-request-presigner": "^3.901.0",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/secret-manager": "^6.1.0",
     "@google-cloud/storage": "^7.17.1",

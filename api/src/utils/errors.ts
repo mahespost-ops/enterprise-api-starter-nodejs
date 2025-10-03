@@ -60,7 +60,7 @@ export class ForbiddenError extends AppError {
  * 404 Not Found
  */
 export class NotFoundError extends AppError {
-  constructor(message = HTTP_STATUS_MESSAGE[HTTP_STATUS.NOT_FOUND]) {
+  constructor(message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.NOT_FOUND]) {
     super(HTTP_STATUS.NOT_FOUND, message);
   }
 }

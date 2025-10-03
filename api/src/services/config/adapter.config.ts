@@ -84,6 +84,29 @@ export interface ILocalStorageConfig {
   publicUrl?: string;
 }
 
+// Extended storage adapter configs (used by adapters directly)
+
+export interface IGoogleCloudStorageConfig {
+  projectId: string;
+  bucketName: string;
+  keyFilename?: string;
+  credentials?: {
+    client_email: string;
+    private_key: string;
+  };
+}
+
+export interface IAWSS3Config {
+  region: string;
+  bucketName: string;
+  credentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken?: string;
+  };
+  endpoint?: string;
+}
+
 // Message Queue Adapter Configuration
 
 export interface IMessageQueueAdapterConfig {
