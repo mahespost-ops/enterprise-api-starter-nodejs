@@ -317,7 +317,7 @@ All list endpoints return:
 
 ## API Endpoints
 
-All API routes are versioned under `/api/v1` (except api-docs):
+All API routes are versioned under `/api/v1` (except api-docs). Groupings match OpenAPI tags in `api/api-docs/index.yaml`.
 
 ### Documentation
 - `GET /api-docs` - Swagger UI API documentation (no version prefix)
@@ -325,18 +325,17 @@ All API routes are versioned under `/api/v1` (except api-docs):
 ### Root
 - `GET /` - API info (name, version, status, environment)
 
-### Health Check
+### Core - Health
 - `GET /api/v1/health` - Basic health check (fast, <5ms)
-- `GET /api/v1/health/detailed` - Detailed health check (includes database)
 
-### Authentication
+### Core - Authentication
 - `POST /api/v1/auth/register` - User registration
 - `POST /api/v1/auth/request-token` - Request magic link token
 - `POST /api/v1/auth/verify-token` - Verify magic link and get JWT
 - `POST /api/v1/auth/refresh` - Refresh JWT token
 - `POST /api/v1/auth/logout` - Logout and invalidate session
 
-### Current User (`/users/me`)
+### Core - Users
 - `GET /api/v1/users/me` - Get current user profile
 - `PUT /api/v1/users/me` - Update current user profile
 - `GET /api/v1/users/me/organizations` - List user's organizations
@@ -348,7 +347,7 @@ All API routes are versioned under `/api/v1` (except api-docs):
 - `DELETE /api/v1/users/me/sessions/{sessionId}` - Revoke specific session
 - `DELETE /api/v1/users/me/sessions/all` - Revoke all sessions
 
-### Organizations
+### Core - Organizations
 - `GET /api/v1/orgs` - List accessible organizations
 - `POST /api/v1/orgs` - Create new organization
 - `GET /api/v1/orgs/{orgId}` - Get organization details
@@ -356,14 +355,14 @@ All API routes are versioned under `/api/v1` (except api-docs):
 - `DELETE /api/v1/orgs/{orgId}` - Delete organization
 - `POST /api/v1/orgs/{orgId}/switch` - Switch organization context (updates JWT)
 
-### Environments (Tenant-Scoped)
+### Core - Environments
 - `GET /api/v1/orgs/{orgId}/envs` - List environments
 - `POST /api/v1/orgs/{orgId}/envs` - Create environment
 - `GET /api/v1/orgs/{orgId}/envs/{envId}` - Get environment details
 - `PUT /api/v1/orgs/{orgId}/envs/{envId}` - Update environment
 - `DELETE /api/v1/orgs/{orgId}/envs/{envId}` - Delete environment
 
-### Members (Tenant-Scoped)
+### Core - Members
 - `GET /api/v1/orgs/{orgId}/members` - List organization members
 - `POST /api/v1/orgs/{orgId}/members` - Invite member
 - `GET /api/v1/orgs/{orgId}/members/{memberId}` - Get member details
@@ -371,11 +370,11 @@ All API routes are versioned under `/api/v1` (except api-docs):
 - `DELETE /api/v1/orgs/{orgId}/members/{memberId}` - Remove member
 - `GET /api/v1/orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
 - `GET /api/v1/orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start org-scoped impersonation (requires `members:manage`)
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start org-scoped impersonation (requires `members:manage` or `members:impersonate`)
 - `DELETE /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End org-scoped impersonation
 - `GET /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get impersonation status
 
-### Groups (Tenant-Scoped)
+### Core - Groups
 - `GET /api/v1/orgs/{orgId}/groups` - List groups
 - `POST /api/v1/orgs/{orgId}/groups` - Create group
 - `GET /api/v1/orgs/{orgId}/groups/{groupId}` - Get group details
@@ -386,88 +385,91 @@ All API routes are versioned under `/api/v1` (except api-docs):
 - `DELETE /api/v1/orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member from group
 - `GET /api/v1/orgs/{orgId}/groups/{groupId}/children` - Get child groups
 
+### Core - Events
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/events` - List events with filters (requires `events:read`)
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details (requires `events:read`)
+
+### Core - Webhooks
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - List webhooks (requires `webhooks:read`)
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - Create webhook (requires `webhooks:manage`)
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook (requires `webhooks:read`)
+- `PUT /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook (requires `webhooks:manage`)
+- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook (requires `webhooks:manage`)
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries (requires `webhooks:read`)
+- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery (requires `webhooks:read`)
+- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery (requires `webhooks:manage`)
+
 ### Admin - Users
-- `GET /api/v1/admin/users` - List all users (system-wide)
-- `GET /api/v1/admin/users/{userId}` - Get user details
-- `PUT /api/v1/admin/users/{userId}` - Update user
-- `DELETE /api/v1/admin/users/{userId}` - Delete user
+- `GET /api/v1/admin/users` - List all users (requires `admin:users:read`)
+- `GET /api/v1/admin/users/{userId}` - Get user details (requires `admin:users:read`)
+- `PUT /api/v1/admin/users/{userId}` - Update user (requires `admin:users:manage`)
+- `DELETE /api/v1/admin/users/{userId}` - Delete user (requires `admin:users:manage`)
 
 ### Admin - Organizations
-- `GET /api/v1/admin/organizations` - List all organizations (system-wide)
-- `GET /api/v1/admin/organizations/{orgId}` - Get organization details
-- `PUT /api/v1/admin/organizations/{orgId}` - Update organization
-- `DELETE /api/v1/admin/organizations/{orgId}` - Delete organization
+- `GET /api/v1/admin/organizations` - List all organizations (requires `admin:organizations:read`)
+- `GET /api/v1/admin/organizations/{orgId}` - Get organization details (requires `admin:organizations:read`)
+- `PUT /api/v1/admin/organizations/{orgId}` - Update organization (requires `admin:organizations:manage`)
+- `DELETE /api/v1/admin/organizations/{orgId}` - Delete organization (requires `admin:organizations:manage`)
 
 ### Admin - Environments
-- `GET /api/v1/admin/environments` - List all environments (system-wide)
-- `GET /api/v1/admin/environments/{envId}` - Get environment details
-- `PUT /api/v1/admin/environments/{envId}` - Update environment
-- `DELETE /api/v1/admin/environments/{envId}` - Delete environment
+- `GET /api/v1/admin/environments` - List all environments (requires `admin:environments:read`)
+- `GET /api/v1/admin/environments/{envId}` - Get environment details (requires `admin:environments:read`)
+- `PUT /api/v1/admin/environments/{envId}` - Update environment (requires `admin:environments:manage`)
+- `DELETE /api/v1/admin/environments/{envId}` - Delete environment (requires `admin:environments:manage`)
+
+### Admin - Members
+- System-wide member management endpoints (requires `admin:members:read` or `admin:members:manage`)
 
 ### Admin - Groups
-- `GET /api/v1/admin/groups` - List all groups (system-wide)
-- `GET /api/v1/admin/groups/{groupId}` - Get group details
-- `PUT /api/v1/admin/groups/{groupId}` - Update group
-- `DELETE /api/v1/admin/groups/{groupId}` - Delete group
-- `GET /api/v1/admin/groups/{groupId}/members` - List group members
+- `GET /api/v1/admin/groups` - List all groups (requires `admin:groups:read`)
+- `GET /api/v1/admin/groups/{groupId}` - Get group details (requires `admin:groups:read`)
+- `PUT /api/v1/admin/groups/{groupId}` - Update group (requires `admin:groups:manage`)
+- `DELETE /api/v1/admin/groups/{groupId}` - Delete group (requires `admin:groups:manage`)
+- `GET /api/v1/admin/groups/{groupId}/members` - List group members (requires `admin:groups:read`)
 
 ### Admin - Roles & Permissions
-- `GET /api/v1/admin/roles` - List all roles
-- `POST /api/v1/admin/roles` - Create role
-- `GET /api/v1/admin/roles/{roleId}` - Get role details
-- `PUT /api/v1/admin/roles/{roleId}` - Update role
-- `DELETE /api/v1/admin/roles/{roleId}` - Delete role
-- `GET /api/v1/admin/roles/{roleId}/permissions` - List role permissions
-- `POST /api/v1/admin/roles/{roleId}/permissions` - Add permission to role
-- `DELETE /api/v1/admin/roles/{roleId}/permissions/{permissionId}` - Remove permission from role
-- `GET /api/v1/admin/permissions` - List all permissions
+- `GET /api/v1/admin/roles` - List all roles (requires `admin:roles:read`)
+- `POST /api/v1/admin/roles` - Create role (requires `admin:roles:manage`)
+- `GET /api/v1/admin/roles/{roleId}` - Get role details (requires `admin:roles:read`)
+- `PUT /api/v1/admin/roles/{roleId}` - Update role (requires `admin:roles:manage`)
+- `DELETE /api/v1/admin/roles/{roleId}` - Delete role (requires `admin:roles:manage`)
+- `GET /api/v1/admin/roles/{roleId}/permissions` - List role permissions (requires `admin:roles:read`)
+- `POST /api/v1/admin/roles/{roleId}/permissions` - Add permission to role (requires `admin:roles:manage`)
+- `DELETE /api/v1/admin/roles/{roleId}/permissions/{permissionId}` - Remove permission from role (requires `admin:roles:manage`)
+- `GET /api/v1/admin/permissions` - List all permissions (requires `admin:permissions:read`)
 
 ### Admin - Role Assignments
-- `GET /api/v1/admin/role-assignments` - List all role assignments (system-wide)
-- `POST /api/v1/admin/role-assignments` - Create role assignment
-- `DELETE /api/v1/admin/role-assignments/{assignmentId}` - Delete role assignment
+- `GET /api/v1/admin/role-assignments` - List all role assignments (requires `admin:assignments:read`)
+- `POST /api/v1/admin/role-assignments` - Create role assignment (requires `admin:assignments:manage`)
+- `DELETE /api/v1/admin/role-assignments/{assignmentId}` - Delete role assignment (requires `admin:assignments:manage`)
 
 ### Admin - Devices
-- `GET /api/v1/admin/devices` - List all devices (system-wide)
-- `GET /api/v1/admin/devices/{deviceId}` - Get device details
-- `PUT /api/v1/admin/devices/{deviceId}` - Update device
-- `DELETE /api/v1/admin/devices/{deviceId}` - Revoke device
+- `GET /api/v1/admin/devices` - List all devices (requires `admin:devices:read`)
+- `GET /api/v1/admin/devices/{deviceId}` - Get device details (requires `admin:devices:read`)
+- `PUT /api/v1/admin/devices/{deviceId}` - Update device (requires `admin:devices:manage`)
+- `DELETE /api/v1/admin/devices/{deviceId}` - Revoke device (requires `admin:devices:manage`)
 
 ### Admin - Sessions
-- `GET /api/v1/admin/sessions` - List all sessions (system-wide)
-- `GET /api/v1/admin/sessions/{sessionId}` - Get session details
-- `DELETE /api/v1/admin/sessions/{sessionId}` - Revoke session
-- `DELETE /api/v1/admin/sessions/user/{userId}` - Revoke all sessions for user
+- `GET /api/v1/admin/sessions` - List all sessions (requires `admin:sessions:read`)
+- `GET /api/v1/admin/sessions/{sessionId}` - Get session details (requires `admin:sessions:read`)
+- `DELETE /api/v1/admin/sessions/{sessionId}` - Revoke session (requires `admin:sessions:manage`)
+- `DELETE /api/v1/admin/sessions/user/{userId}` - Revoke all sessions for user (requires `admin:sessions:manage`)
 
 ### Admin - Impersonation
 - `POST /api/v1/admin/users/{userId}/impersonate` - Start system-wide impersonation (requires `admin:users:impersonate`)
-- `DELETE /api/v1/admin/impersonation/end` - End impersonation (pop or terminate)
-- `GET /api/v1/admin/impersonation/active` - Get active impersonation sessions for current user
-- `GET /api/v1/admin/impersonation-sessions` - List all impersonation sessions (history)
-- `DELETE /api/v1/admin/impersonation-sessions/{sessionId}` - Force-end impersonation session
+- `DELETE /api/v1/admin/impersonation/end` - End impersonation (pop or terminate) (requires `admin:users:impersonate`)
+- `GET /api/v1/admin/impersonation/active` - Get active impersonation sessions for current user (requires `admin:impersonation:read`)
+- `GET /api/v1/admin/impersonation-sessions` - List all impersonation sessions (history) (requires `admin:impersonation:read`)
+- `DELETE /api/v1/admin/impersonation-sessions/{sessionId}` - Force-end impersonation session (requires `admin:impersonation:manage`)
 
-### Events (Tenant-Scoped) - **PENDING**
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/events` - List events with filters
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details
+### Admin - Events
+- `GET /api/v1/admin/events` - List all events system-wide (requires `admin:events:read`)
+- `GET /api/v1/admin/events/{eventId}` - Get event details (requires `admin:events:read`)
 
-### Admin - Events - **PENDING**
-- `GET /api/v1/admin/events` - List all events system-wide
-- `GET /api/v1/admin/events/{eventId}` - Get event details
-
-### Webhooks (Tenant-Scoped) - **PENDING**
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
-- `PUT /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
-- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
-
-### Admin - Webhooks - **PENDING**
-- `GET /api/v1/admin/webhooks` - List all webhooks system-wide
-- `GET /api/v1/admin/webhooks/{webhookId}` - Get webhook
-- `PUT /api/v1/admin/webhooks/{webhookId}` - Update webhook
-- `DELETE /api/v1/admin/webhooks/{webhookId}` - Delete webhook
-- `GET /api/v1/admin/webhooks/{webhookId}/deliveries` - List deliveries
-- `POST /api/v1/admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+### Admin - Webhooks
+- `GET /api/v1/admin/webhooks` - List all webhooks system-wide (requires `admin:webhooks:read`)
+- `GET /api/v1/admin/webhooks/{webhookId}` - Get webhook (requires `admin:webhooks:read`)
+- `PUT /api/v1/admin/webhooks/{webhookId}` - Update webhook (requires `admin:webhooks:manage`)
+- `DELETE /api/v1/admin/webhooks/{webhookId}` - Delete webhook (requires `admin:webhooks:manage`)
+- `GET /api/v1/admin/webhooks/{webhookId}/deliveries` - List deliveries (requires `admin:webhooks:read`)
+- `POST /api/v1/admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery (requires `admin:webhooks:manage`)
