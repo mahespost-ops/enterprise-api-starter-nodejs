@@ -62,6 +62,7 @@ secrets.json
 *.cert
 *.crt
 serviceAccount*.json
+secrets/
 
 # Backup files
 *.bak

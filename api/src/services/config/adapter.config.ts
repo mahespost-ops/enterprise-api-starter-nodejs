@@ -5,7 +5,7 @@
  */
 
 export type EmailProvider = 'sendgrid' | 'ses' | 'mock';
-export type SecretsProvider = 'gcp' | 'aws' | 'env';
+export type SecretsProvider = 'gcp' | 'aws' | 'env' | 'file' | 'memory' | 'vault';
 export type StorageProvider = 'gcs' | 's3' | 'local';
 export type MessageQueueProvider = 'pubsub' | 'sqs' | 'redis' | 'kafka' | 'memory';
 
@@ -43,6 +43,7 @@ export interface ISecretsAdapterConfig {
   provider: SecretsProvider;
   gcp?: IGCPSecretsConfig;
   aws?: IAWSSecretsConfig;
+  file?: IFileSecretsConfig;
 }
 
 export interface IGCPSecretsConfig {
@@ -54,6 +55,10 @@ export interface IAWSSecretsConfig {
   region: string;
   accessKeyId?: string;
   secretAccessKey?: string;
+}
+
+export interface IFileSecretsConfig {
+  secretsDir: string;
 }
 
 // Storage Adapter Configuration
@@ -175,7 +180,7 @@ export function loadAdapterConfig(): IAdapterConfig {
         : undefined,
     },
     secrets: {
-      provider: (process.env.SECRETS_PROVIDER as SecretsProvider) || 'env',
+      provider: (process.env.SECRETS_PROVIDER as SecretsProvider) || 'file',
       gcp: process.env.GCP_PROJECT_ID
         ? {
             projectId: process.env.GCP_PROJECT_ID,
@@ -189,6 +194,9 @@ export function loadAdapterConfig(): IAdapterConfig {
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
           }
         : undefined,
+      file: {
+        secretsDir: process.env.SECRETS_DIR || 'secrets',
+      },
     },
     storage: {
       provider: (process.env.STORAGE_PROVIDER as StorageProvider) || 'local',

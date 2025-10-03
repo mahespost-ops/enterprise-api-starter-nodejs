@@ -17,6 +17,7 @@ export type {
 // Adapter implementations
 export { MemorySecretsAdapter } from './memory.secrets.adapter';
 export { EnvSecretsAdapter } from './env.secrets.adapter';
+export { FileSecretsAdapter } from './file.secrets.adapter';
 export {
   GCPSecretManagerAdapter,
   type GCPSecretManagerConfig,

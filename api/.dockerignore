@@ -76,3 +76,4 @@ secrets.json
 *.key
 *.cert
 serviceAccount*.json
+secrets/
