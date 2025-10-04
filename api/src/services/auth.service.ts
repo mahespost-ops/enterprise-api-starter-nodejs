@@ -14,8 +14,8 @@ import User from '../models/User.model';
 import MagicLinkToken from '../models/MagicLinkToken.model';
 import UserSession from '../models/UserSession.model';
 import Organization from '../models/Organization.model';
+import OrganizationMember from '../models/OrganizationMember.model';
 import Environment from '../models/Environment.model';
-import Device from '../models/Device.model';
 import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
 
 // Types
@@ -172,23 +172,31 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_MAGIC_TOKEN);
     }
 
-    const magicToken = await MagicLinkToken.findByToken(tokenKey);
+    // Find all unexpired, unused tokens and compare
+    const allTokens = await MagicLinkToken.findAllValidTokens();
+
+    let magicToken: MagicLinkToken | null = null;
+    for (const token of allTokens) {
+      let isMatch = false;
+      if (data.token) {
+        isMatch = await bcrypt.compare(tokenKey, token.tokenHash);
+      } else if (data.code) {
+        isMatch = await bcrypt.compare(tokenKey, token.codeHash);
+      }
+
+      if (isMatch) {
+        magicToken = token;
+        break;
+      }
+    }
+
     if (!magicToken) {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_MAGIC_TOKEN);
     }
 
-    if (new Date() > new Date(magicToken.expiresAt)) {
-      await MagicLinkToken.delete(tokenKey);
-      throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_EXPIRED);
-    }
+    await magicToken.markAsUsed();
 
-    if (magicToken.usedAt) {
-      throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_ALREADY_USED);
-    }
-
-    await MagicLinkToken.markAsUsed(tokenKey);
-
-    const user = await User.findById(magicToken.userId);
+    const user = await User.findByPk(magicToken.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
@@ -210,6 +218,7 @@ class AuthService {
       userId: user.id,
       deviceId,
       refreshTokenHash,
+      ipAddress: '127.0.0.1', // TODO: Get from request context
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       createdAt: new Date(),
       isActive: true,
@@ -275,7 +284,7 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.SESSION_EXPIRED);
     }
 
-    const user = await User.findById(matchedSession.userId);
+    const user = await User.findByPk(matchedSession.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
@@ -284,7 +293,7 @@ class AuthService {
     const newRefreshToken = crypto.randomBytes(32).toString('hex');
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
 
-    await UserSession.update(matchedSession.id, {
+    await matchedSession.update({
       refreshTokenHash: newRefreshTokenHash,
       lastAccessedAt: new Date(),
     });
@@ -315,18 +324,22 @@ class AuthService {
     logger.info(`Logging out user: ${userId}`);
 
     if (refreshToken) {
-      const sessions = await UserSession.findByUserId(userId);
+      const sessions = await UserSession.findAll({ where: { userId } });
 
       for (const session of sessions) {
         const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
         if (isMatch) {
-          await UserSession.revoke(session.id);
+          await session.revoke();
           logger.info(`Session ${session.id} revoked`);
           return;
         }
       }
     } else {
-      await UserSession.revokeAllForUser(userId);
+      // Revoke all sessions for user
+      const sessions = await UserSession.findAll({ where: { userId } });
+      for (const session of sessions) {
+        await session.revoke();
+      }
       logger.info(`All sessions revoked for user ${userId}`);
     }
   }
@@ -337,30 +350,38 @@ class AuthService {
   async switchContext(data: SwitchContextData): Promise<SwitchContextResponse> {
     logger.info(`Switching context for user ${data.userId} to org ${data.organizationId}, env ${data.environmentId}`);
 
-    const user = await User.findById(data.userId);
+    const user = await User.findByPk(data.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     // Check if user has access to organization
-    const hasAccess = await Organization.userHasAccess(data.userId, data.organizationId);
-    if (!hasAccess) {
+    const orgMember = await OrganizationMember.findOne({
+      where: { userId: data.userId, organizationId: data.organizationId },
+    });
+    if (!orgMember) {
       throw new ForbiddenError('You do not have access to this organization');
     }
 
     // Check if organization exists
-    const orgExists = await Organization.exists(data.organizationId);
-    if (!orgExists) {
+    const org = await Organization.findByPk(data.organizationId);
+    if (!org) {
       throw new NotFoundError('Organization not found');
     }
 
-    // Check if environment exists
-    const envExists = await Environment.exists(data.environmentId);
-    if (!envExists) {
+    // Check if environment exists and belongs to the organization
+    const env = await Environment.findOne({
+      where: { id: data.environmentId, organizationId: data.organizationId },
+    });
+    if (!env) {
       throw new NotFoundError('Environment not found');
     }
 
-    // TODO: Update user's last_org_id and last_env_id in database
+    // Update user's last_org_id and last_env_id
+    await user.update({
+      lastOrgId: data.organizationId,
+      lastEnvId: data.environmentId,
+    });
 
     const accessToken = this.generateAccessToken({
       sub: user.id,
@@ -375,14 +396,14 @@ class AuthService {
     return {
       accessToken,
       organization: {
-        id: data.organizationId,
-        name: 'Test Organization', // TODO: Get from database
-        slug: 'test-org',
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
       },
       environment: {
-        id: data.environmentId,
-        name: 'Live', // TODO: Get from database
-        type: 'live',
+        id: env.id,
+        name: env.name,
+        type: env.type,
       },
     };
   }
@@ -395,10 +416,14 @@ class AuthService {
     const token = crypto.randomBytes(32).toString('base64url');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // Hash both token and code before storing
+    const tokenHash = await bcrypt.hash(token, 10);
+    const codeHash = await bcrypt.hash(code, 10);
+
     await MagicLinkToken.create({
       userId,
-      token,
-      code,
+      tokenHash,
+      codeHash,
       fingerprint,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),

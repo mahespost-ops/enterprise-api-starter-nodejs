@@ -60,6 +60,18 @@ export class MagicLinkToken
   }
 
   /**
+   * Find all valid unexpired tokens for bcrypt comparison
+   */
+  static async findAllValidTokens(): Promise<MagicLinkToken[]> {
+    return this.findAll({
+      where: {
+        usedAt: null,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+    });
+  }
+
+  /**
    * Mark token as used
    */
   async markAsUsed(): Promise<void> {

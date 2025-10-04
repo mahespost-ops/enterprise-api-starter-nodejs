@@ -6,9 +6,9 @@
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import config from '../../config';
-import { MagicTokenModel } from '../../models/MagicToken.model';
-import { UserModel } from '../../models/User.model';
-import { SessionModel } from '../../models/Session.model';
+import MagicLinkToken from '../../models/MagicLinkToken.model';
+import User from '../../models/User.model';
+import UserSession from '../../models/UserSession.model';
 
 /**
  * Generate a valid JWT token for testing
@@ -60,85 +60,45 @@ export function generateExpiredTestJWT(payload: {
 
 /**
  * Extract the most recent magic token for a user (by email)
- * This is a test helper that accesses the in-memory token store
+ * NOTE: In real Sequelize implementation, tokens are hashed and cannot be retrieved.
+ * This helper is no longer functional with Sequelize. Tests should capture tokens
+ * from API responses or use test-specific token generation.
  */
 export async function getLatestMagicTokenForUser(email: string): Promise<{
   token: string;
   code: string;
 } | null> {
   // Find user by email
-  const user = await UserModel.findByEmail(email);
+  const user = await User.findByEmail(email);
   if (!user) {
     return null;
   }
 
-  // Access the test-only token map
-  const { __testOnly__ } = await import('../../models/MagicToken.model');
-  const tokensMap = __testOnly__.getTokensMap();
-
-  // Collect all tokens for this user
-  const tokenEntries: Array<{
-    userId: string;
-    token: string;
-    code: string;
-    createdAt: Date;
-    usedAt?: Date;
-  }> = [];
-  for (const [, value] of tokensMap.entries()) {
-    if (value.userId === user.id && !value.usedAt) {
-      tokenEntries.push(value);
-    }
-  }
-
-  if (tokenEntries.length === 0) {
-    return null;
-  }
-
-  // Deduplicate by token (since we store by both token and code)
-  const uniqueTokens = new Map<
-    string,
-    {
-      userId: string;
-      token: string;
-      code: string;
-      createdAt: Date;
-      usedAt?: Date;
-    }
-  >();
-  for (const entry of tokenEntries) {
-    if (!uniqueTokens.has(entry.token)) {
-      uniqueTokens.set(entry.token, entry);
-    }
-  }
-
-  // Sort by createdAt and return the most recent
-  const sortedTokens = Array.from(uniqueTokens.values()).sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  // With Sequelize, tokens are hashed and cannot be retrieved
+  // This function is deprecated for Sequelize-based tests
+  // Tests should capture tokens from registration/request-token responses
+  throw new Error(
+    'getLatestMagicTokenForUser is not supported with Sequelize. Tokens are hashed and cannot be retrieved. Capture tokens from API responses instead.'
   );
-
-  return {
-    token: sortedTokens[0].token,
-    code: sortedTokens[0].code,
-  };
 }
 
 /**
  * Clear all magic tokens (for test cleanup)
  */
 export async function clearAllMagicTokens(): Promise<void> {
-  await MagicTokenModel.clear();
+  await MagicLinkToken.destroy({ where: {}, force: true });
 }
 
 /**
  * Clear all users (for test cleanup)
  */
 export async function clearAllUsers(): Promise<void> {
-  await UserModel.clear();
+  await User.destroy({ where: {}, force: true });
 }
 
 /**
  * Clear all sessions (for test cleanup)
  */
 export async function clearAllSessions(): Promise<void> {
-  await SessionModel.clear();
+  await UserSession.destroy({ where: {}, force: true });
 }
