@@ -41,7 +41,7 @@ export class BadRequestError extends AppError {
  * Authentication failed or missing
  */
 export class UnauthorizedError extends AppError {
-  constructor(message = HTTP_STATUS_MESSAGE[HTTP_STATUS.UNAUTHORIZED]) {
+  constructor(message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.UNAUTHORIZED]) {
     super(HTTP_STATUS.UNAUTHORIZED, message);
   }
 }
@@ -51,7 +51,7 @@ export class UnauthorizedError extends AppError {
  * User lacks permission to access resource
  */
 export class ForbiddenError extends AppError {
-  constructor(message = HTTP_STATUS_MESSAGE[HTTP_STATUS.FORBIDDEN]) {
+  constructor(message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.FORBIDDEN]) {
     super(HTTP_STATUS.FORBIDDEN, message);
   }
 }

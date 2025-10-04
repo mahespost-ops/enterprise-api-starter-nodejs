@@ -7,37 +7,56 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { UnauthorizedError } from '../utils/errors';
+import jwt from 'jsonwebtoken';
+import { UnauthorizedError, ForbiddenError } from '../utils/errors';
+import { JWTPayload } from '../types/express';
+import config from '../config';
 
 /**
  * JWT Authentication Middleware
  * Validates JWT token and attaches user to request
  *
  * @throws UnauthorizedError if token is missing or invalid
- *
- * TODO: Implement JWT validation logic:
- * 1. Extract token from Authorization header
- * 2. Verify token signature using JWT_SECRET
- * 3. Decode token payload (sub, orgId, envId, user, impersonation)
- * 4. Attach decoded payload to req.user
- * 5. Validate token expiration
- * 6. Check if token is blacklisted (if using Redis blacklist)
  */
 export const authMiddleware = (
-  _req: Request,
+  req: Request,
   _res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void => {
-  // TODO: Implement authentication
-  // For now, throw error to prevent unauthenticated access
-  throw new UnauthorizedError();
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
 
-  // Implementation reference:
-  // const token = req.headers.authorization?.replace('Bearer ', '');
-  // if (!token) throw new UnauthorizedError('No token provided');
-  // const decoded = jwt.verify(token, config.jwt.secret);
-  // req.user = decoded;
-  // next();
+    if (!authHeader) {
+      throw new UnauthorizedError('No authorization header provided');
+    }
+
+    // Remove 'Bearer ' prefix if present, otherwise use token as-is
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : authHeader;
+
+    if (!token || token.trim() === '') {
+      throw new UnauthorizedError('No token provided');
+    }
+
+    // Verify token signature and decode payload
+    const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
+
+    // Attach decoded payload to request
+    req.user = decoded;
+
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      throw new UnauthorizedError('Invalid token');
+    }
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new UnauthorizedError('Token expired');
+    }
+    // Re-throw if already an UnauthorizedError
+    throw error;
+  }
 };
 
 /**
@@ -46,12 +65,35 @@ export const authMiddleware = (
  * Used for endpoints that have different behavior for authenticated vs unauthenticated users
  */
 export const optionalAuthMiddleware = (
-  _req: Request,
+  req: Request,
   _res: Response,
   next: NextFunction
 ): void => {
-  // TODO: Implement optional authentication
-  next();
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      // No token provided, continue without authentication
+      return next();
+    }
+
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : authHeader;
+
+    if (!token || token.trim() === '') {
+      return next();
+    }
+
+    // Try to verify token, but don't throw if invalid
+    const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
+    req.user = decoded;
+
+    next();
+  } catch {
+    // Token invalid, continue without authentication
+    next();
+  }
 };
 
 /**
@@ -59,18 +101,33 @@ export const optionalAuthMiddleware = (
  * Validates that orgId and envId from path match JWT token claims
  *
  * @throws ForbiddenError if context doesn't match token
- *
- * TODO: Implement context validation:
- * 1. Extract orgId and envId from req.params
- * 2. Compare with req.user.orgId and req.user.envId
- * 3. Throw ForbiddenError if mismatch
  */
 export const validateTenantContextMiddleware = (
-  _req: Request,
+  req: Request,
   _res: Response,
   next: NextFunction
 ): void => {
-  // TODO: Implement tenant context validation
+  // User must be authenticated first
+  if (!req.user) {
+    throw new ForbiddenError('User context missing from request');
+  }
+
+  const { orgId, envId } = req.params;
+
+  // Validate orgId if present in path
+  if (orgId && orgId !== req.user.orgId) {
+    throw new ForbiddenError(
+      `Access denied: Organization context mismatch (expected: ${req.user.orgId}, got: ${orgId})`
+    );
+  }
+
+  // Validate envId if present in path
+  if (envId && envId !== req.user.envId) {
+    throw new ForbiddenError(
+      `Access denied: Environment context mismatch (expected: ${req.user.envId}, got: ${envId})`
+    );
+  }
+
   next();
 };
 

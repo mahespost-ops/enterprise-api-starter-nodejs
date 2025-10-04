@@ -61,28 +61,58 @@ export type Permission =
  * RBAC Middleware Factory
  * Creates middleware that checks if user has required permissions
  *
- * @param requiredPermissions - Array of permissions, user needs at least one
+ * @param requiredPermissions - Array of permissions, user needs at least one (OR logic)
  * @returns Middleware function
- *
- * TODO: Implement RBAC logic:
- * 1. Get user permissions from database based on req.user.sub
- * 2. Check if user has any of the required permissions
- * 3. Handle impersonation context (check both original and effective user permissions)
- * 4. Throw ForbiddenError if no matching permissions
  */
 export const requirePermissions = (
-  _requiredPermissions: Permission[]
-): ((req: Request, res: Response, next: NextFunction) => void) => {
-  return (_req: Request, _res: Response, _next: NextFunction): void => {
-    // TODO: Implement permission checking
-    // Required permissions: _requiredPermissions.join(', ')
-    throw new ForbiddenError();
+  requiredPermissions: Permission[]
+): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
+  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // User must be authenticated
+      if (!req.user) {
+        throw new ForbiddenError('Authentication required');
+      }
 
-    // Implementation reference:
-    // const userPermissions = await getUserPermissions(req.user.sub);
-    // const hasPermission = requiredPermissions.some(p => userPermissions.includes(p));
-    // if (!hasPermission) throw new ForbiddenError('Insufficient permissions');
-    // next();
+      let userPermissions: Permission[];
+
+      // Check for impersonation context with permission overrides
+      if (req.user.impersonation?.impersonationChain?.length) {
+        const latestImpersonation = req.user.impersonation.impersonationChain[
+          req.user.impersonation.impersonationChain.length - 1
+        ];
+
+        // If permission overrides specified in impersonation, use those
+        if (latestImpersonation.permissions) {
+          userPermissions = Object.entries(latestImpersonation.permissions)
+            .filter(([_, allowed]) => allowed)
+            .map(([perm]) => perm as Permission);
+        } else {
+          // No overrides, get effective user's permissions
+          const { getUserPermissions: getPerms } = await import('../services/rbac.service');
+          userPermissions = await getPerms(req.user.sub);
+        }
+      } else {
+        // No impersonation, get user's normal permissions
+        const { getUserPermissions: getPerms } = await import('../services/rbac.service');
+        userPermissions = await getPerms(req.user.sub);
+      }
+
+      // Check if user has ANY of the required permissions (OR logic)
+      const hasRequiredPermission = requiredPermissions.some((perm) =>
+        userPermissions.includes(perm)
+      );
+
+      if (!hasRequiredPermission) {
+        throw new ForbiddenError(
+          `Insufficient permissions. Required: ${requiredPermissions.join(' OR ')}`
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
   };
 };
 
@@ -101,11 +131,16 @@ export const requireAdmin = requirePermissions(['admin:users:read']);
  * @returns Promise<boolean>
  */
 export async function hasPermission(
-  _userId: string,
-  _permission: Permission
+  userId: string,
+  permission: Permission
 ): Promise<boolean> {
-  // TODO: Implement permission check
-  return false;
+  try {
+    const { getUserPermissions } = await import('../services/rbac.service');
+    const permissions = await getUserPermissions(userId);
+    return permissions.includes(permission);
+  } catch {
+    return false;
+  }
 }
 
 export default requirePermissions;
