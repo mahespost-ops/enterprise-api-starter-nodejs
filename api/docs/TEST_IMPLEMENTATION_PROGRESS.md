@@ -140,29 +140,60 @@ Following TDD methodology, we're implementing comprehensive test coverage for al
 
 ---
 
-### Batch 1: Authentication Flow ⏭️
+### Batch 1: Authentication Flow ✅
 **Endpoints:** 6
 **File:** `__tests__/integration/auth.test.ts`
 
 #### Endpoints:
-1. `POST /auth/register` - User registration
-2. `POST /auth/request-token` - Request magic link token
-3. `POST /auth/verify-token` - Verify magic link and get JWT
-4. `POST /auth/refresh` - Refresh JWT token
-5. `POST /auth/logout` - Logout and invalidate session
-6. `POST /auth/switch-context` - Switch organization/environment context
+1. `POST /auth/register` - User registration ✅
+2. `POST /auth/request-token` - Request magic link token ✅
+3. `POST /auth/verify-token` - Verify magic link and get JWT ⚠️
+4. `POST /auth/refresh` - Refresh JWT token ⚠️
+5. `POST /auth/logout` - Logout and invalidate session ⚠️
+6. `POST /auth/switch-context` - Switch organization/environment context ⚠️
 
 #### Test Coverage Per Endpoint:
-- [ ] Success case (200/201)
-- [ ] Validation errors (422)
-- [ ] Authentication errors (401)
-- [ ] Rate limiting (429)
-- [ ] Server errors (500)
-- [ ] Edge cases (duplicate registration, expired tokens, etc.)
+- [x] Success case (200/201)
+- [x] Validation errors (422)
+- [x] Authentication errors (401)
+- [x] Rate limiting (429)
+- [x] Server errors (500)
+- [x] Edge cases (duplicate registration, expired tokens, etc.)
 
-**Status:** Not started
-**Tests Written:** 0/36 (6 endpoints × 6 tests each)
-**Tests Passing:** 0/36
+#### Implementation Complete:
+- [x] Validation middleware (`validate.middleware.ts`)
+- [x] Validation schemas (`validation-schemas/auth.schemas.ts`)
+- [x] User model stub (`models/User.model.ts`)
+- [x] MagicToken model stub (`models/MagicToken.model.ts`)
+- [x] Session model stub (`models/Session.model.ts`)
+- [x] Auth service (`services/auth.service.ts`)
+- [x] Auth controller (`controllers/auth.controller.ts`)
+- [x] Auth routes (`routes/auth.routes.ts`)
+- [x] Wired into main router
+
+**Status:** 🔄 Test helpers created, TS compilation blocked
+**Tests Written:** 36/36 (6 endpoints × 6 tests each)
+**Tests Passing:** BLOCKED - TypeScript compilation error in test helpers
+**Test Helpers Status:**
+  - ✅ Created `__tests__/helpers/auth.helpers.ts` with:
+    - `generateTestJWT()` - Generate valid JWT tokens for testing
+    - `generateExpiredTestJWT()` - Generate expired tokens
+    - `getLatestMagicTokenForUser()` - Extract magic tokens from in-memory store
+    - `clearAllMagicTokens()`, `clearAllUsers()`, `clearAllSessions()` - Cleanup helpers
+  - ✅ Updated all 36 auth tests to use real tokens via helpers
+  - ⚠️ **BLOCKER:** TypeScript compilation error with `jwt.sign()` expiresIn parameter type
+    - Error: `Type 'string | number' is not assignable to type 'number | StringValue | undefined'`
+    - Location: `auth.helpers.ts:38` in `generateTestJWT()` function
+    - Needs: Type assertion or restructured signature to satisfy jwt.sign() overloads
+**Test File Created:** 2025-10-03
+**Implementation Completed:** 2025-10-03
+**Helpers Created:** 2025-10-03
+
+**NEXT STEPS TO UNBLOCK:**
+1. Fix `auth.helpers.ts:38` - Try restructuring the function to avoid type inference issues
+2. Alternative: Use direct jwt.sign() calls in tests instead of helper (less DRY but unblocks)
+3. Once compilation passes, run tests to verify helper extraction works
+4. Expect most/all 36 tests to pass once helpers are working
 
 ---
 
@@ -522,21 +553,23 @@ Split into sub-batches for manageability:
 ## Summary Statistics
 
 ### Phase 1: Core Infrastructure ✅ COMPLETE
-- **Total Tests:** 42 runnable (4 skipped with documentation)
-- **Written:** 42
-- **Passing:** 38/38 (100%) ✅
+- **Total Tests:** 53 runnable (4 skipped with documentation)
+- **Written:** 53
+- **Passing:** 49/49 (100%) ✅
   - ✅ Utils: 2/2 (100%)
-  - ✅ Auth: 17/17 (100%)
-  - ✅ RBAC: 14/14 (100%)
-  - ✅ Rate Limit: 7/7 (100%)
+  - ✅ Auth Middleware: 17/17 (100%)
+  - ✅ RBAC Middleware: 14/14 (100%)
+  - ✅ Rate Limit Middleware: 7/7 (100%)
+  - ✅ Error Handler Middleware: 11/11 (100%) - **ADDED 2025-10-03**
 - **Skipped Tests:** 4 (admin bypass removed, rate limit isolation issues)
 - **Status:** TDD GREEN phase complete - All middleware implemented and tested
 
 ### Phase 2: Endpoint Tests
 - **Total Tests:** ~750 (125 endpoints × 6 tests each)
-- **Written:** 0
-- **Passing:** 0
-- **Completion:** 0%
+- **Written:** 36 (Batch 1 complete - all tests updated with helpers)
+- **Passing:** BLOCKED by TypeScript compilation error
+- **Completion:** 4.8% tests written (36/750), 0% passing (blocked)
+- **Status:** 🔄 Batch 1 tests written & updated with helpers - TS compilation blocker in `auth.helpers.ts:38`
 
 ### Phase 3: Critical Paths
 - **Total Tests:** ~16
@@ -546,9 +579,9 @@ Split into sub-batches for manageability:
 
 ### Overall Progress
 - **Total Tests:** ~816
-- **Written:** 2
-- **Passing:** 2
-- **Completion:** 0.2%
+- **Written:** 89 (Phase 1: 53 ✅, Phase 2: 36 🔄)
+- **Passing:** 49 (Phase 1: 49/49 ✅, Phase 2: BLOCKED by TS error)
+- **Completion:** 10.9% tests written, 6.0% passing (Phase 2 blocked)
 
 ---
 
@@ -587,9 +620,9 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 5. ✅ Write Phase 1.2.2: Authorize middleware tests
 6. ✅ Write Phase 1.2.3: Context validation middleware tests (included in auth tests)
 7. ✅ Write Phase 1.2.4: Rate limit middleware tests
-8. ⏭️ **NEXT: Implement auth & RBAC middleware (make Phase 1 tests pass - GREEN phase)**
-9. ⏭️ Begin Phase 2 Batch 1: Authentication endpoint tests
-10. ⏭️ Implement authentication endpoints
+8. ✅ Implement auth & RBAC middleware (make Phase 1 tests pass - GREEN phase)
+9. ✅ Write Phase 2 Batch 1: Authentication endpoint tests (TDD Red phase)
+10. ⏭️ **NEXT: Implement authentication controllers, services, and routes (TDD Green phase)**
 
 ---
 
@@ -605,17 +638,36 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 
 ---
 
-**Last Updated:** 2025-10-03
-**Current Phase:** Phase 1 - Core Infrastructure Tests ✅ 100% COMPLETE
-**Current Task:** All middleware tests GREEN (38/38 passing). Ready for Phase 2: Endpoint Tests
+**Last Updated:** 2025-10-03 (Evening Session)
+**Current Phase:** Phase 2 Batch 1 - Authentication Flow 🔄
+**Current Task:** BLOCKED - TypeScript compilation error in test helpers
 
-**Key Achievements:**
-- ✅ Authentication middleware with JWT validation (17/17 tests)
-- ✅ RBAC middleware with stub service using realistic UUIDs (14/14 tests)
-- ✅ Context validation middleware (included in auth tests)
+**Phase 1 Achievements:** ✅ COMPLETE
+- ✅ Authentication middleware with JWT validation (17/17 tests) GREEN
+- ✅ RBAC middleware with stub service using realistic UUIDs (14/14 tests) GREEN
+- ✅ Context validation middleware (included in auth tests) GREEN
+- ✅ Error handler middleware (11/11 tests) GREEN - **ADDED 2025-10-03**
 - ✅ All tests enforce Express best practices (next(error) pattern)
 - ✅ Error handling with invalid UUIDs and edge cases
-- ✅ Rate limiting middleware tested (7/7 tests)
+- ✅ Rate limiting middleware tested (7/7 tests) GREEN
+
+**Phase 2 Batch 1 Status:**
+- ✅ **Tests Written:** 36/36 integration tests for 6 auth endpoints
+- ✅ **Implementation:** Controllers, services, routes, models all complete
+- ✅ **Test Helpers:** Created `auth.helpers.ts` with token extraction/generation
+- ✅ **Tests Updated:** All 36 tests now use real tokens via helpers
+- ⚠️ **BLOCKER:** TypeScript compilation error in `auth.helpers.ts:38`
+  - Issue: `jwt.sign()` expiresIn parameter type mismatch
+  - Error: `Type 'string | number' is not assignable to type 'number | StringValue | undefined'`
+  - Impact: Cannot run tests until compilation passes
+- ⏭️ **Next:** Fix TS error, then run tests (expect high pass rate once unblocked)
+
+**Test Helpers Created (2025-10-03):**
+- `generateTestJWT()` - Generate valid JWT tokens
+- `generateExpiredTestJWT()` - Generate expired tokens
+- `getLatestMagicTokenForUser()` - Extract magic tokens from in-memory store
+- `getAuthenticatedTokens()` - Helper in test file to login and get tokens
+- Cleanup helpers: `clearAllMagicTokens()`, `clearAllUsers()`, `clearAllSessions()`
 
 **Security Decisions:**
 - ✅ **No admin bypass**: Admins use impersonation for proper audit trail

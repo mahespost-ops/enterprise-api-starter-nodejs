@@ -3,7 +3,7 @@
  * Protects API from abuse and DDoS attacks
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimitLib from 'express-rate-limit';
 import config from '../config';
 import logger from '../config/logger';
 
@@ -11,7 +11,7 @@ import logger from '../config/logger';
  * General API rate limiter
  * Applied to all API routes
  */
-export const apiLimiter = rateLimit({
+export const apiLimiter = rateLimitLib({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.maxRequests,
   message: {
@@ -41,7 +41,7 @@ export const apiLimiter = rateLimit({
  * Stricter rate limiter for authentication endpoints
  * Prevents brute force attacks
  */
-export const authLimiter = rateLimit({
+export const authLimiter = rateLimitLib({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per window
   message: {
@@ -72,9 +72,18 @@ export const authLimiter = rateLimit({
  * Permissive rate limiter for public endpoints
  * Higher limits for read-only operations
  */
-export const publicLimiter = rateLimit({
+export const publicLimiter = rateLimitLib({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 30, // 30 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Export rate limiters as named object for convenience
+ */
+export const rateLimit = {
+  apiEndpoint: apiLimiter,
+  authEndpoint: authLimiter,
+  publicEndpoint: publicLimiter,
+};

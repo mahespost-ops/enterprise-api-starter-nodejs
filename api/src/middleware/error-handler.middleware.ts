@@ -48,11 +48,11 @@ export const errorHandler = (
 
   // Handle known application errors
   if (err instanceof AppError) {
-    const statusMessage = HTTP_STATUS_MESSAGE[err.status as keyof typeof HTTP_STATUS_MESSAGE] || err.message;
+    const statusMessage = HTTP_STATUS_MESSAGE[err.status as keyof typeof HTTP_STATUS_MESSAGE];
     const response: ErrorResponse = {
       status: err.status,
-      message: statusMessage,
-      error: err.message,
+      message: err.message, // Detailed, human-readable explanation
+      error: statusMessage, // Generic HTTP status message (error type/category)
       timestamp: err.timestamp,
       path: req.path,
     };

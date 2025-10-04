@@ -31,7 +31,7 @@ export class AppError extends Error {
  * 400 Bad Request
  */
 export class BadRequestError extends AppError {
-  constructor(message = HTTP_STATUS_MESSAGE[HTTP_STATUS.BAD_REQUEST]) {
+  constructor(message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.BAD_REQUEST]) {
     super(HTTP_STATUS.BAD_REQUEST, message);
   }
 }
@@ -70,7 +70,7 @@ export class NotFoundError extends AppError {
  * Resource already exists
  */
 export class ConflictError extends AppError {
-  constructor(message = HTTP_STATUS_MESSAGE[HTTP_STATUS.CONFLICT]) {
+  constructor(message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.CONFLICT]) {
     super(HTTP_STATUS.CONFLICT, message);
   }
 }
@@ -90,7 +90,7 @@ export class ValidationError extends AppError {
 
   constructor(
     errors: ValidationErrorDetail[],
-    message = HTTP_STATUS_MESSAGE[HTTP_STATUS.UNPROCESSABLE_ENTITY]
+    message: string = HTTP_STATUS_MESSAGE[HTTP_STATUS.UNPROCESSABLE_ENTITY]
   ) {
     super(HTTP_STATUS.UNPROCESSABLE_ENTITY, message);
     this.errors = errors;
