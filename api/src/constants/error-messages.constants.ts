@@ -10,6 +10,10 @@ export const ERROR_MESSAGES = {
   TOKEN_EXPIRED: 'Token has expired',
   INVALID_CREDENTIALS: 'Invalid email or password',
   UNAUTHORIZED: 'Unauthorized access',
+  NO_AUTH_HEADER: 'No authorization header provided',
+  NO_TOKEN_PROVIDED: 'No token provided',
+  USER_NOT_AUTHENTICATED: 'User not authenticated',
+  USER_CONTEXT_MISSING: 'User context missing from request',
 
   // Authorization
   FORBIDDEN: 'Insufficient permissions to access this resource',
@@ -26,6 +30,9 @@ export const ERROR_MESSAGES = {
   DEVICE_NOT_FOUND: 'Device not found',
   SESSION_NOT_FOUND: 'Session not found',
   RESOURCE_NOT_FOUND: 'Resource not found',
+  ORGANIZATION_NOT_FOUND: 'Organization not found',
+  ENVIRONMENT_NOT_FOUND: 'Environment not found',
+  NOT_ORGANIZATION_MEMBER: 'You are not a member of this organization',
 
   // Conflicts
   USER_EXISTS: 'User with this email already exists',
@@ -34,6 +41,8 @@ export const ERROR_MESSAGES = {
   // Rate Limiting
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',
   TOO_MANY_ATTEMPTS: 'Too many attempts. Please try again later',
+  RATE_LIMIT_MESSAGE: 'You have exceeded the rate limit. Please try again later.',
+  AUTH_RATE_LIMIT_MESSAGE: 'Too many login attempts. Please try again later.',
 
   // Server Errors
   INTERNAL_ERROR: 'An unexpected error occurred',
@@ -53,6 +62,10 @@ export const ERROR_MESSAGES = {
   SESSION_EXPIRED: 'Session has expired',
   SESSION_REVOKED: 'Session has been revoked',
   INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
+
+  // Environment/Organization Business Rules
+  CANNOT_DELETE_DEFAULT_ENV: 'Cannot delete the default environment',
+  CANNOT_DELETE_LAST_ENV: 'Cannot delete the last remaining environment',
 
   // Generic
   UNKNOWN_ERROR: 'Unknown error',

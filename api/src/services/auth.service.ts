@@ -10,6 +10,12 @@ import config from '../config';
 import logger from '../config/logger';
 import { NotFoundError, UnauthorizedError, ConflictError, ForbiddenError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
+import { SUCCESS_MESSAGES } from '../constants/messages.constants';
+import { EMAIL_SUBJECTS } from '../constants/email.constants';
+import { TRUST_STATUS, DEVICE_DEFAULTS, DEVICE_NAMES } from '../constants/device.constants';
+import { NETWORK_DEFAULTS, DEFAULT_CONTEXT } from '../constants/network.constants';
+import { CRYPTO_DEFAULTS, MAGIC_CODE } from '../constants/crypto.constants';
+import { TOKEN_PREFIX } from '../constants/http.constants';
 import { User } from '../models/User.model';
 import { MagicLinkToken } from '../models/MagicLinkToken.model';
 import { UserSession } from '../models/UserSession.model';
@@ -17,7 +23,7 @@ import { Device } from '../models/Device.model';
 import { Organization } from '../models/Organization.model';
 import { OrganizationMember } from '../models/OrganizationMember.model';
 import { Environment } from '../models/Environment.model';
-import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
+import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, TOKEN_EXPIRATION_MS, JWT_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
 import { AdapterFactory } from './adapter.factory';
 
 // Types
@@ -127,13 +133,13 @@ class AuthService {
       await emailAdapter.sendEmail({
         to: data.email,
         from: config.email.from,
-        subject: 'Your Magic Link',
-        body: `Welcome! Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.`,
+        subject: EMAIL_SUBJECTS.MAGIC_LINK,
+        body: `Welcome! Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60} minutes.`,
         html: `
           <p>Welcome! Click the link below to sign in:</p>
           <p><a href="${config.app.url}/auth/verify?token=${token}">Sign In</a></p>
           <p>Or enter this code: <strong>${code}</strong></p>
-          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.</p>
+          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60} minutes.</p>
         `,
       });
     }
@@ -142,7 +148,7 @@ class AuthService {
     logger.info(`Magic token sent via ${deliveryMethod} to ${sentTo}`);
 
     return {
-      message: 'Magic token sent successfully',
+      message: SUCCESS_MESSAGES.MAGIC_TOKEN_SENT,
       deliveryMethod,
       sentTo,
       expiresIn: TOKEN_EXPIRATION.MAGIC_TOKEN,
@@ -175,13 +181,13 @@ class AuthService {
       await emailAdapter.sendEmail({
         to: user.email,
         from: config.email.from,
-        subject: 'Your Magic Link',
-        body: `Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.`,
+        subject: EMAIL_SUBJECTS.MAGIC_LINK,
+        body: `Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60} minutes.`,
         html: `
           <p>Click the link below to sign in:</p>
           <p><a href="${config.app.url}/auth/verify?token=${token}">Sign In</a></p>
           <p>Or enter this code: <strong>${code}</strong></p>
-          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.</p>
+          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60} minutes.</p>
         `,
       });
     }
@@ -190,7 +196,7 @@ class AuthService {
     logger.info(`Magic token sent via ${deliveryMethod} to ${sentTo}`);
 
     return {
-      message: 'Magic token sent successfully',
+      message: SUCCESS_MESSAGES.MAGIC_TOKEN_SENT,
       deliveryMethod,
       sentTo,
       expiresIn: TOKEN_EXPIRATION.MAGIC_TOKEN,
@@ -247,12 +253,12 @@ class AuthService {
       userId: user.id,
       fingerprintHash: data.fingerprint ? await bcrypt.hash(data.fingerprint, 10) : await bcrypt.hash(deviceId, 10),
       deviceName: deviceName,
-      deviceType: 'unknown', // TODO: Parse from user agent
-      os: 'unknown', // TODO: Parse from user agent
-      browser: 'unknown', // TODO: Parse from user agent
-      trustStatus: 'trusted',
-      firstSeenIp: '127.0.0.1', // TODO: Get from request context
-      lastSeenIp: '127.0.0.1', // TODO: Get from request context
+      deviceType: DEVICE_DEFAULTS.UNKNOWN_TYPE, // TODO: Parse from user agent
+      os: DEVICE_DEFAULTS.UNKNOWN_OS, // TODO: Parse from user agent
+      browser: DEVICE_DEFAULTS.UNKNOWN_BROWSER, // TODO: Parse from user agent
+      trustStatus: TRUST_STATUS.TRUSTED,
+      firstSeenIp: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
+      lastSeenIp: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
       createdAt: new Date(),
       lastUsedAt: new Date(),
     });
@@ -264,7 +270,7 @@ class AuthService {
     };
 
     const sessionId = crypto.randomUUID();
-    const refreshToken = crypto.randomBytes(32).toString('hex');
+    const refreshToken = crypto.randomBytes(CRYPTO_DEFAULTS.REFRESH_TOKEN_BYTES).toString('hex');
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
     await UserSession.create({
@@ -272,16 +278,16 @@ class AuthService {
       userId: user.id,
       deviceId,
       refreshTokenHash,
-      ipAddress: '127.0.0.1', // TODO: Get from request context
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      ipAddress: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
+      expiresAt: new Date(Date.now() + TOKEN_EXPIRATION_MS.REFRESH_TOKEN),
       createdAt: new Date(),
       isActive: true,
     });
 
     const accessToken = this.generateAccessToken({
       sub: user.id,
-      orgId: 'default-org-id', // TODO: Get from user's last_org_id
-      envId: 'default-env-id', // TODO: Get from user's last_env_id
+      orgId: DEFAULT_CONTEXT.ORG_ID, // TODO: Get from user's last_org_id
+      envId: DEFAULT_CONTEXT.ENV_ID, // TODO: Get from user's last_env_id
       user: {
         fullName: user.fullName,
         email: user.email,
@@ -291,14 +297,14 @@ class AuthService {
     return {
       accessToken,
       refreshToken,
-      expiresIn: 900,
-      refreshExpiresIn: 2592000,
-      tokenType: 'Bearer',
+      expiresIn: TOKEN_EXPIRATION.ACCESS_TOKEN,
+      refreshExpiresIn: TOKEN_EXPIRATION.REFRESH_TOKEN,
+      tokenType: TOKEN_PREFIX.BEARER.trim(),
       user,
       device,
       session: {
         id: sessionId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + TOKEN_EXPIRATION_MS.REFRESH_TOKEN),
       },
     };
   }
@@ -344,7 +350,7 @@ class AuthService {
     }
 
     // Token rotation for security
-    const newRefreshToken = crypto.randomBytes(32).toString('hex');
+    const newRefreshToken = crypto.randomBytes(CRYPTO_DEFAULTS.REFRESH_TOKEN_BYTES).toString('hex');
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
 
     await matchedSession.update({
@@ -354,8 +360,8 @@ class AuthService {
 
     const accessToken = this.generateAccessToken({
       sub: user.id,
-      orgId: 'default-org-id',
-      envId: 'default-env-id',
+      orgId: DEFAULT_CONTEXT.ORG_ID,
+      envId: DEFAULT_CONTEXT.ENV_ID,
       user: {
         fullName: user.fullName,
         email: user.email,
@@ -365,9 +371,9 @@ class AuthService {
     return {
       accessToken,
       refreshToken: newRefreshToken,
-      expiresIn: 900,
-      refreshExpiresIn: 2592000,
-      tokenType: 'Bearer',
+      expiresIn: TOKEN_EXPIRATION.ACCESS_TOKEN,
+      refreshExpiresIn: TOKEN_EXPIRATION.REFRESH_TOKEN,
+      tokenType: TOKEN_PREFIX.BEARER.trim(),
     };
   }
 
@@ -412,7 +418,7 @@ class AuthService {
     // Check if organization exists first (return 404 if not)
     const org = await Organization.findByPk(data.organizationId);
     if (!org) {
-      throw new NotFoundError('Organization not found');
+      throw new NotFoundError(ERROR_MESSAGES.ORGANIZATION_NOT_FOUND);
     }
 
     // Check if environment exists and belongs to the organization (return 404 if not)
@@ -420,7 +426,7 @@ class AuthService {
       where: { id: data.environmentId, organizationId: data.organizationId },
     });
     if (!env) {
-      throw new NotFoundError('Environment not found');
+      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
     }
 
     // Check if user has access to organization (return 403 if not)
@@ -428,7 +434,7 @@ class AuthService {
       where: { userId: data.userId, organizationId: data.organizationId },
     });
     if (!orgMember) {
-      throw new ForbiddenError('You do not have access to this organization');
+      throw new ForbiddenError(ERROR_MESSAGES.NOT_ORGANIZATION_MEMBER);
     }
 
     // Update user's last_org_id and last_env_id
@@ -467,8 +473,8 @@ class AuthService {
   // ============================================================================
 
   private async generateMagicToken(userId: string, fingerprint?: string): Promise<{ token: string; code: string }> {
-    const token = crypto.randomBytes(32).toString('base64url');
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const token = crypto.randomBytes(CRYPTO_DEFAULTS.MAGIC_TOKEN_BYTES).toString('base64url');
+    const code = Math.floor(MAGIC_CODE.MIN + Math.random() * MAGIC_CODE.RANGE).toString();
 
     // Hash both token and code before storing
     const tokenHash = await bcrypt.hash(token, 10);
@@ -480,7 +486,7 @@ class AuthService {
       codeHash,
       fingerprint,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      expiresAt: new Date(Date.now() + TOKEN_EXPIRATION_MS.MAGIC_TOKEN),
     });
 
     return { token, code };
@@ -488,7 +494,7 @@ class AuthService {
 
   private generateAccessToken(payload: Record<string, unknown>): string {
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: '15m',
+      expiresIn: JWT_EXPIRATION.ACCESS_TOKEN,
       issuer: config.app.name,
     });
   }
@@ -506,16 +512,16 @@ class AuthService {
   }
 
   private extractDeviceName(userAgent?: string): string {
-    if (!userAgent) return 'Unknown Device';
+    if (!userAgent) return DEVICE_DEFAULTS.UNKNOWN_NAME;
 
-    if (userAgent.includes('iPhone')) return 'iPhone';
-    if (userAgent.includes('iPad')) return 'iPad';
-    if (userAgent.includes('Android')) return 'Android Device';
-    if (userAgent.includes('Macintosh')) return 'Mac';
-    if (userAgent.includes('Windows')) return 'Windows PC';
-    if (userAgent.includes('Linux')) return 'Linux PC';
+    if (userAgent.includes('iPhone')) return DEVICE_NAMES.IPHONE;
+    if (userAgent.includes('iPad')) return DEVICE_NAMES.IPAD;
+    if (userAgent.includes('Android')) return DEVICE_NAMES.ANDROID;
+    if (userAgent.includes('Macintosh')) return DEVICE_NAMES.MAC;
+    if (userAgent.includes('Windows')) return DEVICE_NAMES.WINDOWS;
+    if (userAgent.includes('Linux')) return DEVICE_NAMES.LINUX;
 
-    return 'Unknown Device';
+    return DEVICE_DEFAULTS.UNKNOWN_NAME;
   }
 }
 

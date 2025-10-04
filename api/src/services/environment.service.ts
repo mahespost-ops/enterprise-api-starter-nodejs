@@ -7,6 +7,7 @@ import { Environment, EnvironmentType } from '../models/Environment.model';
 import { Organization } from '../models/Organization.model';
 import { OrganizationMember } from '../models/OrganizationMember.model';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import logger from '../config/logger';
 
 interface CreateEnvironmentDto {
@@ -47,7 +48,7 @@ class EnvironmentService {
 
     if (!org) {
       logger.warn(`Organization not found: ${orgId}`);
-      throw new NotFoundError('Organization not found');
+      throw new NotFoundError(ERROR_MESSAGES.ORGANIZATION_NOT_FOUND);
     }
 
     // Check if user is a member of the organization
@@ -60,7 +61,7 @@ class EnvironmentService {
 
     if (!membership) {
       logger.warn(`User ${userId} is not a member of organization ${orgId}`);
-      throw new ForbiddenError('You are not a member of this organization');
+      throw new ForbiddenError(ERROR_MESSAGES.NOT_ORGANIZATION_MEMBER);
     }
 
     return org;
@@ -142,7 +143,7 @@ class EnvironmentService {
 
     if (!environment || environment.organizationId !== orgId) {
       logger.warn(`Environment not found: ${envId} in organization: ${orgId}`);
-      throw new NotFoundError('Environment not found');
+      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
     }
 
     logger.debug(`Environment retrieved: ${envId}`);
@@ -239,7 +240,7 @@ class EnvironmentService {
     // Prevent deletion of default environment
     if (environment.isDefault) {
       logger.warn(`Attempted to delete default environment: ${envId}`);
-      throw new BadRequestError('Cannot delete the default environment');
+      throw new BadRequestError(ERROR_MESSAGES.CANNOT_DELETE_DEFAULT_ENV);
     }
 
     // Check if this is the last remaining environment
@@ -251,7 +252,7 @@ class EnvironmentService {
 
     if (envCount <= 1) {
       logger.warn(`Attempted to delete last remaining environment: ${envId}`);
-      throw new BadRequestError('Cannot delete the last remaining environment');
+      throw new BadRequestError(ERROR_MESSAGES.CANNOT_DELETE_LAST_ENV);
     }
 
     // Soft delete

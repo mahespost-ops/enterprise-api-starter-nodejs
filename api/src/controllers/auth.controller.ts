@@ -6,6 +6,11 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/async-handler';
 import { HTTP_STATUS } from '../constants/http-status.constants';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
+import { COOKIE_NAMES, COOKIE_OPTIONS } from '../constants/cookie.constants';
+import { HTTP_HEADERS } from '../constants/http.constants';
+import { NODE_ENV } from '../constants/environment.constants';
+import { TOKEN_EXPIRATION_MS } from '../constants/auth.constants';
 import authService from '../services/auth.service';
 import logger from '../config/logger';
 
@@ -56,15 +61,15 @@ export const verifyMagicToken = asyncHandler(
 
     const result = await authService.verifyMagicToken({
       ...req.body,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers[HTTP_HEADERS.USER_AGENT],
     });
 
     // Set refresh token as HTTP-only cookie (for web apps)
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: result.refreshExpiresIn * 1000, // Convert to milliseconds
+    res.cookie(COOKIE_NAMES.REFRESH_TOKEN, result.refreshToken, {
+      httpOnly: COOKIE_OPTIONS.HTTP_ONLY,
+      secure: process.env.NODE_ENV === NODE_ENV.PRODUCTION,
+      sameSite: COOKIE_OPTIONS.SAME_SITE_STRICT,
+      maxAge: TOKEN_EXPIRATION_MS.REFRESH_TOKEN,
     });
 
     // Return full response including refreshToken (for mobile apps)
@@ -87,16 +92,16 @@ export const refreshAccessToken = asyncHandler(
     logger.debug('Token refresh requested');
 
     // Get refresh token from cookie or body (dual-mode)
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN] || req.body.refreshToken;
 
     const result = await authService.refreshAccessToken(refreshToken);
 
     // Update refresh token cookie (for web apps)
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: result.refreshExpiresIn * 1000,
+    res.cookie(COOKIE_NAMES.REFRESH_TOKEN, result.refreshToken, {
+      httpOnly: COOKIE_OPTIONS.HTTP_ONLY,
+      secure: process.env.NODE_ENV === NODE_ENV.PRODUCTION,
+      sameSite: COOKIE_OPTIONS.SAME_SITE_STRICT,
+      maxAge: TOKEN_EXPIRATION_MS.REFRESH_TOKEN,
     });
 
     // Return full response including refreshToken (for mobile apps)
@@ -115,16 +120,16 @@ export const logout = asyncHandler(
 
     const userId = req.user?.sub;
     if (!userId) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: 'User not authenticated' });
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: ERROR_MESSAGES.USER_NOT_AUTHENTICATED });
       return;
     }
 
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN] || req.body.refreshToken;
 
     await authService.logout(userId, refreshToken);
 
     // Clear refresh token cookie
-    res.clearCookie('refreshToken');
+    res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN);
 
     res.status(HTTP_STATUS.NO_CONTENT).send();
   }
@@ -141,7 +146,7 @@ export const switchContext = asyncHandler(
 
     const userId = req.user?.sub;
     if (!userId) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: 'User not authenticated' });
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: ERROR_MESSAGES.USER_NOT_AUTHENTICATED });
       return;
     }
 

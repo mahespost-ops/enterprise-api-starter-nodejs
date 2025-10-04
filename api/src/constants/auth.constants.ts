@@ -23,6 +23,25 @@ export const TOKEN_EXPIRATION = {
 } as const;
 
 /**
+ * Token expiration times in milliseconds
+ * Note: For date calculations and cookie maxAge
+ */
+export const TOKEN_EXPIRATION_MS = {
+  MAGIC_TOKEN: TOKEN_EXPIRATION.MAGIC_TOKEN * 1000,
+  ACCESS_TOKEN: TOKEN_EXPIRATION.ACCESS_TOKEN * 1000,
+  REFRESH_TOKEN: TOKEN_EXPIRATION.REFRESH_TOKEN * 1000,
+} as const;
+
+/**
+ * JWT expiration string formats
+ * Note: Used with jsonwebtoken library's expiresIn option
+ */
+export const JWT_EXPIRATION = {
+  ACCESS_TOKEN: '15m',
+  REFRESH_TOKEN: '30d',
+} as const;
+
+/**
  * Identifier types for polymorphic identifier field
  */
 export const IDENTIFIER_TYPE = {

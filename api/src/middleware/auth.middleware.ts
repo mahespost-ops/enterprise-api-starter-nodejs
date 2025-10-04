@@ -9,6 +9,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
+import { HTTP_HEADERS, TOKEN_PREFIX } from '../constants/http.constants';
 import { JWTPayload } from '../types/express';
 import config from '../config';
 
@@ -25,19 +27,19 @@ export const authenticate = (
 ): void => {
   try {
     // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers[HTTP_HEADERS.AUTHORIZATION];
 
     if (!authHeader) {
-      throw new UnauthorizedError('No authorization header provided');
+      throw new UnauthorizedError(ERROR_MESSAGES.NO_AUTH_HEADER);
     }
 
     // Remove 'Bearer ' prefix if present, otherwise use token as-is
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.substring(7)
+    const token = authHeader.startsWith(TOKEN_PREFIX.BEARER)
+      ? authHeader.substring(TOKEN_PREFIX.BEARER.length)
       : authHeader;
 
     if (!token || token.trim() === '') {
-      throw new UnauthorizedError('No token provided');
+      throw new UnauthorizedError(ERROR_MESSAGES.NO_TOKEN_PROVIDED);
     }
 
     // Verify token signature and decode payload
@@ -49,10 +51,10 @@ export const authenticate = (
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      throw new UnauthorizedError('Invalid token');
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN);
     }
     if (error instanceof jwt.TokenExpiredError) {
-      throw new UnauthorizedError('Token expired');
+      throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_EXPIRED);
     }
     // Re-throw if already an UnauthorizedError
     throw error;
@@ -109,7 +111,7 @@ export const validateTenantContext = (
 ): void => {
   // User must be authenticated first
   if (!req.user) {
-    throw new ForbiddenError('User context missing from request');
+    throw new ForbiddenError(ERROR_MESSAGES.USER_CONTEXT_MISSING);
   }
 
   const { orgId, envId } = req.params;

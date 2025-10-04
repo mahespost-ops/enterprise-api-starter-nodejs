@@ -6,6 +6,7 @@
 import { Organization } from '../models/Organization.model';
 import { OrganizationMember } from '../models/OrganizationMember.model';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import logger from '../config/logger';
 
 interface UpdateOrganizationDto {
@@ -33,7 +34,7 @@ class OrganizationService {
 
     if (!org) {
       logger.warn(`Organization not found: ${orgId}`);
-      throw new NotFoundError('Organization not found');
+      throw new NotFoundError(ERROR_MESSAGES.ORGANIZATION_NOT_FOUND);
     }
 
     // Check if user is a member of the organization
@@ -46,7 +47,7 @@ class OrganizationService {
 
     if (!membership) {
       logger.warn(`User ${userId} is not a member of organization ${orgId}`);
-      throw new ForbiddenError('You are not a member of this organization');
+      throw new ForbiddenError(ERROR_MESSAGES.NOT_ORGANIZATION_MEMBER);
     }
 
     logger.debug(`Organization retrieved: ${orgId}`);

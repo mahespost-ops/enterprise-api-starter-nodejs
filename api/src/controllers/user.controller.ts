@@ -6,6 +6,8 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/async-handler';
 import { HTTP_STATUS } from '../constants/http-status.constants';
+import { BOOLEAN_STRINGS } from '../constants/validation.constants';
+import { TrustStatus } from '../constants/device.constants';
 import userService from '../services/user.service';
 import logger from '../config/logger';
 
@@ -81,7 +83,7 @@ export const getCurrentUserOrganizations = asyncHandler(async (req: Request, res
   const result = await userService.getUserOrganizations(userId, {
     limit: limit ? Number(limit) : undefined,
     offset: offset ? Number(offset) : undefined,
-    includeInactive: includeInactive === 'true',
+    includeInactive: includeInactive === BOOLEAN_STRINGS.TRUE,
   });
 
   res.status(HTTP_STATUS.OK).json(result);
@@ -118,7 +120,7 @@ export const getCurrentUserDevices = asyncHandler(async (req: Request, res: Resp
   const result = await userService.getUserDevices(userId, {
     limit: limit ? Number(limit) : undefined,
     offset: offset ? Number(offset) : undefined,
-    trustStatus: trustStatus as 'trusted' | 'pending' | 'revoked' | undefined,
+    trustStatus: trustStatus as TrustStatus | undefined,
   });
 
   // Transform devices to camelCase (never expose fingerprintHash - security sensitive)
@@ -197,7 +199,7 @@ export const getCurrentUserSessions = asyncHandler(async (req: Request, res: Res
   const result = await userService.getUserSessions(userId, {
     limit: limit ? Number(limit) : undefined,
     offset: offset ? Number(offset) : undefined,
-    isActive: isActive !== undefined ? isActive === 'true' : undefined,
+    isActive: isActive !== undefined ? isActive === BOOLEAN_STRINGS.TRUE : undefined,
   });
 
   // Transform sessions to camelCase
