@@ -48,12 +48,16 @@ export const controllerFunction = asyncHandler(
 - Return HTTP responses with proper status codes
 - Use asyncHandler for error handling
 - Log at debug level for request/response details
+- **Transform responses to camelCase if needed (service returns model objects)**
 
 ### Controllers SHOULD NOT:
 - Contain business logic (delegate to services)
 - Directly access database (use services)
 - Perform complex validations (use middleware)
 - Handle authentication/authorization (use middleware)
+- **❌ NEVER expose database implementation details (hashes, fingerprints, internal IDs)**
+- **❌ NEVER transform field names (e.g., trustStatus → isTrusted) - maintain consistency**
+- **❌ NEVER return security-sensitive fields that are system-managed only**
 
 ## Middleware Order (Applied Before Controller)
 1. **Rate Limiting** (endpoint-specific)
@@ -86,15 +90,39 @@ export const getUser = asyncHandler(async (req, res) => {
 
 ### Success Responses
 ```typescript
-// Single resource
-res.status(HTTP_STATUS.OK).json({ user });
+// Single resource (with field filtering for security)
+const user = await userService.getUser(id);
+res.status(HTTP_STATUS.OK).json({
+  id: user.id,
+  email: user.email,
+  fullName: user.fullName,
+  // ❌ NEVER include: passwordHash, fingerprintHash, or other internal fields
+});
+
+// Device response example (security-sensitive fields excluded)
+const device = await deviceService.getDevice(deviceId);
+res.status(HTTP_STATUS.OK).json({
+  id: device.id,
+  name: device.deviceName,
+  deviceType: device.deviceType,
+  browser: device.browser,
+  os: device.os,
+  trustStatus: device.trustStatus, // ✅ Keep as-is, don't transform to isTrusted
+  isRevoked: device.revokedAt !== null, // ✅ OK to derive booleans from dates
+  lastUsedAt: device.lastUsedAt,
+  createdAt: device.createdAt,
+  // ❌ NEVER include: fingerprintHash (bcrypt hash - server-side only)
+});
 
 // Collection
 res.status(HTTP_STATUS.OK).json({
-  users,
-  total: 100,
-  page: 1,
-  limit: 20
+  data: users,
+  pagination: {
+    limit: 20,
+    offset: 0,
+    total: 100,
+    hasMore: true
+  }
 });
 
 // Created
@@ -103,6 +131,19 @@ res.status(HTTP_STATUS.CREATED).json({ user });
 // No content
 res.status(HTTP_STATUS.NO_CONTENT).send();
 ```
+
+### Field Name Consistency Rules
+
+**✅ ALLOWED:**
+- Keep field names consistent: `trustStatus` stays `trustStatus` across all layers
+- Derive boolean flags from dates: `isRevoked: device.revokedAt !== null`
+- Transform model field names to camelCase: `device.deviceName` → `name` (for brevity)
+
+**❌ FORBIDDEN:**
+- Transform field types: `trustStatus` (enum) → `isTrusted` (boolean)
+- Expose database implementation: `fingerprintHash`, `passwordHash`, `saltRounds`
+- Return internal identifiers: `internalId`, `legacyId`, `externalSystemId`
+- Expose security controls: Raw permission bits, encryption keys, secrets
 
 ### Error Responses
 Handled by error middleware - just throw errors:

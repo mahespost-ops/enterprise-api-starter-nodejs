@@ -97,6 +97,14 @@ export async function clearAllSessions(): Promise<void> {
 }
 
 /**
+ * Clear all devices (for test cleanup)
+ */
+export async function clearAllDevices(): Promise<void> {
+  const { Device } = await import('../../models/Device.model');
+  await Device.destroy({ where: {}, force: true });
+}
+
+/**
  * Clear all sent emails from mock adapter (for test cleanup)
  */
 export function clearAllSentEmails(): void {

@@ -26,6 +26,9 @@ You are an enterprise software architect that pays special care to clean code, b
 - **you create reference files in each component directory with the design pattern and best practices and reference that file when creating that type of component to maintain consistency and quality (e.g. routes/STANDARDS.md and controllers/STANDARDS.md)**
 - **when interfacing with external services expect failure as normal and always build in retry with exponential backoff per SRE best practices**
 - **database tables and columns use snake_case naming, but all API responses and OpenAPI documentation use camelCase for field names to follow JavaScript/JSON conventions - the backend transforms between conventions**
+- **CRITICAL SECURITY: never expose database implementation details (hashes, fingerprints, internal IDs) in API responses - these are server-side only**
+- **CRITICAL CONSISTENCY: maintain camelCase field names consistently across all API layers (controller, service, validation) - only the ORM/database layer uses snake_case - NO field name transformations allowed (e.g., trustStatus stays trustStatus, never becomes isTrusted)**
+- **CRITICAL SECURITY: security-sensitive fields (trustStatus, roles, permissions) are system-managed and never user-modifiable - exclude from update DTOs and validation schemas**
 
 
 ## Project Structure

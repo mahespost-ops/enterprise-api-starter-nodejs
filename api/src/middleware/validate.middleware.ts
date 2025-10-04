@@ -85,7 +85,8 @@ export const validate = {
         return next(new ValidationError(errors));
       }
 
-      req.query = value;
+      // req.query is read-only, use Object.assign to update it
+      Object.assign(req.query, value);
       next();
     };
   },

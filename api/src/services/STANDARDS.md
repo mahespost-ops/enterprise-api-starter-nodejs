@@ -67,11 +67,16 @@ export default userService;
 - Handle transactions
 - Manage caching
 - Throw custom errors with meaningful messages
+- **Use camelCase for DTOs and parameters (consistent with API layer)**
+- **Return model objects as-is (let controller handle response transformation)**
 
 ### Services SHOULD NOT:
 - Handle HTTP concerns (req/res)
 - Directly return HTTP status codes
 - Contain authentication/authorization logic (middleware responsibility)
+- **❌ NEVER transform field names (e.g., trustStatus → isTrusted) - keep consistent**
+- **❌ NEVER expose security-sensitive fields in service responses (filter at controller)**
+- **❌ NEVER allow user modification of system-managed fields (trustStatus, roles, permissions)**
 
 ## Error Handling
 
@@ -278,3 +283,60 @@ describe('UserService', () => {
 - **No Sensitive Data in Logs**: Redact passwords, tokens, PII
 - **Rate Limiting**: Services can enforce business-level rate limits
 - **Audit Logging**: Log important operations (create, update, delete)
+
+### System-Managed Fields (Never User-Modifiable)
+
+When designing DTOs, **exclude** these types of fields from update operations:
+
+```typescript
+// ❌ BAD: Allows user to modify security-sensitive fields
+interface UpdateDeviceDto {
+  name?: string;
+  is_trusted?: boolean;  // WRONG - security field should be system-managed
+}
+
+// ✅ GOOD: Only allows modification of user-controllable fields
+interface UpdateDeviceDto {
+  name?: string;
+  // trustStatus is managed by system logic, not user input
+}
+
+// Example system-managed fields:
+// - trustStatus, roles, permissions (security controls)
+// - emailVerified, phoneVerified (verification state)
+// - isActive, isSuspended (account state)
+// - createdAt, updatedAt (timestamps)
+// - passwordHash, fingerprintHash (cryptographic data)
+```
+
+### Field Naming Consistency
+
+**Rule:** Keep field names and types consistent across all API layers
+
+```typescript
+// ✅ GOOD: Consistent field naming
+interface DeviceFilters {
+  trustStatus?: 'trusted' | 'pending' | 'revoked';  // Enum stays enum
+}
+
+const where: WhereOptions = {};
+if (filters.trustStatus) {
+  where.trustStatus = filters.trustStatus;  // Direct assignment
+}
+
+// ❌ BAD: Field name transformation
+interface DeviceFilters {
+  isTrusted?: boolean;  // Changed from enum to boolean
+}
+
+const where: WhereOptions = {};
+if (filters.isTrusted !== undefined) {
+  where.trustStatus = filters.isTrusted ? 'trusted' : 'pending';  // Transformation logic
+}
+```
+
+**Why this matters:**
+- Consistency reduces cognitive load and bugs
+- API contract stays aligned with domain model
+- Easier to trace data flow through layers
+- Type safety is preserved

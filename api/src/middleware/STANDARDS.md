@@ -369,6 +369,81 @@ describe('Authenticate Middleware', () => {
 });
 ```
 
+## Security and Consistency Standards
+
+### Field Naming Consistency
+
+**CRITICAL:** Maintain consistent field names and types across all API layers
+
+```typescript
+// ✅ GOOD: Field names match API contract
+export const listDevicesQuerySchema = Joi.object({
+  trustStatus: Joi.string().valid('trusted', 'pending', 'revoked').optional(), // Enum stays enum
+});
+
+// ❌ BAD: Field name transformation
+export const listDevicesQuerySchema = Joi.object({
+  isTrusted: Joi.boolean().optional(), // Changed from enum to boolean - WRONG
+});
+```
+
+**Why consistency matters:**
+- Reduces cognitive load and bugs
+- Maintains type safety across layers
+- API contract aligns with domain model
+- Easier debugging and tracing
+
+### System-Managed Fields (Never User-Modifiable)
+
+When designing validation schemas, **exclude** these types of fields from update operations:
+
+```typescript
+// ❌ BAD: Allows user to modify security-sensitive fields
+export const updateDeviceSchema = Joi.object({
+  name: Joi.string().min(1).max(100).optional(),
+  is_trusted: Joi.boolean().optional(), // WRONG - security field
+});
+
+// ✅ GOOD: Only allows modification of user-controllable fields
+export const updateDeviceSchema = Joi.object({
+  name: Joi.string().min(1).max(100).required(),
+  // trustStatus excluded - system-managed
+});
+```
+
+**Fields that should NEVER be user-modifiable:**
+- `trustStatus`, `roles`, `permissions` (security controls)
+- `emailVerified`, `phoneVerified` (verification state)
+- `isActive`, `isSuspended` (account state)
+- `passwordHash`, `fingerprintHash`, `saltRounds` (cryptographic data)
+- `createdAt`, `updatedAt`, `deletedAt` (timestamps)
+
+### Never Expose Database Implementation Details
+
+```typescript
+// ❌ BAD: Exposing sensitive database fields
+res.json({
+  id: device.id,
+  fingerprintHash: device.fingerprintHash, // NEVER expose hashes
+  name: device.name,
+});
+
+// ✅ GOOD: Filter out sensitive fields
+res.json({
+  id: device.id,
+  name: device.name,
+  trustStatus: device.trustStatus, // ✅ OK - not a hash
+  // fingerprintHash excluded
+});
+```
+
+**Never expose to users:**
+- Password hashes (`passwordHash`, `saltRounds`)
+- Device fingerprint hashes (`fingerprintHash`)
+- Internal identifiers (`internalId`, `legacyId`)
+- Encryption keys or secrets
+- Raw permission bits or access control data
+
 ## File Size
 - Target: <300 lines per middleware file
 - >500 lines: Must refactor by logical grouping

@@ -221,6 +221,51 @@ describe('User Routes', () => {
 - **Conditional Middleware**: Only apply middleware when needed
 - **Avoid Deep Nesting**: Keep route definitions flat and readable
 
+## Validation Schema Standards
+
+When creating validation schemas, maintain consistency with API contracts:
+
+```typescript
+// ✅ GOOD: Field names match API contract
+export const listDevicesQuerySchema = Joi.object({
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  offset: Joi.number().integer().min(0).default(0),
+  trustStatus: Joi.string().valid('trusted', 'pending', 'revoked').optional(), // Enum as-is
+});
+
+// ❌ BAD: Field name transformation
+export const listDevicesQuerySchema = Joi.object({
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  offset: Joi.number().integer().min(0).default(0),
+  isTrusted: Joi.boolean().optional(), // Changed from enum to boolean
+});
+```
+
+**Security-Sensitive Fields:**
+
+Never allow user modification of system-managed fields:
+
+```typescript
+// ✅ GOOD: Update schema excludes security fields
+export const updateDeviceSchema = Joi.object({
+  name: Joi.string().min(1).max(100).required(),
+  // trustStatus is system-managed - NOT included
+});
+
+// ❌ BAD: Allows user to modify security controls
+export const updateDeviceSchema = Joi.object({
+  name: Joi.string().min(1).max(100).optional(),
+  is_trusted: Joi.boolean().optional(), // Security field - should be system-only
+});
+```
+
+**Fields that should NEVER be user-modifiable:**
+- `trustStatus`, `roles`, `permissions` (security controls)
+- `emailVerified`, `phoneVerified` (verification state)
+- `isActive`, `isSuspended` (account state)
+- `passwordHash`, `fingerprintHash`, `saltRounds` (cryptographic data)
+- `createdAt`, `updatedAt`, `deletedAt` (timestamps)
+
 ## File Size
 - Target: <200 lines per route file
 - >500 lines: Must refactor by logical grouping
