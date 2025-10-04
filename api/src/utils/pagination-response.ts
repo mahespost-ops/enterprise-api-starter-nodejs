@@ -81,7 +81,7 @@ export function formatOffsetPaginationResponse<T>(
  * @param sortFields - Sort fields used for cursor generation
  * @returns Formatted response with pagination metadata
  */
-export function formatCursorPaginationResponse<T extends Record<string, any>>(
+export function formatCursorPaginationResponse<T extends Record<string, unknown>>(
   data: T[],
   limit: number,
   hasMore: boolean,
@@ -95,7 +95,7 @@ export function formatCursorPaginationResponse<T extends Record<string, any>>(
   // Generate next cursor if there's more data
   if (hasMore && data.length > 0) {
     const lastItem = data[data.length - 1];
-    const cursorValues: Record<string, any> = { id: lastItem.id };
+    const cursorValues: Record<string, unknown> = { id: lastItem.id };
 
     // Include sort field values in cursor
     for (const sort of sortFields) {
@@ -121,9 +121,9 @@ export function formatCursorPaginationResponse<T extends Record<string, any>>(
  * @param values - Cursor field values
  * @returns Base64-encoded cursor string
  */
-export function encodeCursor(values: Record<string, any>): string {
+export function encodeCursor(values: Record<string, unknown>): string {
   // Convert dates to ISO strings for JSON serialization
-  const serializable: Record<string, any> = {};
+  const serializable: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(values)) {
     if (value instanceof Date) {
@@ -144,11 +144,11 @@ export function encodeCursor(values: Record<string, any>): string {
  * @returns Decoded cursor values
  * @throws Error if cursor is invalid
  */
-export function decodeCursor(cursor: string): Record<string, any> {
+export function decodeCursor(cursor: string): Record<string, unknown> {
   try {
     const json = Buffer.from(cursor, 'base64').toString('utf-8');
-    return JSON.parse(json);
-  } catch (error) {
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
     throw new Error('Invalid cursor format');
   }
 }

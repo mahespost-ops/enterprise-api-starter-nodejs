@@ -17,8 +17,8 @@ export interface User {
   preferredAuthMethod: 'email' | 'sms';
   timezone?: string;
   emailVerified: boolean;
-  createdAt: string;
-  updatedAt?: string;
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Temporary in-memory storage
@@ -34,7 +34,7 @@ export class UserModel {
       id,
       ...data,
       fullName: `${data.firstName} ${data.lastName}`,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
     users.set(id, user);
@@ -88,7 +88,7 @@ export class UserModel {
     const updated = {
       ...user,
       ...data,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     };
 
     users.set(id, updated);

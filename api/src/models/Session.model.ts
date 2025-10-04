@@ -10,11 +10,11 @@ export interface Session {
   userId: string;
   deviceId: string;
   refreshTokenHash: string;
-  expiresAt: string;
-  createdAt: string;
-  lastAccessedAt?: string;
+  expiresAt: Date;
+  createdAt: Date;
+  lastAccessedAt?: Date;
   isActive: boolean;
-  revokedAt?: string;
+  revokedAt?: Date;
 }
 
 // Temporary in-memory storage
@@ -81,7 +81,7 @@ export class SessionModel {
     if (!session) return false;
 
     session.isActive = false;
-    session.revokedAt = new Date().toISOString();
+    session.revokedAt = new Date();
     return true;
   }
 
@@ -94,7 +94,7 @@ export class SessionModel {
 
     for (const session of userSessions) {
       session.isActive = false;
-      session.revokedAt = new Date().toISOString();
+      session.revokedAt = new Date();
       count++;
     }
 

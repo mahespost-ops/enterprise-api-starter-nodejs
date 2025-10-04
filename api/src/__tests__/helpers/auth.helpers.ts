@@ -31,7 +31,7 @@ export function generateTestJWT(payload: {
       userId: string;
       startedAt: string;
       impersonationType: 'system' | 'organization';
-      permissions: any;
+      permissions: Record<string, unknown> | null;
     }>;
   };
   expiresIn?: StringValue;
@@ -77,7 +77,13 @@ export async function getLatestMagicTokenForUser(email: string): Promise<{
   const tokensMap = __testOnly__.getTokensMap();
 
   // Collect all tokens for this user
-  const tokenEntries: any[] = [];
+  const tokenEntries: Array<{
+    userId: string;
+    token: string;
+    code: string;
+    createdAt: Date;
+    usedAt?: Date;
+  }> = [];
   for (const [, value] of tokensMap.entries()) {
     if (value.userId === user.id && !value.usedAt) {
       tokenEntries.push(value);
@@ -89,7 +95,16 @@ export async function getLatestMagicTokenForUser(email: string): Promise<{
   }
 
   // Deduplicate by token (since we store by both token and code)
-  const uniqueTokens = new Map<string, any>();
+  const uniqueTokens = new Map<
+    string,
+    {
+      userId: string;
+      token: string;
+      code: string;
+      createdAt: Date;
+      usedAt?: Date;
+    }
+  >();
   for (const entry of tokenEntries) {
     if (!uniqueTokens.has(entry.token)) {
       uniqueTokens.set(entry.token, entry);
@@ -98,7 +113,7 @@ export async function getLatestMagicTokenForUser(email: string): Promise<{
 
   // Sort by createdAt and return the most recent
   const sortedTokens = Array.from(uniqueTokens.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
   return {

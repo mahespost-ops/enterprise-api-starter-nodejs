@@ -106,7 +106,7 @@ function parseFilterKey(key: string): { field: string; operator?: string } | nul
  * @returns Array of parsed filters
  * @throws Error if invalid operator
  */
-export function parseFilterParams(query: Record<string, any>): ParsedFilter[] {
+export function parseFilterParams(query: Record<string, unknown>): ParsedFilter[] {
   const filters: ParsedFilter[] = [];
 
   for (const [key, value] of Object.entries(query)) {
@@ -122,17 +122,19 @@ export function parseFilterParams(query: Record<string, any>): ParsedFilter[] {
     }
 
     // Parse value based on operator
+    // Ensure value is a string for processing
+    const valueStr = String(value);
     let parsedValue: string | string[] | boolean;
 
     if (operator === FilterOperator.IN || operator === FilterOperator.NIN) {
       // Split comma-separated values into array
-      parsedValue = value.split(',').map((v: string) => v.trim());
+      parsedValue = valueStr.split(',').map((v: string) => v.trim());
     } else if (operator === FilterOperator.EXISTS) {
       // Convert string to boolean
-      parsedValue = value === 'true' || value === true;
+      parsedValue = valueStr === 'true' || value === true;
     } else {
       // Keep as string
-      parsedValue = value;
+      parsedValue = valueStr;
     }
 
     filters.push({ field, operator, value: parsedValue });
@@ -233,10 +235,10 @@ const MIN_OFFSET = 0;
  * @returns Parsed pagination params
  */
 export function parsePaginationParams(
-  query: Record<string, any>,
+  query: Record<string, unknown>,
   type: 'offset' | 'cursor'
 ): PaginationParams {
-  const limitStr = query.limit;
+  const limitStr = query.limit as string | undefined;
   let limit = DEFAULT_LIMIT;
 
   if (limitStr) {
@@ -247,7 +249,7 @@ export function parsePaginationParams(
   }
 
   if (type === 'offset') {
-    const offsetStr = query.offset;
+    const offsetStr = query.offset as string | undefined;
     let offset = 0;
 
     if (offsetStr) {
@@ -266,7 +268,7 @@ export function parsePaginationParams(
     return {
       type: 'cursor',
       limit,
-      cursor: query.cursor,
+      cursor: query.cursor as string | undefined,
     };
   }
 }

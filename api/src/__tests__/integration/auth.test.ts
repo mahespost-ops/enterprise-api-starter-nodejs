@@ -15,7 +15,7 @@
 
 // Mock uuid to avoid ESM issues in Jest
 jest.mock('uuid', () => ({
-  v4: () => 'test-uuid-' + Math.random().toString(36).substring(7),
+  v4: (): string => 'test-uuid-' + Math.random().toString(36).substring(7),
 }));
 
 import request from 'supertest';
@@ -54,7 +54,11 @@ describe('Authentication Flow', () => {
   };
 
   // Helper to get authenticated tokens
-  async function getAuthenticatedTokens() {
+  async function getAuthenticatedTokens(): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    userId: string;
+  }> {
     // Try to register user (might fail if already exists)
     const registerRes = await request(app).post('/api/v1/auth/register').send(testUser);
 
@@ -386,8 +390,8 @@ describe('Authentication Flow', () => {
         token: 'expired-token-test',
         code: '999999',
         fingerprint: testUser.fingerprint,
-        createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 minutes ago
-        expiresAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // Expired 5 minutes ago
+        createdAt: new Date(Date.now() - 20 * 60 * 1000), // 20 minutes ago
+        expiresAt: new Date(Date.now() - 5 * 60 * 1000), // Expired 5 minutes ago
       };
 
       await MagicTokenModel.create(expiredToken);
@@ -514,8 +518,8 @@ describe('Authentication Flow', () => {
         userId: tokens.userId,
         deviceId: 'test-device',
         refreshTokenHash: expiredRefreshTokenHash,
-        expiresAt: new Date(Date.now() - 60 * 1000).toISOString(), // Expired 1 minute ago
-        createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() - 60 * 1000), // Expired 1 minute ago
+        createdAt: new Date(Date.now() - 3600 * 1000),
         isActive: true,
       });
 

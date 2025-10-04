@@ -61,7 +61,7 @@ describe('Pagination Response Utilities', () => {
     });
 
     it('should handle empty data array', () => {
-      const data: any[] = [];
+      const data: Record<string, unknown>[] = [];
       const limit = 20;
       const offset = 0;
       const total = 0;
@@ -124,7 +124,7 @@ describe('Pagination Response Utilities', () => {
     });
 
     it('should handle empty data array', () => {
-      const data: any[] = [];
+      const data: Record<string, unknown>[] = [];
       const limit = 20;
       const hasMore = false;
       const sortFields = [{ field: 'createdAt', direction: 'DESC' as const }];

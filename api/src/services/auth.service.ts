@@ -61,7 +61,7 @@ interface AuthResponse {
   };
   session: {
     id: string;
-    expiresAt: string;
+    expiresAt: Date;
   };
 }
 
@@ -209,8 +209,8 @@ class AuthService {
       userId: user.id,
       deviceId,
       refreshTokenHash,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
       isActive: true,
     });
 
@@ -234,7 +234,7 @@ class AuthService {
       device,
       session: {
         id: sessionId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     };
   }
@@ -285,7 +285,7 @@ class AuthService {
 
     await SessionModel.update(matchedSession.id, {
       refreshTokenHash: newRefreshTokenHash,
-      lastAccessedAt: new Date().toISOString(),
+      lastAccessedAt: new Date(),
     });
 
     const accessToken = this.generateAccessToken({
@@ -399,14 +399,14 @@ class AuthService {
       token,
       code,
       fingerprint,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
 
     return token;
   }
 
-  private generateAccessToken(payload: Record<string, any>): string {
+  private generateAccessToken(payload: Record<string, unknown>): string {
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: '15m',
       issuer: config.app.name,

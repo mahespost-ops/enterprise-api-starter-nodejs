@@ -10,9 +10,9 @@ export interface MagicToken {
   token: string;
   code: string;
   fingerprint?: string;
-  createdAt: string;
-  expiresAt: string;
-  usedAt?: string;
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date;
 }
 
 // Temporary in-memory storage
@@ -21,7 +21,7 @@ const tokens: Map<string, MagicToken> = new Map();
 
 // Export for test helpers (will be removed when replaced with database)
 export const __testOnly__ = {
-  getTokensMap: () => tokens,
+  getTokensMap: (): Map<string, MagicToken> => tokens,
 };
 
 export class MagicTokenModel {
@@ -49,7 +49,7 @@ export class MagicTokenModel {
     const token = tokens.get(tokenOrCode);
     if (!token) return false;
 
-    token.usedAt = new Date().toISOString();
+    token.usedAt = new Date();
     return true;
   }
 
