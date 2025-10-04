@@ -24,12 +24,13 @@ const router = Router();
 /**
  * @route   GET /api/v1/orgs/:orgId
  * @desc    Get organization details
- * @access  Private (member access)
+ * @access  Private (requires organizations:read)
  */
 router.get(
   '/:orgId',
   authenticate,
   validate.params(organizationSchemas.orgIdParamSchema),
+  authorize(['organizations:read']),
   controller.getOrganization
 );
 

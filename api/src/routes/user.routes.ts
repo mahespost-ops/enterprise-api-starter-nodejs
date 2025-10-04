@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import * as controller from '../controllers/user.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { authorize } from '../middleware/rbac.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { userSchemas } from '../middleware/validation-schemas';
 
@@ -16,7 +17,7 @@ const router = Router();
  * 1. Rate limiting (if needed)
  * 2. Authentication (all routes require auth)
  * 3. Parameter validation (req.params)
- * 4. Authorization (RBAC - if needed)
+ * 4. Authorization (RBAC)
  * 5. Body/Query validation (req.body/req.query)
  * 6. Controller
  */
@@ -24,9 +25,9 @@ const router = Router();
 /**
  * @route   GET /api/v1/users/me
  * @desc    Get current user profile
- * @access  Private
+ * @access  Private (requires users:read)
  */
-router.get('/me', authenticate, controller.getCurrentUser);
+router.get('/me', authenticate, authorize(['users:read']), controller.getCurrentUser);
 
 /**
  * @route   PUT /api/v1/users/me
@@ -43,11 +44,12 @@ router.put(
 /**
  * @route   GET /api/v1/users/me/organizations
  * @desc    Get user's organizations
- * @access  Private
+ * @access  Private (requires users:read)
  */
 router.get(
   '/me/organizations',
   authenticate,
+  authorize(['users:read']),
   validate.query(userSchemas.listOrganizationsQuerySchema),
   controller.getCurrentUserOrganizations
 );
@@ -55,11 +57,12 @@ router.get(
 /**
  * @route   GET /api/v1/users/me/permissions
  * @desc    Get user's effective permissions
- * @access  Private
+ * @access  Private (requires users:read)
  */
 router.get(
   '/me/permissions',
   authenticate,
+  authorize(['users:read']),
   validate.query(userSchemas.userPermissionsQuerySchema),
   controller.getCurrentUserPermissions
 );
@@ -67,7 +70,7 @@ router.get(
 /**
  * @route   GET /api/v1/users/me/devices
  * @desc    Get current user's devices
- * @access  Private
+ * @access  Private (implicit - users can always read own devices)
  */
 router.get(
   '/me/devices',
@@ -79,12 +82,13 @@ router.get(
 /**
  * @route   PUT /api/v1/users/me/devices/:deviceId
  * @desc    Update current user's device
- * @access  Private
+ * @access  Private (requires devices:manage)
  */
 router.put(
   '/me/devices/:deviceId',
   authenticate,
   validate.params(userSchemas.uuidParamSchema),
+  authorize(['devices:manage']),
   validate.body(userSchemas.updateDeviceSchema),
   controller.updateCurrentUserDevice
 );
@@ -92,19 +96,20 @@ router.put(
 /**
  * @route   DELETE /api/v1/users/me/devices/:deviceId
  * @desc    Revoke current user's device
- * @access  Private
+ * @access  Private (requires devices:manage)
  */
 router.delete(
   '/me/devices/:deviceId',
   authenticate,
   validate.params(userSchemas.uuidParamSchema),
+  authorize(['devices:manage']),
   controller.revokeCurrentUserDevice
 );
 
 /**
  * @route   GET /api/v1/users/me/sessions
  * @desc    Get current user's sessions
- * @access  Private
+ * @access  Private (implicit - users can always read own sessions)
  */
 router.get(
   '/me/sessions',
@@ -116,20 +121,26 @@ router.get(
 /**
  * @route   DELETE /api/v1/users/me/sessions/all
  * @desc    Revoke all current user's sessions (except current)
- * @access  Private
+ * @access  Private (requires sessions:manage)
  * @note    Must come BEFORE /:sessionId route to avoid matching "all" as sessionId
  */
-router.delete('/me/sessions/all', authenticate, controller.revokeAllCurrentUserSessions);
+router.delete(
+  '/me/sessions/all',
+  authenticate,
+  authorize(['sessions:manage']),
+  controller.revokeAllCurrentUserSessions
+);
 
 /**
  * @route   DELETE /api/v1/users/me/sessions/:sessionId
  * @desc    Revoke current user's session
- * @access  Private
+ * @access  Private (requires sessions:manage)
  */
 router.delete(
   '/me/sessions/:sessionId',
   authenticate,
   validate.params(userSchemas.sessionIdParamSchema),
+  authorize(['sessions:manage']),
   controller.revokeCurrentUserSession
 );
 

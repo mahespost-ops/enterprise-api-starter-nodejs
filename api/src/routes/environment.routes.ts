@@ -24,12 +24,13 @@ const router = Router();
 /**
  * @route   GET /api/v1/orgs/:orgId/envs
  * @desc    List environments for an organization
- * @access  Private (member access)
+ * @access  Private (requires environments:read)
  */
 router.get(
   '/:orgId/envs',
   authenticate,
   validate.params(environmentSchemas.orgIdParamSchema),
+  authorize(['environments:read']),
   validate.query(environmentSchemas.listEnvironmentsQuerySchema),
   controller.listEnvironments
 );
@@ -37,7 +38,7 @@ router.get(
 /**
  * @route   POST /api/v1/orgs/:orgId/envs
  * @desc    Create new environment
- * @access  Private (requires environments:manage permission)
+ * @access  Private (requires environments:manage)
  */
 router.post(
   '/:orgId/envs',
@@ -51,12 +52,13 @@ router.post(
 /**
  * @route   GET /api/v1/orgs/:orgId/envs/:envId
  * @desc    Get environment details
- * @access  Private (member access)
+ * @access  Private (requires environments:read)
  */
 router.get(
   '/:orgId/envs/:envId',
   authenticate,
   validate.params(environmentSchemas.envPathParamsSchema),
+  authorize(['environments:read']),
   controller.getEnvironment
 );
 
