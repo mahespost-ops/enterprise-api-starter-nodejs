@@ -41,7 +41,15 @@ requestToken:
     tags:
       - Core - Authentication
     summary: Request magic token
-    description: Request a passwordless magic token via email or SMS
+    description: |
+      Request a passwordless magic token via email or SMS.
+
+      **Polymorphic Identifier:**
+      - Send email address for email delivery
+      - Send E.164 phone number (e.g., +12025551234) for SMS delivery
+      - Backend auto-detects type and selects delivery method
+
+      **Security:** Rate limited to prevent abuse (3 requests per 15 minutes per identifier)
     operationId: requestMagicToken
     security: []
     requestBody:
@@ -50,6 +58,17 @@ requestToken:
         application/json:
           schema:
             $ref: '../components/schemas/auth.yaml#/RequestMagicTokenRequest'
+          examples:
+            emailRequest:
+              summary: Request token via email
+              value:
+                identifier: user@example.com
+                fingerprint: 'a1b2c3d4e5f67890abcdef1234567890'
+            phoneRequest:
+              summary: Request token via SMS
+              value:
+                identifier: '+12025551234'
+                fingerprint: '9f8e7d6c5b4a32109876543210fedcba'
     responses:
       '200':
         description: Magic token sent successfully

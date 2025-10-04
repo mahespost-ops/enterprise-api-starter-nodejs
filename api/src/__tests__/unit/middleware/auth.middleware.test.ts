@@ -8,9 +8,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import {
-  authMiddleware,
-  optionalAuthMiddleware,
-  validateTenantContextMiddleware,
+  authenticate,
+  authenticateOptional,
+  validateTenantContext,
 } from '../../../middleware/auth.middleware';
 import { UnauthorizedError, ForbiddenError } from '../../../utils/errors';
 import { JWTPayload } from '../../../types/express';
@@ -23,7 +23,7 @@ jest.mock('../../../config', () => ({
   },
 }));
 
-describe('authMiddleware', () => {
+describe('authenticate', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
@@ -55,7 +55,7 @@ describe('authMiddleware', () => {
         authorization: `Bearer ${token}`,
       };
 
-      authMiddleware(
+      authenticate(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction
@@ -99,7 +99,7 @@ describe('authMiddleware', () => {
         authorization: `Bearer ${token}`,
       };
 
-      authMiddleware(
+      authenticate(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction
@@ -136,7 +136,7 @@ describe('authMiddleware', () => {
         authorization: token,
       };
 
-      authMiddleware(
+      authenticate(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction
@@ -150,7 +150,7 @@ describe('authMiddleware', () => {
   describe('Missing or Invalid Token', () => {
     it('should throw UnauthorizedError when no Authorization header', () => {
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -166,7 +166,7 @@ describe('authMiddleware', () => {
       };
 
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -182,7 +182,7 @@ describe('authMiddleware', () => {
       };
 
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -211,7 +211,7 @@ describe('authMiddleware', () => {
       };
 
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -240,7 +240,7 @@ describe('authMiddleware', () => {
       };
 
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -256,7 +256,7 @@ describe('authMiddleware', () => {
       };
 
       expect(() => {
-        authMiddleware(
+        authenticate(
           mockRequest as Request,
           mockResponse as Response,
           nextFunction
@@ -268,7 +268,7 @@ describe('authMiddleware', () => {
   });
 });
 
-describe('optionalAuthMiddleware', () => {
+describe('authenticateOptional', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
@@ -299,7 +299,7 @@ describe('optionalAuthMiddleware', () => {
       authorization: `Bearer ${token}`,
     };
 
-    optionalAuthMiddleware(
+    authenticateOptional(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction
@@ -311,7 +311,7 @@ describe('optionalAuthMiddleware', () => {
   });
 
   it('should allow request to proceed when no token provided', () => {
-    optionalAuthMiddleware(
+    authenticateOptional(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction
@@ -326,7 +326,7 @@ describe('optionalAuthMiddleware', () => {
       authorization: 'Bearer invalid-token',
     };
 
-    optionalAuthMiddleware(
+    authenticateOptional(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction
@@ -337,7 +337,7 @@ describe('optionalAuthMiddleware', () => {
   });
 });
 
-describe('validateTenantContextMiddleware', () => {
+describe('validateTenantContext', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
@@ -366,7 +366,7 @@ describe('validateTenantContextMiddleware', () => {
       orgId: 'org-456',
     };
 
-    validateTenantContextMiddleware(
+    validateTenantContext(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction
@@ -381,7 +381,7 @@ describe('validateTenantContextMiddleware', () => {
       envId: 'env-789',
     };
 
-    validateTenantContextMiddleware(
+    validateTenantContext(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction
@@ -396,7 +396,7 @@ describe('validateTenantContextMiddleware', () => {
     };
 
     expect(() => {
-      validateTenantContextMiddleware(
+      validateTenantContext(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction
@@ -413,7 +413,7 @@ describe('validateTenantContextMiddleware', () => {
     };
 
     expect(() => {
-      validateTenantContextMiddleware(
+      validateTenantContext(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction
@@ -430,7 +430,7 @@ describe('validateTenantContextMiddleware', () => {
     };
 
     expect(() => {
-      validateTenantContextMiddleware(
+      validateTenantContext(
         mockRequest as Request,
         mockResponse as Response,
         nextFunction

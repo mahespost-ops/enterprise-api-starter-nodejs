@@ -18,7 +18,7 @@ import config from '../config';
  *
  * @throws UnauthorizedError if token is missing or invalid
  */
-export const authMiddleware = (
+export const authenticate = (
   req: Request,
   _res: Response,
   next: NextFunction
@@ -64,7 +64,7 @@ export const authMiddleware = (
  * Attempts to authenticate but allows request to proceed if no token
  * Used for endpoints that have different behavior for authenticated vs unauthenticated users
  */
-export const optionalAuthMiddleware = (
+export const authenticateOptional = (
   req: Request,
   _res: Response,
   next: NextFunction
@@ -102,7 +102,7 @@ export const optionalAuthMiddleware = (
  *
  * @throws ForbiddenError if context doesn't match token
  */
-export const validateTenantContextMiddleware = (
+export const validateTenantContext = (
   req: Request,
   _res: Response,
   next: NextFunction
@@ -130,5 +130,3 @@ export const validateTenantContextMiddleware = (
 
   next();
 };
-
-export default authMiddleware;

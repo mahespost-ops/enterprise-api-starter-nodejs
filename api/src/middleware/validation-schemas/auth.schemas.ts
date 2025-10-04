@@ -4,17 +4,14 @@
  */
 
 import Joi from 'joi';
+import { IDENTIFIER_REGEX, DELIVERY_METHOD } from '../../constants/auth.constants';
 
 /**
- * Device fingerprint schema (reusable)
+ * Fingerprint validation
+ * Client generates a hashed fingerprint string using libraries like FingerprintJS, ThumbmarkJS, or ClientJS
+ * Typically a 32-character hex string (e.g., "a1b2c3d4e5f6...") or similar hash format
  */
-const deviceFingerprintSchema = Joi.object({
-  userAgent: Joi.string().optional(),
-  timezone: Joi.string().optional(),
-  acceptLanguage: Joi.string().optional(),
-  screenResolution: Joi.string().optional(),
-  colorDepth: Joi.number().integer().optional(),
-});
+const fingerprintSchema = Joi.string().min(8).max(128);
 
 /**
  * POST /auth/register
@@ -26,7 +23,7 @@ export const registerSchema = Joi.object({
     'any.required': 'Email is required',
   }),
   phone: Joi.string()
-    .pattern(/^\+[1-9]\d{1,14}$/)
+    .pattern(IDENTIFIER_REGEX.PHONE_E164)
     .optional()
     .messages({
       'string.pattern.base': 'Phone number must be in E.164 format (e.g., +12025551234)',
@@ -41,28 +38,37 @@ export const registerSchema = Joi.object({
     'string.max': 'Last name must not exceed 50 characters',
     'any.required': 'Last name is required',
   }),
-  preferredAuthMethod: Joi.string().valid('email', 'sms').optional().default('email'),
+  preferredAuthMethod: Joi.string().valid(DELIVERY_METHOD.EMAIL, DELIVERY_METHOD.SMS).optional().default(DELIVERY_METHOD.EMAIL),
   timezone: Joi.string().optional(),
-  deviceFingerprint: deviceFingerprintSchema.optional(),
+  fingerprint: fingerprintSchema.required().messages({
+    'any.required': 'Fingerprint is required for security',
+  }),
 });
 
 /**
  * POST /auth/request-token
  * Request magic token schema
+ * Uses polymorphic 'identifier' field that accepts either email or E.164 phone number
  */
 export const requestTokenSchema = Joi.object({
-  email: Joi.string().email().required().messages({
-    'string.email': 'Invalid email address',
-    'any.required': 'Email is required',
+  identifier: Joi.string().required().custom((value, helpers) => {
+    // Check if it's a valid email
+    if (IDENTIFIER_REGEX.EMAIL.test(value)) {
+      return value;
+    }
+    // Check if it's a valid E.164 phone number
+    if (IDENTIFIER_REGEX.PHONE_E164.test(value)) {
+      return value;
+    }
+    // Neither email nor phone
+    return helpers.error('string.pattern.base');
+  }).messages({
+    'any.required': 'Identifier (email or phone) is required',
+    'string.pattern.base': 'Identifier must be a valid email or E.164 phone number (e.g., +12025551234)',
   }),
-  phone: Joi.string()
-    .pattern(/^\+[1-9]\d{1,14}$/)
-    .optional()
-    .messages({
-      'string.pattern.base': 'Phone number must be in E.164 format',
-    }),
-  deliveryMethod: Joi.string().valid('email', 'sms').optional(),
-  deviceFingerprint: deviceFingerprintSchema.optional(),
+  fingerprint: fingerprintSchema.required().messages({
+    'any.required': 'Fingerprint is required for security',
+  }),
 });
 
 /**
@@ -83,7 +89,9 @@ export const verifyTokenSchema = Joi.object({
     .messages({
       'string.pattern.base': 'Code must be a 6-digit number',
     }),
-  deviceFingerprint: deviceFingerprintSchema.optional(),
+  fingerprint: fingerprintSchema.required().messages({
+    'any.required': 'Fingerprint is required for security',
+  }),
 }).or('token', 'code').messages({
   'object.missing': 'Either token or code must be provided',
 });
@@ -117,5 +125,7 @@ export const switchContextSchema = Joi.object({
     'string.guid': 'Environment ID must be a valid UUID',
     'any.required': 'Environment ID is required',
   }),
-  deviceFingerprint: deviceFingerprintSchema.optional(),
+  fingerprint: fingerprintSchema.required().messages({
+    'any.required': 'Fingerprint is required for security',
+  }),
 });

@@ -8,6 +8,7 @@ import * as authController from '../controllers/auth.controller';
 import { validate } from '../middleware/validate.middleware';
 import { authSchemas } from '../middleware/validation-schemas';
 import { rateLimit } from '../middleware/rate-limit.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -82,7 +83,7 @@ router.post(
 router.post(
   '/logout',
   rateLimit.apiEndpoint,
-  // TODO: Add authenticate middleware when ready
+  authenticate,
   validate.body(authSchemas.logoutSchema),
   authController.logout
 );
@@ -96,7 +97,7 @@ router.post(
 router.post(
   '/switch-context',
   rateLimit.apiEndpoint,
-  // TODO: Add authenticate middleware when ready
+  authenticate,
   validate.body(authSchemas.switchContextSchema),
   authController.switchContext
 );

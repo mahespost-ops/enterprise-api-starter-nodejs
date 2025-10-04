@@ -56,6 +56,29 @@ export class UserModel {
   }
 
   /**
+   * Find user by phone number (E.164 format)
+   */
+  static async findByPhone(phone: string): Promise<User | null> {
+    return Array.from(users.values()).find(u => u.phone === phone) || null;
+  }
+
+  /**
+   * Find user by identifier (polymorphic: email or phone)
+   */
+  static async findByIdentifier(identifier: string): Promise<User | null> {
+    // Try email first (most common case)
+    const byEmail = await this.findByEmail(identifier);
+    if (byEmail) return byEmail;
+
+    // Try phone (E.164 format starts with +)
+    if (identifier.startsWith('+')) {
+      return await this.findByPhone(identifier);
+    }
+
+    return null;
+  }
+
+  /**
    * Update user
    */
   static async update(id: string, data: Partial<User>): Promise<User | null> {

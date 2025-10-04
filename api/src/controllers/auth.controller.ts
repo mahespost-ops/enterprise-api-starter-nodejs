@@ -54,7 +54,10 @@ export const verifyMagicToken = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     logger.debug('Magic token verification requested');
 
-    const result = await authService.verifyMagicToken(req.body);
+    const result = await authService.verifyMagicToken({
+      ...req.body,
+      userAgent: req.headers['user-agent'],
+    });
 
     // Set refresh token as HTTP-only cookie (for web apps)
     res.cookie('refreshToken', result.refreshToken, {

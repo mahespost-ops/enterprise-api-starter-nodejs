@@ -22,6 +22,7 @@ import request from 'supertest';
 import { type Application } from 'express';
 import appPromise from '../../app';
 import { getLatestMagicTokenForUser } from '../helpers/auth.helpers';
+import { DELIVERY_METHOD } from '../../constants/auth.constants';
 
 describe('Authentication Flow', () => {
   let app: Application;
@@ -49,13 +50,7 @@ describe('Authentication Flow', () => {
     lastName: 'User',
     preferredAuthMethod: 'email',
     timezone: 'America/New_York',
-    deviceFingerprint: {
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-      timezone: 'America/New_York',
-      acceptLanguage: 'en-US,en;q=0.9',
-      screenResolution: '1920x1080',
-      colorDepth: 24,
-    },
+    fingerprint: 'a1b2c3d4e5f67890abcdef1234567890', // 32-char hex string (simulating FingerprintJS output)
   };
 
   // Helper to get authenticated tokens
@@ -65,13 +60,18 @@ describe('Authentication Flow', () => {
 
     // If user already exists (409), request a new token instead
     if (registerRes.status === 409) {
-      await request(app).post('/api/v1/auth/request-token').send({ email: testUser.email });
+      await request(app).post('/api/v1/auth/request-token').send({
+        identifier: testUser.email,
+        fingerprint: testUser.fingerprint,
+      });
+    } else if (registerRes.status !== 201) {
+      throw new Error(`Registration failed with status ${registerRes.status}: ${JSON.stringify(registerRes.body)}`);
     }
 
     // Get magic token
     const magicToken = await getLatestMagicTokenForUser(testUser.email);
     if (!magicToken) {
-      throw new Error('Magic token not found');
+      throw new Error(`Magic token not found. Register status: ${registerRes.status}`);
     }
 
     // Verify token to get JWT
@@ -79,7 +79,7 @@ describe('Authentication Flow', () => {
       .post('/api/v1/auth/verify-token')
       .send({
         token: magicToken.token,
-        deviceFingerprint: testUser.deviceFingerprint,
+        fingerprint: testUser.fingerprint,
       });
 
     return {
@@ -188,14 +188,14 @@ describe('Authentication Flow', () => {
       const res = await request(app)
         .post('/api/v1/auth/request-token')
         .send({
-          email: testUser.email,
-          deviceFingerprint: testUser.deviceFingerprint,
+          identifier: testUser.email,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(200);
 
       expect(res.body).toHaveProperty('message');
-      expect(res.body).toHaveProperty('deliveryMethod', 'email');
+      expect(res.body).toHaveProperty('deliveryMethod', DELIVERY_METHOD.EMAIL);
       expect(res.body).toHaveProperty('sentTo');
       expect(res.body.sentTo).toMatch(/\*\*\*/);
       expect(res.body).toHaveProperty('expiresIn');
@@ -205,8 +205,8 @@ describe('Authentication Flow', () => {
       const res = await request(app)
         .post('/api/v1/auth/request-token')
         .send({
-          email: 'nonexistent@example.com',
-          deviceFingerprint: testUser.deviceFingerprint,
+          identifier: 'nonexistent@example.com',
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(404);
@@ -215,10 +215,10 @@ describe('Authentication Flow', () => {
       expect(res.body).toHaveProperty('message');
     });
 
-    it('should return 422 when email is invalid', async () => {
+    it('should return 422 when identifier is invalid format', async () => {
       const res = await request(app)
         .post('/api/v1/auth/request-token')
-        .send({ email: 'invalid-email' })
+        .send({ identifier: 'invalid-email' })
         .expect('Content-Type', /json/)
         .expect(422);
 
@@ -228,13 +228,13 @@ describe('Authentication Flow', () => {
 
     it('should return 429 when rate limit exceeded', async () => {
       // Rate limiting is critical for this endpoint to prevent abuse
-      // Make multiple rapid requests to same email
+      // Make multiple rapid requests to same identifier
       const requests = Array(5)
         .fill(null)
         .map(() =>
           request(app)
             .post('/api/v1/auth/request-token')
-            .send({ email: testUser.email }),
+            .send({ identifier: testUser.email }),
         );
 
       const responses = await Promise.all(requests);
@@ -247,28 +247,28 @@ describe('Authentication Flow', () => {
       }
     });
 
-    it('should support SMS delivery method', async () => {
+    it('should support SMS delivery via phone identifier', async () => {
       const userWithPhone = {
         ...testUser,
         email: 'smsuser@example.com',
         phone: '+12025551234',
-        preferredAuthMethod: 'sms',
+        preferredAuthMethod: DELIVERY_METHOD.SMS,
       };
 
       // Register user with phone
       await request(app).post('/api/v1/auth/register').send(userWithPhone);
 
+      // Request token using phone number as identifier (E.164 format)
       const res = await request(app)
         .post('/api/v1/auth/request-token')
         .send({
-          email: userWithPhone.email,
-          deliveryMethod: 'sms',
-          deviceFingerprint: testUser.deviceFingerprint,
+          identifier: userWithPhone.phone, // Polymorphic field: phone in E.164 format
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(200);
 
-      expect(res.body).toHaveProperty('deliveryMethod', 'sms');
+      expect(res.body).toHaveProperty('deliveryMethod', DELIVERY_METHOD.SMS);
       expect(res.body).toHaveProperty('sentTo');
       expect(res.body.sentTo).toMatch(/\+\*\*\*/); // Masked phone
     });
@@ -303,7 +303,7 @@ describe('Authentication Flow', () => {
         .post('/api/v1/auth/verify-token')
         .send({
           token: magicToken.token,
-          deviceFingerprint: testUser.deviceFingerprint,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(200);
@@ -348,7 +348,7 @@ describe('Authentication Flow', () => {
         .post('/api/v1/auth/verify-token')
         .send({
           code: magicToken.code,
-          deviceFingerprint: testUser.deviceFingerprint,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(200);
@@ -360,7 +360,10 @@ describe('Authentication Flow', () => {
     it('should return 401 when token is invalid', async () => {
       const res = await request(app)
         .post('/api/v1/auth/verify-token')
-        .send({ token: 'invalid-token' })
+        .send({
+          token: 'invalid-token',
+          fingerprint: testUser.fingerprint,
+        })
         .expect('Content-Type', /json/)
         .expect(401);
 
@@ -382,7 +385,7 @@ describe('Authentication Flow', () => {
         userId: user.id,
         token: 'expired-token-test',
         code: '999999',
-        deviceFingerprint: testUser.deviceFingerprint,
+        fingerprint: testUser.fingerprint,
         createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 minutes ago
         expiresAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // Expired 5 minutes ago
       };
@@ -391,7 +394,10 @@ describe('Authentication Flow', () => {
 
       const res = await request(app)
         .post('/api/v1/auth/verify-token')
-        .send({ token: expiredToken.token })
+        .send({
+          token: expiredToken.token,
+          fingerprint: testUser.fingerprint,
+        })
         .expect('Content-Type', /json/)
         .expect(401);
 
@@ -419,26 +425,25 @@ describe('Authentication Flow', () => {
 
       await request(app)
         .post('/api/v1/auth/verify-token')
-        .send({ token: magicToken1.token, deviceFingerprint: testUser.deviceFingerprint });
+        .send({ token: magicToken1.token, fingerprint: testUser.fingerprint });
 
       // Request new token for second login
-      await request(app).post('/api/v1/auth/request-token').send({ email: testUser.email });
+      await request(app).post('/api/v1/auth/request-token').send({
+        identifier: testUser.email,
+        fingerprint: testUser.fingerprint,
+      });
 
       const magicToken2 = await getLatestMagicTokenForUser(testUser.email);
       if (!magicToken2) {
         throw new Error('Second magic token not found');
       }
 
-      // Second login with different device
-      const newDeviceFingerprint = {
-        ...testUser.deviceFingerprint,
-        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
-        screenResolution: '390x844',
-      };
+      // Second login with different device (different fingerprint hash)
+      const newDeviceFingerprint = '9f8e7d6c5b4a32109876543210fedcba'; // Different 32-char hex
 
       const res = await request(app)
         .post('/api/v1/auth/verify-token')
-        .send({ token: magicToken2.token, deviceFingerprint: newDeviceFingerprint })
+        .send({ token: magicToken2.token, fingerprint: newDeviceFingerprint })
         .expect(200);
 
       expect(res.body.device).toHaveProperty('isNew', true);
@@ -581,14 +586,15 @@ describe('Authentication Flow', () => {
 
       expect(res.body).toEqual({}); // No content
 
-      // Should clear refresh token cookie
+      // Should clear refresh token cookie (either Max-Age=0 or Expires in past)
       expect(res.headers['set-cookie']).toBeDefined();
       const setCookieHeader = res.headers['set-cookie'];
       const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
       const cookieHeader = cookies.find((c: string) =>
         c.startsWith('refreshToken='),
       );
-      expect(cookieHeader).toContain('Max-Age=0');
+      // Express clearCookie uses Expires header in past, not Max-Age=0
+      expect(cookieHeader).toMatch(/Expires=Thu, 01 Jan 1970|Max-Age=0/);
     });
 
     it('should logout using refresh token from cookie (204)', async () => {
@@ -653,7 +659,7 @@ describe('Authentication Flow', () => {
         .send({
           organizationId: testOrgId,
           environmentId: testEnvId,
-          deviceFingerprint: testUser.deviceFingerprint,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(200);
@@ -693,6 +699,7 @@ describe('Authentication Flow', () => {
         .send({
           organizationId: unauthorizedOrgId,
           environmentId: testEnvId,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(403);
@@ -709,6 +716,7 @@ describe('Authentication Flow', () => {
         .send({
           organizationId: nonexistentOrgId,
           environmentId: testEnvId,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(404);
@@ -725,6 +733,7 @@ describe('Authentication Flow', () => {
         .send({
           organizationId: testOrgId,
           environmentId: nonexistentEnvId,
+          fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)
         .expect(404);
@@ -754,7 +763,7 @@ describe('Authentication Flow', () => {
         .send({
           organizationId: testOrgId,
           environmentId: testEnvId,
-          deviceFingerprint: testUser.deviceFingerprint,
+          fingerprint: testUser.fingerprint,
         })
         .expect(200);
 

@@ -8,11 +8,14 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import config from '../config';
 import logger from '../config/logger';
-import { NotFoundError, UnauthorizedError, ConflictError } from '../utils/errors';
+import { NotFoundError, UnauthorizedError, ConflictError, ForbiddenError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import { UserModel, type User } from '../models/User.model';
 import { MagicTokenModel } from '../models/MagicToken.model';
 import { SessionModel } from '../models/Session.model';
+import { OrganizationModel } from '../models/Organization.model';
+import { EnvironmentModel } from '../models/Environment.model';
+import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
 
 // Types
 interface RegisterData {
@@ -22,27 +25,26 @@ interface RegisterData {
   lastName: string;
   preferredAuthMethod?: 'email' | 'sms';
   timezone?: string;
-  deviceFingerprint?: Record<string, any>;
+  fingerprint: string;
 }
 
 interface RequestTokenData {
-  email: string;
-  phone?: string;
-  deliveryMethod?: 'email' | 'sms';
-  deviceFingerprint?: Record<string, any>;
+  identifier: string; // Polymorphic: email or E.164 phone number
+  fingerprint: string;
 }
 
 interface VerifyTokenData {
   token?: string;
   code?: string;
-  deviceFingerprint?: Record<string, any>;
+  fingerprint: string;
+  userAgent?: string;
 }
 
 interface SwitchContextData {
   userId: string;
   organizationId: string;
   environmentId: string;
-  deviceFingerprint?: Record<string, any>;
+  fingerprint: string;
 }
 
 interface AuthResponse {
@@ -105,15 +107,16 @@ class AuthService {
       phone: data.phone,
       firstName: data.firstName,
       lastName: data.lastName,
-      preferredAuthMethod: data.preferredAuthMethod || 'email',
+      preferredAuthMethod: data.preferredAuthMethod || DELIVERY_METHOD.EMAIL,
       timezone: data.timezone,
       emailVerified: false,
     });
 
-    await this.generateMagicToken(user.id, data.deviceFingerprint);
+    await this.generateMagicToken(user.id, data.fingerprint);
 
-    const deliveryMethod = data.preferredAuthMethod || 'email';
-    const sentTo = this.maskContact(deliveryMethod === 'email' ? data.email : data.phone || data.email);
+    const deliveryMethod: DeliveryMethod = data.preferredAuthMethod || DELIVERY_METHOD.EMAIL;
+    const contactToMask = deliveryMethod === DELIVERY_METHOD.EMAIL ? data.email : (data.phone || data.email);
+    const sentTo = this.maskContact(contactToMask, deliveryMethod);
 
     // TODO: Send via email/SMS adapter
     logger.info(`Magic token would be sent via ${deliveryMethod} to ${sentTo}`);
@@ -122,25 +125,29 @@ class AuthService {
       message: 'Magic token sent successfully',
       deliveryMethod,
       sentTo,
-      expiresIn: 900,
+      expiresIn: TOKEN_EXPIRATION.MAGIC_TOKEN,
     };
   }
 
   /**
    * Request a magic token for existing user
    */
-  async requestMagicToken(data: RequestTokenData): Promise<{ message: string; deliveryMethod: string; sentTo: string; expiresIn: number }> {
-    logger.info(`Requesting magic token for: ${data.email}`);
+  async requestMagicToken(data: RequestTokenData): Promise<{ message: string; deliveryMethod: DeliveryMethod; sentTo: string; expiresIn: number }> {
+    logger.info(`Requesting magic token for identifier: ${this.maskContact(data.identifier)}`);
 
-    const user = await UserModel.findByEmail(data.email);
+    // Find user by polymorphic identifier (email or phone)
+    const user = await UserModel.findByIdentifier(data.identifier);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    await this.generateMagicToken(user.id, data.deviceFingerprint);
+    await this.generateMagicToken(user.id, data.fingerprint);
 
-    const deliveryMethod = data.deliveryMethod || user.preferredAuthMethod || 'email';
-    const sentTo = this.maskContact(deliveryMethod === 'email' ? data.email : data.phone || data.email);
+    // Determine delivery method based on identifier type
+    const isPhone = IDENTIFIER_REGEX.PHONE_E164.test(data.identifier);
+    const deliveryMethod: DeliveryMethod = isPhone ? DELIVERY_METHOD.SMS : (user.preferredAuthMethod || DELIVERY_METHOD.EMAIL);
+    const contactToMask = isPhone ? data.identifier : user.email;
+    const sentTo = this.maskContact(contactToMask, deliveryMethod);
 
     // TODO: Send via email/SMS adapter
     logger.info(`Magic token would be sent via ${deliveryMethod} to ${sentTo}`);
@@ -149,7 +156,7 @@ class AuthService {
       message: 'Magic token sent successfully',
       deliveryMethod,
       sentTo,
-      expiresIn: 900,
+      expiresIn: TOKEN_EXPIRATION.MAGIC_TOKEN,
     };
   }
 
@@ -189,7 +196,7 @@ class AuthService {
     const deviceId = crypto.randomUUID();
     const device = {
       id: deviceId,
-      name: this.extractDeviceName(data.deviceFingerprint),
+      name: this.extractDeviceName(data.userAgent),
       isNew: true, // TODO: Check against existing devices
     };
 
@@ -334,8 +341,25 @@ class AuthService {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // TODO: Verify user has access to org/env
-    // TODO: Update user's last_org_id and last_env_id
+    // Check if user has access to organization
+    const hasAccess = await OrganizationModel.userHasAccess(data.userId, data.organizationId);
+    if (!hasAccess) {
+      throw new ForbiddenError('You do not have access to this organization');
+    }
+
+    // Check if organization exists
+    const orgExists = await OrganizationModel.exists(data.organizationId);
+    if (!orgExists) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    // Check if environment exists
+    const envExists = await EnvironmentModel.exists(data.environmentId);
+    if (!envExists) {
+      throw new NotFoundError('Environment not found');
+    }
+
+    // TODO: Update user's last_org_id and last_env_id in database
 
     const accessToken = this.generateAccessToken({
       sub: user.id,
@@ -366,7 +390,7 @@ class AuthService {
   // Private Helper Methods
   // ============================================================================
 
-  private async generateMagicToken(userId: string, deviceFingerprint?: Record<string, any>): Promise<string> {
+  private async generateMagicToken(userId: string, fingerprint?: string): Promise<string> {
     const token = crypto.randomBytes(32).toString('base64url');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -374,7 +398,7 @@ class AuthService {
       userId,
       token,
       code,
-      deviceFingerprint,
+      fingerprint,
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     });
@@ -389,24 +413,27 @@ class AuthService {
     });
   }
 
-  private maskContact(contact: string): string {
-    if (contact.includes('@')) {
+  private maskContact(contact: string, deliveryMethod?: DeliveryMethod): string {
+    // Auto-detect if not provided
+    const isEmail = deliveryMethod ? deliveryMethod === DELIVERY_METHOD.EMAIL : contact.includes('@');
+
+    if (isEmail) {
       const [local, domain] = contact.split('@');
       return `${local[0]}***@${domain}`;
     }
+    // Phone number masking (E.164 format)
     return `+***${contact.slice(-4)}`;
   }
 
-  private extractDeviceName(fingerprint?: Record<string, any>): string {
-    if (!fingerprint?.userAgent) return 'Unknown Device';
+  private extractDeviceName(userAgent?: string): string {
+    if (!userAgent) return 'Unknown Device';
 
-    const ua = fingerprint.userAgent;
-    if (ua.includes('iPhone')) return 'iPhone';
-    if (ua.includes('iPad')) return 'iPad';
-    if (ua.includes('Android')) return 'Android Device';
-    if (ua.includes('Macintosh')) return 'Mac';
-    if (ua.includes('Windows')) return 'Windows PC';
-    if (ua.includes('Linux')) return 'Linux PC';
+    if (userAgent.includes('iPhone')) return 'iPhone';
+    if (userAgent.includes('iPad')) return 'iPad';
+    if (userAgent.includes('Android')) return 'Android Device';
+    if (userAgent.includes('Macintosh')) return 'Mac';
+    if (userAgent.includes('Windows')) return 'Windows PC';
+    if (userAgent.includes('Linux')) return 'Linux PC';
 
     return 'Unknown Device';
   }

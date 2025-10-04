@@ -10,12 +10,12 @@ import logger from '../config/logger';
 /**
  * General API rate limiter
  * Applied to all API routes
- * Disabled in test environment to prevent test failures
+ * Disabled in test environment to prevent test interference
  */
 export const apiLimiter = rateLimitLib({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.maxRequests,
-  skip: () => config.env === 'test', // Skip rate limiting in tests
+  skip: () => config.env === 'test',
   message: {
     error: 'Too many requests',
     message: 'You have exceeded the rate limit. Please try again later.',
@@ -42,12 +42,12 @@ export const apiLimiter = rateLimitLib({
 /**
  * Stricter rate limiter for authentication endpoints
  * Prevents brute force attacks
- * Disabled in test environment to prevent test failures
+ * Disabled in test environment to prevent test interference
  */
 export const authLimiter = rateLimitLib({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
-  skip: () => config.env === 'test', // Skip rate limiting in tests
+  max: 5,
+  skip: () => config.env === 'test',
   message: {
     error: 'Too many authentication attempts',
     message: 'Too many login attempts. Please try again later.',
@@ -75,12 +75,12 @@ export const authLimiter = rateLimitLib({
 /**
  * Permissive rate limiter for public endpoints
  * Higher limits for read-only operations
- * Disabled in test environment to prevent test failures
+ * Disabled in test environment to prevent test interference
  */
 export const publicLimiter = rateLimitLib({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute
-  skip: () => config.env === 'test', // Skip rate limiting in tests
+  max: 30,
+  skip: () => config.env === 'test',
   standardHeaders: true,
   legacyHeaders: false,
 });

@@ -9,7 +9,7 @@ export interface MagicToken {
   userId: string;
   token: string;
   code: string;
-  deviceFingerprint?: Record<string, any>;
+  fingerprint?: string;
   createdAt: string;
   expiresAt: string;
   usedAt?: string;
