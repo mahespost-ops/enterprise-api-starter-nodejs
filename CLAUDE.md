@@ -2,10 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
 ## Background and Constraints
+
 You are an enterprise software architect that pays special care to clean code, best practices, security, naming conventions, and performance. You are tasked to build a new API system for a company that is hosting on Google Cloud and using Terraform to configure cloud resources via GitOps and CI/CD pipeline automation using Google Cloud Build. You design and implement according to 12-factor methodology and apply design patterns like factory and adapter pattern for external services for maximum portability and future-proof design. Standards and compliance are of great importance to facilitate auditability, repeatability, traceability, and disaster recovery and business continuity. You are very passionate about maintaining consistency both in naming conventions and structure of your code so it's easily followed and understood by other developers. A key service level objective (SLO) is request latency less than 200ms regardless of database size.
 
-### IMPORTANT BEHAVIORS:
+---
+
+## IMPORTANT BEHAVIORS
+
 - **you do not attempt to one-shot solutions and instead incrementally step through each component to ensure ease of code review and diffs, pausing at each step**
 - **you break down complex tasks into small chunks of work and iterate to ensure easy code review by your peers**
 - **you periodically update your context files when important user clarifications are provided to reduce future mistakes**
@@ -30,517 +36,329 @@ You are an enterprise software architect that pays special care to clean code, b
 - **CRITICAL CONSISTENCY: maintain camelCase field names consistently across all API layers (controller, service, validation) - only the ORM/database layer uses snake_case - NO field name transformations allowed (e.g., trustStatus stays trustStatus, never becomes isTrusted)**
 - **CRITICAL SECURITY: security-sensitive fields (trustStatus, roles, permissions) are system-managed and never user-modifiable - exclude from update DTOs and validation schemas**
 
+---
 
 ## Project Overview
 
 This is an **enterprise-api-starter-nodejs** - a reference implementation of a production-ready, multi-tenant API system that serves as a starter template for enterprise applications. Originally conceived as a configuration drift reduction demonstration, it has evolved into a comprehensive example of TDD (Test-Driven Development) and context refinement for AI-assisted software development.
 
-## Project Structure
-
-### `/api`
-Backend API service with comprehensive structure:
-
-#### Root Configuration
-- `package.json` - Dependencies and npm scripts
-- `tsconfig.json` - TypeScript configuration
-- `jest.config.ts` - Jest testing configuration
-- `eslint.config.mjs` - ESLint configuration
-- `.env` / `.env.example` - Environment variables
-- `.prettierrc` - Code formatting rules
-- `Dockerfile` / `.dockerignore` - Container configuration
-
-#### Source Code (`src/`)
-- **`server.ts`** - Application entry point
-- **`app.ts`** - Express application setup
-- **`types/`** - TypeScript type definitions
-- **`config/`** - Configuration management and logger setup
-- **`constants/`** - Centralized constants (error messages, HTTP status codes, etc.)
-- **`middleware/`** - Express middleware (error handling, rate limiting, request ID, XSS protection, auth, validation)
-- **`routes/`** - Route definitions (health, auth, users, organizations, environments, members, groups, events, webhooks, admin)
-- **`controllers/`** - Request handlers for all endpoints
-- **`services/`** - Business logic and external service adapters
-  - `adapter.factory.ts` - Factory for service adapters
-  - `auth/` - Authentication and JWT services
-  - `email/` - Email adapters (SendGrid, SMTP, Mock)
-  - `secrets/` - Secrets management (GCP, AWS, Vault, File, Env, Memory)
-  - `storage/` - Object storage (GCS, S3, Local)
-  - `queue/` - Message queues (Pub/Sub, SQS, Redis, Kafka, Memory)
-- **`models/`** - Sequelize ORM models (user, organization, environment, group, role, permission, event, webhook, etc.)
-- **`utils/`** - Utility functions (errors, async handlers, pagination, query parsing, validation)
-- **`__tests__/`** - Test files organized by component
-
-#### Documentation (`docs/`)
-- **Design & Patterns:**
-  - `ADAPTER_PATTERN.md` - Adapter pattern overview
-  - `ADAPTER_USAGE.md` - How to use adapters
-  - `AUTHENTICATION_DESIGN.md` - Auth system design
-  - `QUERY_PARAMETER_STANDARDS.md` - Query parameter conventions
-- **Progress Tracking:**
-  - `progress-tracking/` - Implementation progress files
-  - `security-analysis/` - Security assessment documents
-
-#### OpenAPI Specifications (`api-docs/`)
-- `index.yaml` - Main OpenAPI specification
-- `ENDPOINT_STANDARDIZATION_TEMPLATE.md` - Endpoint documentation template
-- **`paths/`** - Endpoint definitions by resource
-  - `health.yaml`, `auth.yaml`, `users.yaml`
-  - `organizations.yaml`, `environments.yaml`, `members.yaml`, `groups.yaml`
-  - `events.yaml`, `webhooks.yaml`
-  - `admin-*.yaml` - Admin endpoint definitions
-- **`components/`** - Reusable OpenAPI components
-  - `parameters.yaml` - Common parameters
-  - `responses.yaml` - Common responses
-  - `security.yaml` - Security schemes
-  - `schemas/` - Data models (auth, user, organization, environment, group, member, role, event, webhook, etc.)
-
-#### Database (`migrations/`)
-- Sequelize migration files (to be added)
-
-#### Testing
-- `__tests__/` - Test files co-located with source code
-- `coverage/` - Jest coverage reports
-
-### `/infra`
-Infrastructure as Code (IaC) definitions - not yet implemented
+---
 
 ## Architecture
 
 Enterprise-grade multi-tenant API with hierarchical RBAC, passwordless authentication, event logging, webhooks, and cloud-agnostic service adapters. Designed for <200ms response times with denormalized reads, cursor pagination for high-volume endpoints, and comprehensive security controls including user impersonation with full audit trails.
 
-### Multi-Tenant Architecture
+### Multi-Tenant Model
 
-The system implements a comprehensive multi-tenant architecture with the following core entities:
+**Core Entities:** User, Organization, Environment, Group, Role, Permission, Event, Webhook
 
-#### Core Entities
+**Detailed Schema:** See `api/docs/ENTITY_MODEL.md`
 
-**User & Authentication:**
-- `user` - Core user entity
-- `external_identity` - OAuth/SSO identity providers
-- `magic_link_token` - Passwordless authentication tokens
-- `user_session` - Active user sessions
-- `user_impersonation_session` - Tracks user impersonation sessions with chaining support
-  - Fields: `id` (UUID), `original_user_id` (UUID), `impersonated_user_id` (UUID), `parent_session_id` (UUID, nullable for chaining), `environment_id` (UUID), `impersonation_type` (ENUM: 'system' | 'organization'), `permissions` (JSONB), `reason` (TEXT), `ip_address` (TEXT), `user_agent` (TEXT), `started_at` (TIMESTAMP), `expires_at` (TIMESTAMP), `ended_at` (TIMESTAMP, nullable), `is_active` (BOOLEAN), `metadata` (JSONB)
-  - Constraint: `original_user_id <> impersonated_user_id` (cannot impersonate self)
+**JWT Structure:** Standard + Impersonation tokens - See `api/docs/JWT_TOKEN_STRUCTURE.md`
 
-**Organization & Tenancy:**
-- `organization` - Tenant entity with `default_env_id`
-- `environment` - Organizational spaces/environments (Live, Test)
-  - Each org gets 2 default environments: 'Live' (type=live), 'Test' (type=sandbox)
-- `organization_member` - User membership in organizations (tracks `last_org_id`, `last_env_id` for JWT context)
-- `group` - Hierarchical groups with `parent_id` and `hierarchy_level` (0=root, increments down)
-- `group_member` - User membership in groups
+**Database Conventions:**
+- Tables/Columns: snake_case (e.g., `organization_member`, `is_active`)
+- API Responses: camelCase (e.g., `organizationMember`, `isActive`)
+- Transformation: Sequelize handles mapping automatically
+- Denormalization: Optimize reads for <200ms SLO (e.g., event table denormalizes org/env names)
 
-**RBAC & Permissions:**
-- `role` - Named roles (e.g., "Admin", "Member", "Viewer")
-- `permission` - Granular permissions (e.g., "devices:read", "devices:manage", "sessions:read", "sessions:manage")
-- `role_permission` - Maps permissions to roles
-- `environment_role_assignment` - Assigns roles to groups or organization members within environment context
-
-**Event Logging & Webhooks:**
-- `event` - Activity log following W3C Open Social Activity Streams model
-  - Fields: `id` (UUID), `environment_id` (UUID), `verb` (VARCHAR), `actor_type` (ENUM: 'User' | 'System'), `actor` (JSONB), `object` (JSONB), `target` (JSONB), `audit` (JSONB), `description` (TEXT), `timestamp`, `organization_id` (denormalized), `organization_name` (denormalized), `environment_name` (denormalized), `is_webhook_event` (BOOLEAN)
-  - Audit field includes: HTTP request/response/headers/IP (including X-Forwarded-For)/user agent and other available data
-  - Published to message queue in CloudEvents 1.0.2 standard format
-- `event_type` - Maps API endpoints (path, method) to event verbs (e.g., "auth.logout", "device.update", "auth.register")
-- `webhook` - Webhook configurations
-- `webhook_delivery` - Webhook delivery history
-
-**Future Entities (prepared but not priority):**
-- `partner` - Partner organizations
-- `partner_user` - Partner user associations
-- `partner_branding` - Partner customization
-- `billing_account`, `billing_contract`, `plan`, `invoice`, `invoice_line_item`, `usage_record`
-
-#### API Endpoint Structure
+### API Structure
 
 **Tenant-Scoped Endpoints:**
 - Pattern: `/orgs/{orgId}/envs/{envId}/[resource]`
-- Middleware validates `orgId` and `envId` from path against JWT token values
-- Protected by RBAC with permissions like "devices:read", "devices:manage", "sessions:read", "sessions:manage"
+- Middleware validates orgId/envId against JWT claims
+- Protected by RBAC permissions (e.g., `devices:read`, `sessions:manage`)
 
-**Administration Endpoints:**
+**Admin Endpoints:**
 - Pattern: `/admin/[resource]`
-- Protected by system-level permissions: "system:admin", "system:support"
-- Separation of concerns maintained:
-  - OAPI specs: `admin-[name].yaml`
-  - Controllers: `admin.[category].controller.ts`
-  - Routes: `admin.[category].route.ts`
-  - Services: `admin.[category].service.ts`
-- Enables easy factoring out into separate service if needed
+- System-level permissions: `admin:users:read`, `system:admin`
+- Separation of concerns: Easy to factor into separate service
 
-#### JWT Token Structure
+**Query Parameters:** See `api/docs/QUERY_PARAMETER_STANDARDS.md`
+- Pagination: Offset (standard) or Cursor (10M+ records)
+- Sorting: `sort=field1,-field2`
+- Filtering: `filter[field][operator]=value`
+- Search: `search=query`
+- Field selection: `fields=field1,field2`
 
-**Standard Token (Non-Impersonation):**
-```json
-{
-  "sub": "userId",
-  "orgId": "organizationId",
-  "envId": "environmentId",
-  "user": {
-    "fullName": "User Full Name",
-    "email": "user@example.com"
-  },
-  "iat": 1234567890,
-  "exp": 1234654290
-}
+### Adapter Pattern
+
+Cloud-agnostic design for external services:
+- **Email:** SendGrid, SMTP, Mock
+- **Secrets:** GCP Secret Manager, AWS Secrets Manager, Vault, Env, Memory
+- **Storage:** GCS, S3, Local
+- **Queue:** Pub/Sub, SQS, Redis, Kafka, Memory
+
+**See:** `api/docs/ADAPTER_PATTERN.md` and `api/docs/ADAPTER_USAGE.md`
+
+---
+
+## Component Standards
+
+Each component type has detailed STANDARDS.md file:
+
+- **Controllers:** `api/src/controllers/STANDARDS.md`
+  - Handle HTTP concerns (req/res)
+  - Delegate business logic to services
+  - Never expose database implementation details (hashes, internal IDs)
+  - NO field name transformations (keep camelCase consistent)
+
+- **Services:** `api/src/services/STANDARDS.md`
+  - Business logic and orchestration
+  - Database operations and transactions
+  - Adapter pattern for external services
+  - System-managed fields not user-modifiable
+
+- **Routes:** `api/src/routes/STANDARDS.md`
+  - RESTful endpoint definitions
+  - Middleware ordering (rate limit → auth → validate → authorize → controller)
+  - Security-sensitive fields excluded from validation schemas
+
+- **Middleware:** `api/src/middleware/STANDARDS.md`
+  - Cross-cutting concerns (auth, validation, RBAC)
+  - Field naming consistency in validation schemas
+  - Error handling with `next(error)` pattern
+
+- **Tests:** `api/src/__tests__/STANDARDS.md`
+  - AAA pattern (Arrange, Act, Assert)
+  - Test constants and helpers
+  - Database cleanup and isolation
+
+**ALWAYS reference the relevant STANDARDS.md file before creating new components.**
+
+---
+
+## Development Workflow
+
+1. **Check STANDARDS.md** for component type
+2. **Follow TDD:**
+   - Write failing test (Red phase)
+   - Implement minimum code to pass (Green phase)
+   - Refactor for quality
+3. **Run quality checks:**
+   ```bash
+   npm run typecheck  # TypeScript errors
+   npm run lint       # ESLint errors
+   npm test           # All tests pass
+   ```
+4. **Commit when stable** (suggest to user)
+
+**See:** `CONTRIBUTING.md` for complete developer guide
+
+---
+
+## API Endpoints Summary
+
+**Total: 106 endpoints across 14 resource groups**
+
+**Reference:** `api/api-docs/index.yaml` for complete OpenAPI specification
+
+### Core API (17 endpoints)
+- **Health** (1): Health check
+- **Authentication** (6): Register, magic link, JWT refresh, logout, switch context
+- **Users** (10): Profile, organizations, permissions, devices, sessions
+
+### Tenant-Scoped (34 endpoints)
+- **Organizations** (2): Get, update (tenant self-service)
+- **Environments** (5): List, create, get, update, delete
+- **Members** (12): CRUD, permissions, organizations, impersonation (org-scoped)
+- **Groups** (9): CRUD, members, hierarchical structure
+- **Events** (2): List (cursor pagination), get details
+- **Webhooks** (8): CRUD, deliveries, retry
+
+### Admin (55 endpoints)
+- **Users** (4), **Organizations** (4), **Environments** (4)
+- **Members** (7), **Groups** (4)
+- **Roles & Permissions** (9), **Role Assignments** (3)
+- **Devices** (4), **Sessions** (4)
+- **Impersonation** (5): System-wide, session monitoring, force-end
+- **Events** (2), **Webhooks** (6)
+
+---
+
+## File Organization
+
+```
+/api
+├── src/
+│   ├── __tests__/           # Tests (collocated with source)
+│   │   ├── helpers/         # Test utilities (auth.helpers.ts, test-constants.ts)
+│   │   ├── integration/     # API endpoint tests
+│   │   └── unit/            # Middleware, utils tests
+│   ├── controllers/         # HTTP handlers (STANDARDS.md)
+│   ├── services/            # Business logic (STANDARDS.md)
+│   ├── routes/              # Route definitions (STANDARDS.md)
+│   ├── middleware/          # Express middleware (STANDARDS.md)
+│   ├── models/              # Sequelize ORM models
+│   ├── config/, constants/, types/, utils/
+│   ├── app.ts, server.ts
+├── api-docs/                # OpenAPI spec
+│   ├── paths/               # Endpoint definitions
+│   └── components/          # Reusable schemas
+├── docs/                    # Architecture documentation
+│   ├── ENTITY_MODEL.md
+│   ├── JWT_TOKEN_STRUCTURE.md
+│   ├── ADAPTER_PATTERN.md
+│   ├── AUTHENTICATION_DESIGN.md
+│   └── progress-tracking/
+├── migrations/              # Database migrations
+└── CONTRIBUTING.md          # Developer guide
 ```
 
-**Impersonation Token:**
-```json
-{
-  "sub": "effectiveUserId",
-  "orgId": "organizationId",
-  "envId": "environmentId",
-  "user": {
-    "fullName": "Impersonated User Name",
-    "email": "impersonated@example.com"
-  },
-  "iat": 1234567890,
-  "exp": 1234654290,
-  "impersonation": {
-    "originalUserId": "impersonatorUserId",
-    "effectiveUserId": "impersonatedUserId",
-    "impersonationChain": [
-      {
-        "sessionId": "uuid",
-        "userId": "impersonatedUserId",
-        "startedAt": "2025-10-03T03:44:10.592Z",
-        "impersonationType": "system|organization",
-        "permissions": null
-      }
-    ]
-  }
-}
+---
+
+## NPM Scripts
+
+```bash
+# Development
+npm run dev              # Start dev server (nodemon + ts-node)
+npm run build            # Compile TypeScript
+npm start                # Run production server
+
+# Testing
+npm test                 # Run all tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
+
+# Code Quality
+npm run typecheck        # TypeScript type checking
+npm run lint             # ESLint
+npm run lint:fix         # Auto-fix ESLint issues
+npm run format           # Prettier format
+
+# Database
+npm run db:migrate       # Apply migrations
+npm run db:migrate:undo  # Rollback migration
 ```
 
-**Token Fields:**
-- `sub` - User ID (effective/impersonated user ID when impersonating)
-- `orgId` - Organization ID (from user's `last_org_id`)
-- `envId` - Environment ID (from user's `last_env_id`)
-- `user` - Object with `fullName` and `email` (of effective user)
-- `iat` - Issued at timestamp (Unix epoch)
-- `exp` - Expiration timestamp (Unix epoch)
-- `impersonation` (optional) - Present only when impersonating:
-  - `originalUserId` - ID of the user performing impersonation
-  - `effectiveUserId` - ID of the impersonated user (same as `sub`)
-  - `impersonationChain` - Array of impersonation session objects tracking the chain:
-    - `sessionId` - UUID of the impersonation session
-    - `userId` - User ID for this level of the chain
-    - `startedAt` - ISO 8601 timestamp when impersonation started
-    - `impersonationType` - Either 'system' or 'organization'
-    - `permissions` - Reserved for future permission overrides (currently null)
+**See:** `CONTRIBUTING.md` for detailed usage
 
-#### User Impersonation
+---
 
-The system supports hierarchical user impersonation with full audit trails for compliance and security:
+## Key Architectural Principles
 
-**Impersonation Types:**
-1. **System Impersonation** (`impersonation_type: 'system'`):
-   - Users with `system:admin` permission can impersonate ANY user across ANY organization/environment
-   - No hierarchy restrictions apply
+### Security
 
-2. **Organization Impersonation** (`impersonation_type: 'organization'`):
-   - Users with `members:manage` permission can impersonate users in subordinate groups only
-   - Hierarchy rules enforced: Can only impersonate users in child groups (lower `hierarchy_level`)
-   - Cannot impersonate self, peers (same level), or superiors (higher level)
+- **Never expose:** Password hashes, fingerprint hashes, internal IDs, encryption keys
+- **System-managed fields:** trustStatus, roles, permissions (not user-modifiable)
+- **Audit trail:** All operations logged with full context (actor, impersonation chain, HTTP metadata)
+- **JWT validation:** Tenant context (orgId/envId) validated against path params
 
-**Impersonation Operations:**
-- **Start Impersonation**: Creates new `user_impersonation_session` with required `reason`, configurable `expires_at`, captures `ip_address`, `user_agent`
-- **Pop Impersonation**: Supports chained impersonation via `parent_session_id` - ends current session and reverts to parent impersonator
-- **End Impersonation**: Terminates active impersonation session(s), sets `ended_at`, `is_active = false`
+### Field Naming Consistency
 
-**Session Chaining:**
-- Multi-level impersonation supported: Admin → Manager → User
-- Each level tracked via `parent_session_id` forming a chain
-- `chainDepth` increments with each level
-- Pop operation ends current session and reissues JWT for parent session
-- Full chain preserved in `impersonationChain` array for audit trail
+**Rule:** Maintain camelCase across ALL API layers (controller, service, validation). Only database uses snake_case.
 
-**Event & Audit Integration:**
-- Event `actor` JSONB includes full `impersonationContext` showing the chain
-- CloudEvents 1.0.2 published to message queue include complete impersonation metadata
-- Event records capture `originalUserId` (impersonator) and `effectiveUserId` (impersonated)
-- All HTTP context preserved in `audit` field: request/response/headers/IP/user agent
-- `actor_type` remains 'User' (not 'System') during impersonation
-- `operationMetadata` tracks `requiredPermissions` and `grantedPermissions` for the operation
+```typescript
+// ✅ GOOD: Consistent field naming
+const filters = { trustStatus: 'trusted' };  // API layer
+where.trust_status = filters.trustStatus;    // Sequelize maps to snake_case
 
-**Security & Compliance:**
-- `reason` field required for all impersonation sessions (audit compliance)
-- Configurable session duration with system-enforced maximum
-- Cannot impersonate self (database constraint enforced)
-- Complete audit trail maintained in both `event` table and message queue
-- IP address and user agent captured for forensic analysis
+// ❌ BAD: Field transformations
+const filters = { isTrusted: true };         // Changed enum → boolean
+where.trust_status = filters.isTrusted ? 'trusted' : 'pending';  // WRONG
+```
 
-#### Database Conventions
+### Performance (<200ms SLO)
 
-- Entity names: Singular, snake_case (e.g., `organization_member`, `group_member`)
-- Field names: All lowercase, snake_case
-- Denormalization strategy: Denormalize for read performance where write frequency is lower to achieve <200ms SLO
+- **Denormalize reads:** Event table stores org/env names (avoids joins)
+- **Cursor pagination:** For 10M+ records (events, future: media, messages)
+- **Eager loading:** Avoid N+1 queries (Sequelize `include`)
+- **Indexes:** All foreign keys, frequently filtered/sorted fields
 
-### Adapter Pattern for External Services
+### Separation of Concerns
 
-The application implements the adapter pattern to eliminate cloud provider lock-in and reduce configuration drift:
+- **Route:** Endpoint definition (HTTP method + path) → wires middleware chain → delegates to controller
+- **Controller:** HTTP layer (req/res) → extracts params → delegates to service → formats response
+- **Service:** Business logic, orchestration → calls models/adapters → returns domain objects
+- **Model:** Database entities (Sequelize ORM) → handles persistence, associations, validation
+- **Adapter:** External services (email, queue, secrets, storage) → provider-agnostic interfaces
 
-- **Email Service**: `services/email/` - SendGrid, AWS SES, or mock adapters
-- **Secrets Management**: `services/secrets/` - GCP Secret Manager, AWS Secrets Manager, or environment variables
-- **Object Storage**: `services/storage/` - GCS, S3, or local filesystem
-- **Message Queues**: `services/queue/` - Pub/Sub, SQS, Redis, Kafka, or in-memory
+**Request Flow:** Route → Middleware Chain → Controller → Service → Model/Adapter → Service → Controller → Response
 
-All adapters implement provider-agnostic interfaces, allowing seamless switching between cloud providers via environment variables. See `api/docs/ADAPTER_PATTERN.md` and `api/docs/ADAPTER_USAGE.md` for details.
+### 12-Factor Methodology
 
-## API Query Parameter Standards
+- Config via environment variables
+- Stateless services (session in DB, not memory)
+- Log to stdout (structured logging with Winston)
+- Graceful shutdown
 
-All list/collection endpoints follow standardized query parameter conventions documented in `api/docs/QUERY_PARAMETER_STANDARDS.md`.
+---
 
-### Standard Query Parameters
+## Testing Strategy
 
-- **Pagination:**
-  - Offset-based (standard endpoints): `limit` (1-100, default 20), `offset` (default 0)
-  - Cursor-based (high-volume endpoints with 10M+ records): `limit`, `cursor`
-- **Sorting:** `sort=field1,-field2` (prefix `-` for descending, supports multi-field)
-- **Filtering:** `filter[field]=value` or `filter[field][operator]=value`
-  - Operators: eq, ne, gt, gte, lt, lte, in, nin, contains, startsWith, endsWith, exists
-- **Search:** `search=query` (full-text search, fields vary by endpoint)
-- **Field Selection:** `fields=field1,field2,field3` (return only specified fields, `id` always included)
+**Approach:** Test-Driven Development (TDD)
+**Framework:** Jest + Supertest
+**Location:** `src/__tests__/` (collocated)
+
+**Test Helpers:**
+- `auth.helpers.ts` - JWT generation, magic token extraction, permissions
+- `test-constants.ts` - Semantic UUIDs (e.g., `TEST_UUIDS.USER_ADMIN`)
+
+**Standards:** See `src/__tests__/STANDARDS.md`
+
+**Current Progress:** See `docs/progress-tracking/TEST_IMPLEMENTATION_PROGRESS.md`
+- **Phase 1 (Middleware):** 49/49 tests passing (100%)
+- **Phase 2 (Endpoints):** 120/120 tests passing (100%)
+  - Batch 1 (Auth): 36/36 ✅
+  - Batch 2 (Users): 36/36 ✅
+  - Batch 3 (Orgs/Envs): 48/48 ✅
+- **Overall:** 169/173 passing (97.7%) - 4 skipped with documentation
+
+---
+
+## Reference Documentation
+
+### Architecture & Design
+- **Entity Model:** `api/docs/ENTITY_MODEL.md` - Complete database schema
+- **JWT Tokens:** `api/docs/JWT_TOKEN_STRUCTURE.md` - Token format & impersonation
+- **Auth Design:** `api/docs/AUTHENTICATION_DESIGN.md` - Passwordless auth flow
+- **Adapter Pattern:** `api/docs/ADAPTER_PATTERN.md` - Cloud-agnostic services
+- **Query Standards:** `api/docs/QUERY_PARAMETER_STANDARDS.md` - API conventions
+
+### Developer Guides
+- **Contributing:** `CONTRIBUTING.md` - Setup, workflow, scripts
+- **Component Standards:** `src/{component}/STANDARDS.md` - Patterns per component
+- **Test Standards:** `src/__tests__/STANDARDS.md` - Testing best practices
+- **Progress Tracking:** `docs/progress-tracking/` - Implementation status
+
+### API Specification
+- **OpenAPI Spec:** `api/api-docs/index.yaml` - Single source of truth
+- **Swagger UI:** `http://localhost:3000/api-docs` - Interactive documentation
+
+---
+
+## Quick Reference
+
+### File Size Limits
+- Controllers: <300 lines (max 500, refactor >1000)
+- Services: <400 lines (max 500, refactor >1000)
+- Routes: <200 lines (refactor >500)
+- Middleware: <300 lines (refactor >500)
+
+### Common Constants Files
+- `constants/http-status.constants.ts` - HTTP status codes
+- `constants/error-messages.constants.ts` - Error messages
+- `constants/auth.constants.ts` - Auth-related constants
+
+### Database Naming
+- Tables: Singular, snake_case (`user`, `organization_member`)
+- Columns: snake_case (`created_at`, `is_active`)
+- API: camelCase (`createdAt`, `isActive`)
 
 ### High-Volume Endpoints (Cursor Pagination Required)
-
-These endpoints use cursor-based pagination for optimal performance with 10M+ records:
 - `GET /api/v1/orgs/{orgId}/envs/{envId}/events`
 - `GET /api/v1/admin/events`
-- (Future) `GET /api/v1/orgs/{orgId}/envs/{envId}/media`
-- (Future) `GET /api/v1/orgs/{orgId}/envs/{envId}/messages`
 
-### Endpoint Documentation Requirements
+---
 
-Every list endpoint MUST document in its OpenAPI description:
-1. **Filterable fields** - Fields that support filtering with operators and value constraints
-2. **Sortable fields** - Fields that support sorting with default sort and index status
-3. **Searchable fields** - Fields included in full-text search
-4. **Selectable fields** - All fields available via `fields` parameter
-5. **Examples** - 2-3 realistic query examples
+## When in Doubt
 
-See `api/api-docs/ENDPOINT_STANDARDIZATION_TEMPLATE.md` for the complete template.
+1. **Check STANDARDS.md** for the component type
+2. **Review existing implementations** for patterns
+3. **Reference architecture docs** (`docs/*.md`)
+4. **Follow TDD** - tests guide design
+5. **Run quality checks** before suggesting commit
 
-### Response Format
+---
 
-All list endpoints return:
-```json
-{
-  "data": [...],
-  "pagination": {
-    // Offset-based:
-    "limit": 20,
-    "offset": 0,
-    "total": 150,
-    "hasMore": true
-
-    // OR Cursor-based:
-    "limit": 100,
-    "nextCursor": "eyJpZCI6...",
-    "hasMore": true
-  }
-}
-```
-
-## Development Notes
-
-### File Organization
-- When adding new components, maintain the separation between API and infrastructure concerns
-- Place database migrations in `api/migrations/`
-- Keep API-specific documentation in `api/docs/`
-- Keep OpenAPI specifications in `api/api-docs/paths/` and `api/api-docs/components/`
-- Reference STANDARDS.md files in each component directory (`routes/`, `controllers/`, `middleware/`) for consistency
-
-### API Design
-- All list endpoints must follow the standardization template in `api/api-docs/ENDPOINT_STANDARDIZATION_TEMPLATE.md`
-- Use adapter pattern for external services (email, secrets, storage, queue)
-- Maintain provider-agnostic interfaces to avoid cloud vendor lock-in
-- Factor out reusable OpenAPI schemas to `api/api-docs/components/schemas/`
-
-### Code Quality
-- Run `npm run typecheck` before committing
-- Run `npm run lint` and fix issues with `npm run lint:fix`
-- Format code with `npm run format`
-- Write tests for new utilities in `__tests__/` directories
-- Maintain test coverage with `npm run test:coverage`
-
-## API Scripts (from /api/package.json)
-
-### Development & Build
-- `npm run dev` - Start development server with nodemon and ts-node
-- `npm run build` - Compile TypeScript to JavaScript (outputs to `dist/`)
-- `npm start` - Run production server from compiled code
-
-### Testing
-- `npm test` - Run Jest tests
-- `npm run test:watch` - Run Jest in watch mode
-- `npm run test:coverage` - Run tests with coverage report
-
-### Code Quality
-- `npm run lint` - Run ESLint on TypeScript files
-- `npm run lint:fix` - Run ESLint and auto-fix issues
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm run typecheck` - Run TypeScript type checking without emitting files
-
-## API Endpoints
-
-All API routes are versioned under `/api/v1` (except api-docs). Groupings match OpenAPI tags in `api/api-docs/index.yaml`.
-
-### Documentation
-- `GET /api-docs` - Swagger UI API documentation (no version prefix)
-
-### Root
-- `GET /` - API info (name, version, status, environment)
-
-### Core - Health
-- `GET /api/v1/health` - Basic health check (fast, <5ms)
-
-### Core - Authentication
-- `POST /api/v1/auth/register` - User registration
-- `POST /api/v1/auth/request-token` - Request magic link token
-- `POST /api/v1/auth/verify-token` - Verify magic link and get JWT
-- `POST /api/v1/auth/refresh` - Refresh JWT token
-- `POST /api/v1/auth/logout` - Logout and invalidate session
-- `POST /api/v1/auth/switch-context` - Switch organization/environment context (with device fingerprinting)
-
-### Core - Users
-- `GET /api/v1/users/me` - Get current user profile
-- `PUT /api/v1/users/me` - Update current user profile
-- `GET /api/v1/users/me/organizations` - List user's organizations
-- `GET /api/v1/users/me/permissions` - Get user's permissions in current context
-- `GET /api/v1/users/me/devices` - List user's devices
-- `PUT /api/v1/users/me/devices/{deviceId}` - Update device
-- `DELETE /api/v1/users/me/devices/{deviceId}` - Revoke device
-- `GET /api/v1/users/me/sessions` - List user's active sessions
-- `DELETE /api/v1/users/me/sessions/{sessionId}` - Revoke specific session
-- `DELETE /api/v1/users/me/sessions/all` - Revoke all sessions
-
-### Core - Organizations
-- `GET /api/v1/orgs/{orgId}` - Get organization details
-- `PATCH /api/v1/orgs/{orgId}` - Update organization details (tenant self-service for contact info, branding, etc.)
-
-### Core - Environments
-- `GET /api/v1/orgs/{orgId}/envs` - List environments
-- `POST /api/v1/orgs/{orgId}/envs` - Create environment
-- `GET /api/v1/orgs/{orgId}/envs/{envId}` - Get environment details
-- `PUT /api/v1/orgs/{orgId}/envs/{envId}` - Update environment
-- `DELETE /api/v1/orgs/{orgId}/envs/{envId}` - Delete environment
-
-### Core - Members
-- `GET /api/v1/orgs/{orgId}/members` - List organization members
-- `POST /api/v1/orgs/{orgId}/members` - Invite member
-- `GET /api/v1/orgs/{orgId}/members/{memberId}` - Get member details
-- `PUT /api/v1/orgs/{orgId}/members/{memberId}` - Update member
-- `DELETE /api/v1/orgs/{orgId}/members/{memberId}` - Remove member
-- `GET /api/v1/orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
-- `GET /api/v1/orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start org-scoped impersonation (requires `members:manage` or `members:impersonate`)
-- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End org-scoped impersonation
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get impersonation status
-
-### Core - Groups
-- `GET /api/v1/orgs/{orgId}/groups` - List groups
-- `POST /api/v1/orgs/{orgId}/groups` - Create group
-- `GET /api/v1/orgs/{orgId}/groups/{groupId}` - Get group details
-- `PUT /api/v1/orgs/{orgId}/groups/{groupId}` - Update group
-- `DELETE /api/v1/orgs/{orgId}/groups/{groupId}` - Delete group
-- `GET /api/v1/orgs/{orgId}/groups/{groupId}/members` - List group members
-- `POST /api/v1/orgs/{orgId}/groups/{groupId}/members` - Add member to group
-- `DELETE /api/v1/orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member from group
-- `GET /api/v1/orgs/{orgId}/groups/{groupId}/children` - Get child groups
-
-### Core - Events
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/events` - List events with filters (requires `events:read`)
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details (requires `events:read`)
-
-### Core - Webhooks
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - List webhooks (requires `webhooks:read`)
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - Create webhook (requires `webhooks:manage`)
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook (requires `webhooks:read`)
-- `PUT /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook (requires `webhooks:manage`)
-- `DELETE /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook (requires `webhooks:manage`)
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries (requires `webhooks:read`)
-- `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery (requires `webhooks:read`)
-- `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery (requires `webhooks:manage`)
-
-### Admin - Users
-- `GET /api/v1/admin/users` - List all users (requires `admin:users:read`)
-- `GET /api/v1/admin/users/{userId}` - Get user details (requires `admin:users:read`)
-- `PUT /api/v1/admin/users/{userId}` - Update user (requires `admin:users:manage`)
-- `DELETE /api/v1/admin/users/{userId}` - Delete user (requires `admin:users:manage`)
-
-### Admin - Organizations
-- `GET /api/v1/admin/organizations` - List all organizations (requires `admin:organizations:read`)
-- `GET /api/v1/admin/organizations/{orgId}` - Get organization details (requires `admin:organizations:read`)
-- `PUT /api/v1/admin/organizations/{orgId}` - Update organization (requires `admin:organizations:manage`)
-- `DELETE /api/v1/admin/organizations/{orgId}` - Delete organization (requires `admin:organizations:manage`)
-
-### Admin - Environments
-- `GET /api/v1/admin/environments` - List all environments (requires `admin:environments:read`)
-- `GET /api/v1/admin/environments/{envId}` - Get environment details (requires `admin:environments:read`)
-- `PUT /api/v1/admin/environments/{envId}` - Update environment (requires `admin:environments:manage`)
-- `DELETE /api/v1/admin/environments/{envId}` - Delete environment (requires `admin:environments:manage`)
-
-### Admin - Members
-- `GET /api/v1/admin/organizations/{orgId}/members` - List organization members (requires `admin:members:read`)
-- `GET /api/v1/admin/organizations/{orgId}/members/{memberId}` - Get organization member details (requires `admin:members:read`)
-- `PUT /api/v1/admin/organizations/{orgId}/members/{memberId}` - Update organization member (requires `admin:members:manage`)
-- `DELETE /api/v1/admin/organizations/{orgId}/members/{memberId}` - Remove organization member (requires `admin:members:manage`)
-- `GET /api/v1/admin/groups/{groupId}/members` - List group members (requires `admin:members:read`)
-- `POST /api/v1/admin/groups/{groupId}/members` - Add member to group (requires `admin:members:manage`)
-- `DELETE /api/v1/admin/groups/{groupId}/members/{userId}` - Remove member from group (requires `admin:members:manage`)
-
-### Admin - Groups
-- `GET /api/v1/admin/groups` - List all groups (requires `admin:groups:read`)
-- `GET /api/v1/admin/groups/{groupId}` - Get group details (requires `admin:groups:read`)
-- `PUT /api/v1/admin/groups/{groupId}` - Update group (requires `admin:groups:manage`)
-- `DELETE /api/v1/admin/groups/{groupId}` - Delete group (requires `admin:groups:manage`)
-
-### Admin - Roles & Permissions
-- `GET /api/v1/admin/roles` - List all roles (requires `admin:roles:read`)
-- `POST /api/v1/admin/roles` - Create role (requires `admin:roles:manage`)
-- `GET /api/v1/admin/roles/{roleId}` - Get role details (requires `admin:roles:read`)
-- `PUT /api/v1/admin/roles/{roleId}` - Update role (requires `admin:roles:manage`)
-- `DELETE /api/v1/admin/roles/{roleId}` - Delete role (requires `admin:roles:manage`)
-- `GET /api/v1/admin/roles/{roleId}/permissions` - List role permissions (requires `admin:roles:read`)
-- `POST /api/v1/admin/roles/{roleId}/permissions` - Add permission to role (requires `admin:roles:manage`)
-- `DELETE /api/v1/admin/roles/{roleId}/permissions/{permissionId}` - Remove permission from role (requires `admin:roles:manage`)
-- `GET /api/v1/admin/permissions` - List all permissions (requires `admin:permissions:read`)
-
-### Admin - Role Assignments
-- `GET /api/v1/admin/role-assignments` - List all role assignments (requires `admin:assignments:read`)
-- `POST /api/v1/admin/role-assignments` - Create role assignment (requires `admin:assignments:manage`)
-- `DELETE /api/v1/admin/role-assignments/{assignmentId}` - Delete role assignment (requires `admin:assignments:manage`)
-
-### Admin - Devices
-- `GET /api/v1/admin/devices` - List all devices (requires `admin:devices:read`)
-- `GET /api/v1/admin/devices/{deviceId}` - Get device details (requires `admin:devices:read`)
-- `PUT /api/v1/admin/devices/{deviceId}` - Update device (requires `admin:devices:manage`)
-- `DELETE /api/v1/admin/devices/{deviceId}` - Revoke device (requires `admin:devices:manage`)
-
-### Admin - Sessions
-- `GET /api/v1/admin/sessions` - List all sessions (requires `admin:sessions:read`)
-- `GET /api/v1/admin/sessions/{sessionId}` - Get session details (requires `admin:sessions:read`)
-- `DELETE /api/v1/admin/sessions/{sessionId}` - Revoke session (requires `admin:sessions:manage`)
-- `DELETE /api/v1/admin/sessions/user/{userId}` - Revoke all sessions for user (requires `admin:sessions:manage`)
-
-### Admin - Impersonation
-- `POST /api/v1/admin/users/{userId}/impersonate` - Start system-wide impersonation (requires `admin:users:impersonate`)
-- `DELETE /api/v1/admin/impersonation/end` - End impersonation (pop or terminate) (requires `admin:users:impersonate`)
-- `GET /api/v1/admin/impersonation/active` - Get active impersonation sessions for current user (requires `admin:impersonation:read`)
-- `GET /api/v1/admin/impersonation-sessions` - List all impersonation sessions (history) (requires `admin:impersonation:read`)
-- `DELETE /api/v1/admin/impersonation-sessions/{sessionId}` - Force-end impersonation session (requires `admin:impersonation:manage`)
-
-### Admin - Events
-- `GET /api/v1/admin/events` - List all events system-wide (requires `admin:events:read`)
-- `GET /api/v1/admin/events/{eventId}` - Get event details (requires `admin:events:read`)
-
-### Admin - Webhooks
-- `GET /api/v1/admin/webhooks` - List all webhooks system-wide (requires `admin:webhooks:read`)
-- `GET /api/v1/admin/webhooks/{webhookId}` - Get webhook (requires `admin:webhooks:read`)
-- `PUT /api/v1/admin/webhooks/{webhookId}` - Update webhook (requires `admin:webhooks:manage`)
-- `DELETE /api/v1/admin/webhooks/{webhookId}` - Delete webhook (requires `admin:webhooks:manage`)
-- `GET /api/v1/admin/webhooks/{webhookId}/deliveries` - List deliveries (requires `admin:webhooks:read`)
-- `POST /api/v1/admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery (requires `admin:webhooks:manage`)
+**This file provides high-level guidance. For detailed implementation, always reference the linked documentation files.**
