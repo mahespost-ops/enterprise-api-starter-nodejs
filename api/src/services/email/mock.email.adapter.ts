@@ -112,4 +112,38 @@ export class MockEmailAdapter implements IEmailAdapter {
   public clearSentEmails(): void {
     this.sentEmails = [];
   }
+
+  /**
+   * Test helper: Get the latest magic token sent to an email address
+   * Extracts token and code from the email HTML
+   */
+  public getLatestMagicTokenForEmail(email: string): { token: string; code: string } | null {
+    // Find the most recent email sent to this address
+    const emailsToUser = this.sentEmails.filter((sent) => {
+      const recipients = Array.isArray(sent.params.to) ? sent.params.to : [sent.params.to];
+      return recipients.includes(email);
+    });
+
+    if (emailsToUser.length === 0) {
+      return null;
+    }
+
+    // Get the latest email
+    const latestEmail = emailsToUser[emailsToUser.length - 1];
+    const html = latestEmail.params.html || '';
+
+    // Extract token from URL parameter: ?token=xxxxx
+    const tokenMatch = html.match(/token=([^"&\s]+)/);
+    const token = tokenMatch ? tokenMatch[1] : '';
+
+    // Extract code from HTML: <strong>123456</strong>
+    const codeMatch = html.match(/<strong>(\d{6})<\/strong>/);
+    const code = codeMatch ? codeMatch[1] : '';
+
+    if (!token || !code) {
+      return null;
+    }
+
+    return { token, code };
+  }
 }

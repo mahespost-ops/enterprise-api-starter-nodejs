@@ -77,6 +77,11 @@ export const config = {
   app: {
     port: parseInt(process.env.PORT || '3000', 10),
     name: process.env.APP_NAME || 'API',
+    url: process.env.APP_URL || 'http://localhost:3000',
+  },
+
+  email: {
+    from: process.env.EMAIL_FROM || 'noreply@example.com',
   },
 
   database: {

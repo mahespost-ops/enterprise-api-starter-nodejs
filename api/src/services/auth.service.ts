@@ -13,10 +13,12 @@ import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import User from '../models/User.model';
 import MagicLinkToken from '../models/MagicLinkToken.model';
 import UserSession from '../models/UserSession.model';
+import Device from '../models/Device.model';
 import Organization from '../models/Organization.model';
 import OrganizationMember from '../models/OrganizationMember.model';
 import Environment from '../models/Environment.model';
 import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
+import { AdapterFactory } from './adapter.factory';
 
 // Types
 interface RegisterData {
@@ -113,14 +115,31 @@ class AuthService {
       emailVerified: false,
     });
 
-    await this.generateMagicToken(user.id, data.fingerprint);
+    const { token, code } = await this.generateMagicToken(user.id, data.fingerprint);
 
     const deliveryMethod: DeliveryMethod = data.preferredAuthMethod || DELIVERY_METHOD.EMAIL;
     const contactToMask = deliveryMethod === DELIVERY_METHOD.EMAIL ? data.email : (data.phone || data.email);
     const sentTo = this.maskContact(contactToMask, deliveryMethod);
 
-    // TODO: Send via email/SMS adapter
-    logger.info(`Magic token would be sent via ${deliveryMethod} to ${sentTo}`);
+    // Send magic token via email/SMS adapter
+    if (deliveryMethod === DELIVERY_METHOD.EMAIL) {
+      const emailAdapter = AdapterFactory.getInstance().getEmailAdapter();
+      await emailAdapter.sendEmail({
+        to: data.email,
+        from: config.email.from,
+        subject: 'Your Magic Link',
+        body: `Welcome! Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.`,
+        html: `
+          <p>Welcome! Click the link below to sign in:</p>
+          <p><a href="${config.app.url}/auth/verify?token=${token}">Sign In</a></p>
+          <p>Or enter this code: <strong>${code}</strong></p>
+          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.</p>
+        `,
+      });
+    }
+    // TODO: Implement SMS delivery
+
+    logger.info(`Magic token sent via ${deliveryMethod} to ${sentTo}`);
 
     return {
       message: 'Magic token sent successfully',
@@ -142,7 +161,7 @@ class AuthService {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    await this.generateMagicToken(user.id, data.fingerprint);
+    const { token, code } = await this.generateMagicToken(user.id, data.fingerprint);
 
     // Determine delivery method based on identifier type
     const isPhone = IDENTIFIER_REGEX.PHONE_E164.test(data.identifier);
@@ -150,8 +169,25 @@ class AuthService {
     const contactToMask = isPhone ? data.identifier : user.email;
     const sentTo = this.maskContact(contactToMask, deliveryMethod);
 
-    // TODO: Send via email/SMS adapter
-    logger.info(`Magic token would be sent via ${deliveryMethod} to ${sentTo}`);
+    // Send magic token via email/SMS adapter
+    if (deliveryMethod === DELIVERY_METHOD.EMAIL) {
+      const emailAdapter = AdapterFactory.getInstance().getEmailAdapter();
+      await emailAdapter.sendEmail({
+        to: user.email,
+        from: config.email.from,
+        subject: 'Your Magic Link',
+        body: `Use this link to sign in: ${config.app.url}/auth/verify?token=${token}\n\nOr enter this code: ${code}\n\nThis link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.`,
+        html: `
+          <p>Click the link below to sign in:</p>
+          <p><a href="${config.app.url}/auth/verify?token=${token}">Sign In</a></p>
+          <p>Or enter this code: <strong>${code}</strong></p>
+          <p>This link expires in ${TOKEN_EXPIRATION.MAGIC_TOKEN / 60000} minutes.</p>
+        `,
+      });
+    }
+    // TODO: Implement SMS delivery
+
+    logger.info(`Magic token sent via ${deliveryMethod} to ${sentTo}`);
 
     return {
       message: 'Magic token sent successfully',
@@ -201,11 +237,29 @@ class AuthService {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // Create device and session
+    // Create or find device
     const deviceId = crypto.randomUUID();
+    const deviceName = this.extractDeviceName(data.userAgent);
+
+    // Create Device record
+    await Device.create({
+      id: deviceId,
+      userId: user.id,
+      fingerprintHash: data.fingerprint ? await bcrypt.hash(data.fingerprint, 10) : await bcrypt.hash(deviceId, 10),
+      deviceName: deviceName,
+      deviceType: 'unknown', // TODO: Parse from user agent
+      os: 'unknown', // TODO: Parse from user agent
+      browser: 'unknown', // TODO: Parse from user agent
+      trustStatus: 'trusted',
+      firstSeenIp: '127.0.0.1', // TODO: Get from request context
+      lastSeenIp: '127.0.0.1', // TODO: Get from request context
+      createdAt: new Date(),
+      lastUsedAt: new Date(),
+    });
+
     const device = {
       id: deviceId,
-      name: this.extractDeviceName(data.userAgent),
+      name: deviceName,
       isNew: true, // TODO: Check against existing devices
     };
 
@@ -412,7 +466,7 @@ class AuthService {
   // Private Helper Methods
   // ============================================================================
 
-  private async generateMagicToken(userId: string, fingerprint?: string): Promise<string> {
+  private async generateMagicToken(userId: string, fingerprint?: string): Promise<{ token: string; code: string }> {
     const token = crypto.randomBytes(32).toString('base64url');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -429,7 +483,7 @@ class AuthService {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
 
-    return token;
+    return { token, code };
   }
 
   private generateAccessToken(payload: Record<string, unknown>): string {

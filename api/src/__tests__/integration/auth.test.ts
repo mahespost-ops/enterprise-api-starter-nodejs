@@ -21,13 +21,10 @@ jest.mock('uuid', () => ({
 import request from 'supertest';
 import { type Application } from 'express';
 import appPromise from '../../app';
-import { getLatestMagicTokenForUser } from '../helpers/auth.helpers';
+import { getLatestMagicTokenForUser, clearAllSentEmails } from '../helpers/auth.helpers';
 import { DELIVERY_METHOD } from '../../constants/auth.constants';
 
-// TODO: Rewrite auth integration tests for Sequelize
-// The tests rely on getLatestMagicTokenForUser() which cannot work with hashed tokens
-// Tests need to be refactored to capture tokens from API responses instead
-describe.skip('Authentication Flow', () => {
+describe('Authentication Flow', () => {
   let app: Application;
 
   // Setup: Resolve app promise before all tests
@@ -35,15 +32,24 @@ describe.skip('Authentication Flow', () => {
     app = await appPromise;
   });
 
-  // Cleanup: Clear database tables after each test to avoid interference
+  // Cleanup: Close database connection after all tests
+  afterAll(async () => {
+    const { sequelize } = await import('../../models');
+    await sequelize.close();
+  });
+
+  // Cleanup: Clear database tables and sent emails after each test to avoid interference
   afterEach(async () => {
     const User = (await import('../../models/User.model')).default;
     const MagicLinkToken = (await import('../../models/MagicLinkToken.model')).default;
     const UserSession = (await import('../../models/UserSession.model')).default;
+    const Device = (await import('../../models/Device.model')).default;
 
     await UserSession.destroy({ where: {}, force: true });
+    await Device.destroy({ where: {}, force: true });
     await MagicLinkToken.destroy({ where: {}, force: true });
     await User.destroy({ where: {}, force: true });
+    clearAllSentEmails();
   });
 
   // Test data shared across tests
@@ -75,10 +81,10 @@ describe.skip('Authentication Flow', () => {
       throw new Error(`Registration failed with status ${registerRes.status}: ${JSON.stringify(registerRes.body)}`);
     }
 
-    // Get magic token
+    // Get magic token from mock email
     const magicToken = await getLatestMagicTokenForUser(testUser.email);
     if (!magicToken) {
-      throw new Error(`Magic token not found. Register status: ${registerRes.status}`);
+      throw new Error(`Magic token not found for ${testUser.email}. Register status: ${registerRes.status}`);
     }
 
     // Verify token to get JWT
@@ -88,6 +94,14 @@ describe.skip('Authentication Flow', () => {
         token: magicToken.token,
         fingerprint: testUser.fingerprint,
       });
+
+    if (res.status !== 200) {
+      throw new Error(`Token verification failed with status ${res.status}: ${JSON.stringify(res.body)}`);
+    }
+
+    if (!res.body.user || !res.body.user.id) {
+      throw new Error(`Invalid response from verify-token: ${JSON.stringify(res.body)}`);
+    }
 
     return {
       accessToken: res.body.accessToken,

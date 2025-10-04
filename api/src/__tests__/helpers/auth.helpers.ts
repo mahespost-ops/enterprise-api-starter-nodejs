@@ -9,6 +9,8 @@ import config from '../../config';
 import MagicLinkToken from '../../models/MagicLinkToken.model';
 import User from '../../models/User.model';
 import UserSession from '../../models/UserSession.model';
+import { AdapterFactory } from '../../services/adapter.factory';
+import type { MockEmailAdapter } from '../../services/email/mock.email.adapter';
 
 /**
  * Generate a valid JWT token for testing
@@ -60,26 +62,17 @@ export function generateExpiredTestJWT(payload: {
 
 /**
  * Extract the most recent magic token for a user (by email)
- * NOTE: In real Sequelize implementation, tokens are hashed and cannot be retrieved.
- * This helper is no longer functional with Sequelize. Tests should capture tokens
- * from API responses or use test-specific token generation.
+ * Uses the MockEmailAdapter to retrieve tokens from sent emails
  */
 export async function getLatestMagicTokenForUser(email: string): Promise<{
   token: string;
   code: string;
 } | null> {
-  // Find user by email
-  const user = await User.findByEmail(email);
-  if (!user) {
-    return null;
-  }
+  // Get the email adapter (must be MockEmailAdapter in test environment)
+  const emailAdapter = AdapterFactory.getInstance().getEmailAdapter() as MockEmailAdapter;
 
-  // With Sequelize, tokens are hashed and cannot be retrieved
-  // This function is deprecated for Sequelize-based tests
-  // Tests should capture tokens from registration/request-token responses
-  throw new Error(
-    'getLatestMagicTokenForUser is not supported with Sequelize. Tokens are hashed and cannot be retrieved. Capture tokens from API responses instead.'
-  );
+  // Extract token from the latest email sent to this address
+  return emailAdapter.getLatestMagicTokenForEmail(email);
 }
 
 /**
@@ -101,4 +94,12 @@ export async function clearAllUsers(): Promise<void> {
  */
 export async function clearAllSessions(): Promise<void> {
   await UserSession.destroy({ where: {}, force: true });
+}
+
+/**
+ * Clear all sent emails from mock adapter (for test cleanup)
+ */
+export function clearAllSentEmails(): void {
+  const emailAdapter = AdapterFactory.getInstance().getEmailAdapter() as MockEmailAdapter;
+  emailAdapter.clearSentEmails();
 }
