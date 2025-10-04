@@ -1,65 +1,123 @@
 /**
- * User Model (Stub)
- *
- * This is a temporary in-memory implementation for TDD purposes.
- * Will be replaced with actual Sequelize/Prisma model when database layer is implemented.
+ * User Model
+ * OIDC-compliant user identity with email/phone authentication
  */
 
-import crypto from 'crypto';
+import { Model, DataTypes, Optional, UUIDV1, Op } from 'sequelize';
+import sequelize from '../config/database';
 
-export interface User {
+// User attributes
+export interface UserAttributes {
   id: string;
   email: string;
-  phone?: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  preferredAuthMethod: 'email' | 'sms';
-  timezone?: string;
   emailVerified: boolean;
+  phoneNumber: string | null;
+  phoneNumberVerified: boolean;
+  givenName: string;
+  familyName: string;
+  middleName: string | null;
+  nickname: string | null;
+  preferredUsername: string | null;
+  profile: string | null;
+  picture: string | null;
+  website: string | null;
+  gender: string | null;
+  birthdate: Date | null;
+  zoneinfo: string | null;
+  locale: string | null;
+  preferredAuthMethod: 'email' | 'sms';
+  isActive: boolean;
+  lastLoginAt: Date | null;
+  lastOrgId: string | null;
+  lastEnvId: string | null;
   createdAt: Date;
-  updatedAt?: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
 }
 
-// Temporary in-memory storage
-const users: Map<string, User> = new Map();
+// Optional fields for creation
+export interface UserCreationAttributes
+  extends Optional<
+    UserAttributes,
+    | 'id'
+    | 'emailVerified'
+    | 'phoneNumber'
+    | 'phoneNumberVerified'
+    | 'middleName'
+    | 'nickname'
+    | 'preferredUsername'
+    | 'profile'
+    | 'picture'
+    | 'website'
+    | 'gender'
+    | 'birthdate'
+    | 'zoneinfo'
+    | 'locale'
+    | 'preferredAuthMethod'
+    | 'isActive'
+    | 'lastLoginAt'
+    | 'lastOrgId'
+    | 'lastEnvId'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'deletedAt'
+  > {}
 
-export class UserModel {
+/**
+ * User Model Class
+ */
+export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
+  declare id: string;
+  declare email: string;
+  declare emailVerified: boolean;
+  declare phoneNumber: string | null;
+  declare phoneNumberVerified: boolean;
+  declare givenName: string;
+  declare familyName: string;
+  declare middleName: string | null;
+  declare nickname: string | null;
+  declare preferredUsername: string | null;
+  declare profile: string | null;
+  declare picture: string | null;
+  declare website: string | null;
+  declare gender: string | null;
+  declare birthdate: Date | null;
+  declare zoneinfo: string | null;
+  declare locale: string | null;
+  declare preferredAuthMethod: 'email' | 'sms';
+  declare isActive: boolean;
+  declare lastLoginAt: Date | null;
+  declare lastOrgId: string | null;
+  declare lastEnvId: string | null;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
+
   /**
-   * Create a new user
+   * Get full name
    */
-  static async create(data: Omit<User, 'id' | 'createdAt' | 'fullName'>): Promise<User> {
-    const id = crypto.randomUUID();
-    const user: User = {
-      id,
-      ...data,
-      fullName: `${data.firstName} ${data.lastName}`,
-      createdAt: new Date(),
-    };
-
-    users.set(id, user);
-    return user;
-  }
-
-  /**
-   * Find user by ID
-   */
-  static async findById(id: string): Promise<User | null> {
-    return users.get(id) || null;
+  get fullName(): string {
+    return `${this.givenName} ${this.familyName}`;
   }
 
   /**
    * Find user by email
    */
   static async findByEmail(email: string): Promise<User | null> {
-    return Array.from(users.values()).find(u => u.email === email) || null;
+    return this.findOne({
+      where: { email },
+      paranoid: true,
+    });
   }
 
   /**
-   * Find user by phone number (E.164 format)
+   * Find user by phone (E.164 format)
    */
-  static async findByPhone(phone: string): Promise<User | null> {
-    return Array.from(users.values()).find(u => u.phone === phone) || null;
+  static async findByPhone(phoneNumber: string): Promise<User | null> {
+    return this.findOne({
+      where: { phoneNumber },
+      paranoid: true,
+    });
   }
 
   /**
@@ -77,35 +135,156 @@ export class UserModel {
 
     return null;
   }
-
-  /**
-   * Update user
-   */
-  static async update(id: string, data: Partial<User>): Promise<User | null> {
-    const user = users.get(id);
-    if (!user) return null;
-
-    const updated = {
-      ...user,
-      ...data,
-      updatedAt: new Date(),
-    };
-
-    users.set(id, updated);
-    return updated;
-  }
-
-  /**
-   * Delete user
-   */
-  static async delete(id: string): Promise<boolean> {
-    return users.delete(id);
-  }
-
-  /**
-   * Clear all users (for testing)
-   */
-  static async clear(): Promise<void> {
-    users.clear();
-  }
 }
+
+// Initialize User model
+User.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: UUIDV1,
+      primaryKey: true,
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true,
+      },
+    },
+    emailVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'email_verified',
+    },
+    phoneNumber: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      unique: true,
+      field: 'phone_number',
+      validate: {
+        is: /^\+[1-9]\d{1,14}$/, // E.164 format
+      },
+    },
+    phoneNumberVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'phone_number_verified',
+    },
+    givenName: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      field: 'given_name',
+    },
+    familyName: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      field: 'family_name',
+    },
+    middleName: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'middle_name',
+    },
+    nickname: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    preferredUsername: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'preferred_username',
+    },
+    profile: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    picture: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    website: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    gender: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    birthdate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    zoneinfo: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    locale: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    preferredAuthMethod: {
+      type: DataTypes.ENUM('email', 'sms'),
+      allowNull: false,
+      defaultValue: 'email',
+      field: 'preferred_auth_method',
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'is_active',
+    },
+    lastLoginAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'last_login_at',
+    },
+    lastOrgId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'last_org_id',
+    },
+    lastEnvId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'last_env_id',
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'created_at',
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'updated_at',
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deleted_at',
+    },
+  },
+  {
+    sequelize,
+    tableName: 'user',
+    timestamps: true,
+    paranoid: true, // Soft deletes
+    underscored: true,
+    indexes: [
+      { fields: ['email'], where: { deleted_at: null } },
+      { fields: ['phone_number'], where: { phone_number: { [Op.ne]: null }, deleted_at: null } },
+      { fields: ['created_at'] },
+      { fields: ['last_login_at'], where: { last_login_at: { [Op.ne]: null } } },
+      { fields: ['is_active'], where: { deleted_at: null } },
+    ],
+  },
+);
+
+export default User;

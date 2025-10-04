@@ -10,11 +10,12 @@ import config from '../config';
 import logger from '../config/logger';
 import { NotFoundError, UnauthorizedError, ConflictError, ForbiddenError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
-import { UserModel, type User } from '../models/User.model';
-import { MagicTokenModel } from '../models/MagicToken.model';
-import { SessionModel } from '../models/Session.model';
-import { OrganizationModel } from '../models/Organization.model';
-import { EnvironmentModel } from '../models/Environment.model';
+import User from '../models/User.model';
+import MagicLinkToken from '../models/MagicLinkToken.model';
+import UserSession from '../models/UserSession.model';
+import Organization from '../models/Organization.model';
+import Environment from '../models/Environment.model';
+import Device from '../models/Device.model';
 import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
 
 // Types
@@ -97,18 +98,18 @@ class AuthService {
   async register(data: RegisterData): Promise<{ message: string; deliveryMethod: string; sentTo: string; expiresIn: number }> {
     logger.info(`Registering user: ${data.email}`);
 
-    const existingUser = await UserModel.findByEmail(data.email);
+    const existingUser = await User.findByEmail(data.email);
     if (existingUser) {
       throw new ConflictError(ERROR_MESSAGES.USER_EXISTS);
     }
 
-    const user = await UserModel.create({
+    const user = await User.create({
       email: data.email,
-      phone: data.phone,
-      firstName: data.firstName,
-      lastName: data.lastName,
+      phoneNumber: data.phone,
+      givenName: data.firstName,
+      familyName: data.lastName,
       preferredAuthMethod: data.preferredAuthMethod || DELIVERY_METHOD.EMAIL,
-      timezone: data.timezone,
+      zoneinfo: data.timezone,
       emailVerified: false,
     });
 
@@ -136,7 +137,7 @@ class AuthService {
     logger.info(`Requesting magic token for identifier: ${this.maskContact(data.identifier)}`);
 
     // Find user by polymorphic identifier (email or phone)
-    const user = await UserModel.findByIdentifier(data.identifier);
+    const user = await User.findByIdentifier(data.identifier);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
@@ -171,13 +172,13 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_MAGIC_TOKEN);
     }
 
-    const magicToken = await MagicTokenModel.findByToken(tokenKey);
+    const magicToken = await MagicLinkToken.findByToken(tokenKey);
     if (!magicToken) {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_MAGIC_TOKEN);
     }
 
     if (new Date() > new Date(magicToken.expiresAt)) {
-      await MagicTokenModel.delete(tokenKey);
+      await MagicLinkToken.delete(tokenKey);
       throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_EXPIRED);
     }
 
@@ -185,9 +186,9 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_ALREADY_USED);
     }
 
-    await MagicTokenModel.markAsUsed(tokenKey);
+    await MagicLinkToken.markAsUsed(tokenKey);
 
-    const user = await UserModel.findById(magicToken.userId);
+    const user = await User.findById(magicToken.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
@@ -204,7 +205,7 @@ class AuthService {
     const refreshToken = crypto.randomBytes(32).toString('hex');
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
-    await SessionModel.create({
+    await UserSession.create({
       id: sessionId,
       userId: user.id,
       deviceId,
@@ -251,7 +252,7 @@ class AuthService {
 
     // Find session with matching refresh token
     // Must check all sessions since refresh token is hashed
-    const sessions = await SessionModel.findAll();
+    const sessions = await UserSession.findAll();
     let matchedSession = null;
 
     for (const session of sessions) {
@@ -274,7 +275,7 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.SESSION_EXPIRED);
     }
 
-    const user = await UserModel.findById(matchedSession.userId);
+    const user = await User.findById(matchedSession.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
@@ -283,7 +284,7 @@ class AuthService {
     const newRefreshToken = crypto.randomBytes(32).toString('hex');
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
 
-    await SessionModel.update(matchedSession.id, {
+    await UserSession.update(matchedSession.id, {
       refreshTokenHash: newRefreshTokenHash,
       lastAccessedAt: new Date(),
     });
@@ -314,18 +315,18 @@ class AuthService {
     logger.info(`Logging out user: ${userId}`);
 
     if (refreshToken) {
-      const sessions = await SessionModel.findByUserId(userId);
+      const sessions = await UserSession.findByUserId(userId);
 
       for (const session of sessions) {
         const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
         if (isMatch) {
-          await SessionModel.revoke(session.id);
+          await UserSession.revoke(session.id);
           logger.info(`Session ${session.id} revoked`);
           return;
         }
       }
     } else {
-      await SessionModel.revokeAllForUser(userId);
+      await UserSession.revokeAllForUser(userId);
       logger.info(`All sessions revoked for user ${userId}`);
     }
   }
@@ -336,25 +337,25 @@ class AuthService {
   async switchContext(data: SwitchContextData): Promise<SwitchContextResponse> {
     logger.info(`Switching context for user ${data.userId} to org ${data.organizationId}, env ${data.environmentId}`);
 
-    const user = await UserModel.findById(data.userId);
+    const user = await User.findById(data.userId);
     if (!user) {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     // Check if user has access to organization
-    const hasAccess = await OrganizationModel.userHasAccess(data.userId, data.organizationId);
+    const hasAccess = await Organization.userHasAccess(data.userId, data.organizationId);
     if (!hasAccess) {
       throw new ForbiddenError('You do not have access to this organization');
     }
 
     // Check if organization exists
-    const orgExists = await OrganizationModel.exists(data.organizationId);
+    const orgExists = await Organization.exists(data.organizationId);
     if (!orgExists) {
       throw new NotFoundError('Organization not found');
     }
 
     // Check if environment exists
-    const envExists = await EnvironmentModel.exists(data.environmentId);
+    const envExists = await Environment.exists(data.environmentId);
     if (!envExists) {
       throw new NotFoundError('Environment not found');
     }
@@ -394,7 +395,7 @@ class AuthService {
     const token = crypto.randomBytes(32).toString('base64url');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await MagicTokenModel.create({
+    await MagicLinkToken.create({
       userId,
       token,
       code,

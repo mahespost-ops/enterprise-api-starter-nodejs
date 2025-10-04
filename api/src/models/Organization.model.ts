@@ -1,88 +1,233 @@
 /**
- * Organization Model (Stub)
- * In-memory stub for organization management
- * TODO: Replace with actual database implementation
+ * Organization Model
+ * Multi-tenant organization entity with contact and address information
  */
 
-export interface Organization {
+import { Model, DataTypes, Optional, UUIDV1, Op } from 'sequelize';
+import sequelize from '../config/database';
+
+export interface OrganizationAttributes {
   id: string;
   name: string;
   slug: string;
-  defaultEnvId: string;
-  createdAt: string;
-  updatedAt: string;
+  description: string | null;
+  defaultEnvId: string | null;
+  logoUrl: string | null;
+  website: string | null;
+  primaryContactName: string | null;
+  primaryContactEmail: string | null;
+  primaryContactPhone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  stateProvince: string | null;
+  postalCode: string | null;
+  country: string | null;
+  metadata: Record<string, unknown> | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
 }
 
-/**
- * In-memory store for organizations (stub)
- */
-const organizations = new Map<string, Organization>();
+export interface OrganizationCreationAttributes
+  extends Optional<
+    OrganizationAttributes,
+    | 'id'
+    | 'description'
+    | 'defaultEnvId'
+    | 'logoUrl'
+    | 'website'
+    | 'primaryContactName'
+    | 'primaryContactEmail'
+    | 'primaryContactPhone'
+    | 'addressLine1'
+    | 'addressLine2'
+    | 'city'
+    | 'stateProvince'
+    | 'postalCode'
+    | 'country'
+    | 'metadata'
+    | 'isActive'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'deletedAt'
+  > {}
 
-/**
- * OrganizationModel class
- */
-class OrganizationModelClass {
-  /**
-   * Find organization by ID
-   */
-  async findById(id: string): Promise<Organization | null> {
-    return organizations.get(id) || null;
-  }
-
-  /**
-   * Check if user has access to organization
-   * @param userId - User ID
-   * @param orgId - Organization ID
-   * @returns true if user has access
-   */
-  async userHasAccess(_userId: string, orgId: string): Promise<boolean> {
-    // Stub: Deny access if orgId is all zeros (test case for 403)
-    if (orgId === '00000000-0000-0000-0000-000000000000') {
-      return false;
-    }
-
-    // Stub: Allow access for any other org (in real app, check organization_member table)
-    // TODO: Check organization_member table with userId
-    return true;
-  }
-
-  /**
-   * Check if organization exists
-   * @param orgId - Organization ID
-   * @returns true if organization exists
-   */
-  async exists(orgId: string): Promise<boolean> {
-    // Stub: Return false if orgId is all 9s (test case for 404)
-    if (orgId === '99999999-9999-9999-9999-999999999999') {
-      return false;
-    }
-
-    // Stub: Return true for any other org (in real app, check database)
-    return true;
-  }
-
-  /**
-   * Create a new organization (stub)
-   */
-  async create(data: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>): Promise<Organization> {
-    const org: Organization = {
-      id: crypto.randomUUID(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    organizations.set(org.id, org);
-    return org;
-  }
+export class Organization
+  extends Model<OrganizationAttributes, OrganizationCreationAttributes>
+  implements OrganizationAttributes
+{
+  declare id: string;
+  declare name: string;
+  declare slug: string;
+  declare description: string | null;
+  declare defaultEnvId: string | null;
+  declare logoUrl: string | null;
+  declare website: string | null;
+  declare primaryContactName: string | null;
+  declare primaryContactEmail: string | null;
+  declare primaryContactPhone: string | null;
+  declare addressLine1: string | null;
+  declare addressLine2: string | null;
+  declare city: string | null;
+  declare stateProvince: string | null;
+  declare postalCode: string | null;
+  declare country: string | null;
+  declare metadata: Record<string, unknown> | null;
+  declare isActive: boolean;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
+  declare deletedAt: Date | null;
 
   /**
-   * Clear all organizations (for testing)
+   * Find organization by slug
    */
-  async clear(): Promise<void> {
-    organizations.clear();
+  static async findBySlug(slug: string): Promise<Organization | null> {
+    return this.findOne({
+      where: { slug },
+      paranoid: true,
+    });
   }
 }
 
-export const OrganizationModel = new OrganizationModelClass();
-export default OrganizationModel;
+Organization.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: UUIDV1,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    slug: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true,
+      validate: {
+        is: /^[a-z0-9-]+$/, // Lowercase alphanumeric with hyphens
+      },
+    },
+    description: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    defaultEnvId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'default_env_id',
+      references: {
+        model: 'environment',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+    },
+    logoUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'logo_url',
+    },
+    website: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    primaryContactName: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'primary_contact_name',
+    },
+    primaryContactEmail: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'primary_contact_email',
+      validate: {
+        isEmail: true,
+      },
+    },
+    primaryContactPhone: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      field: 'primary_contact_phone',
+      validate: {
+        is: /^\+[1-9]\d{1,14}$/, // E.164 format
+      },
+    },
+    addressLine1: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'address_line1',
+    },
+    addressLine2: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'address_line2',
+    },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    stateProvince: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'state_province',
+    },
+    postalCode: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      field: 'postal_code',
+    },
+    country: {
+      type: DataTypes.CHAR(2),
+      allowNull: true,
+      validate: {
+        is: /^[A-Z]{2}$/, // ISO 3166-1 alpha-2
+      },
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'is_active',
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'created_at',
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'updated_at',
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deleted_at',
+    },
+  },
+  {
+    sequelize,
+    tableName: 'organization',
+    timestamps: true,
+    paranoid: true,
+    underscored: true,
+    indexes: [
+      { fields: ['slug'], unique: true, where: { deleted_at: null } },
+      { fields: ['is_active'], where: { deleted_at: null } },
+      { fields: ['created_at'] },
+      { fields: ['country'], where: { country: { [Op.ne]: null }, deleted_at: null } },
+      { fields: ['country', 'state_province'], where: { state_province: { [Op.ne]: null }, deleted_at: null } },
+      { fields: ['primary_contact_email'], where: { primary_contact_email: { [Op.ne]: null }, deleted_at: null } },
+    ],
+  },
+);
+
+export default Organization;
