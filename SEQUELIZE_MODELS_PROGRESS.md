@@ -1,12 +1,12 @@
 # Sequelize Models Implementation Progress
 
-**Status:** Partial completion - 14 of 19 models created
+**Status:** ✅ COMPLETE - All 19 models created, associations defined
 **Last Updated:** 2025-10-04
-**Next Steps:** Complete remaining 5 models, create associations, update service layer
+**Next Steps:** Update service layer to use Sequelize models instead of mock API
 
 ---
 
-## ✅ Completed Models (14/19)
+## ✅ Completed Models (19/19)
 
 ### Authentication & Identity (5/5)
 - [x] **User.model.ts** - OIDC-compliant core identity
@@ -83,69 +83,84 @@
 
 ---
 
-## ⏳ Remaining Models (5/19)
-
 ### Impersonation (1/1)
-- [ ] **UserImpersonationSession.model.ts**
+- [x] **UserImpersonationSession.model.ts** ✅
   - Fields: originalUserId, impersonatedUserId, parentSessionId
   - Types: system (admin), organization (hierarchy-restricted)
-  - Features: Chained impersonation, reason tracking
-  - Constraint: Cannot impersonate self
+  - Methods: `findActiveById()`, `findActiveForUser()`, `end()`
+  - Features: Chained impersonation, reason tracking, expiration checking
+  - Constraint: Cannot impersonate self (model-level validation)
 
 ### Events & Webhooks (4/4)
-- [ ] **EventType.model.ts**
+- [x] **EventType.model.ts** ✅
   - Maps HTTP endpoints (method + path) to event verbs
   - Fields: verb, httpMethod, httpPath, isWebhookEvent
+  - Methods: `findByEndpoint()`, `getWebhookEvents()`
+  - Unique constraint on verb
 
-- [ ] **Event.model.ts** - W3C Activity Streams
+- [x] **Event.model.ts** ✅ - W3C Activity Streams
   - Fields: verb, actor (JSONB), object (JSONB), target (JSONB), audit (JSONB)
   - Denormalized: organizationId, organizationName, environmentName
-  - Indexes: GIN on JSONB, cursor pagination (timestamp DESC, id DESC)
+  - Methods: `findWithCursor()`, `findByVerb()`, `findWebhookEvents()`
+  - Indexes: Cursor pagination (timestamp DESC, id DESC), GIN on JSONB
   - Scale target: 100M+ records
 
-- [ ] **Webhook.model.ts** - CloudEvents 1.0.2
+- [x] **Webhook.model.ts** ✅ - CloudEvents 1.0.2
   - Fields: url, eventTypes (ARRAY), authMethod, retryConfig (JSONB)
   - Auth methods: none, hmac, jwt, basic, digest
-  - Features: Delivery tracking, retry configuration
+  - Methods: `findActiveByEnvironment()`, `findByEventType()`, `recordSuccess()`, `recordFailure()`, `disable()`
+  - Features: Delivery tracking, retry configuration, failure counting
 
-- [ ] **WebhookDelivery.model.ts** - Delivery tracking
+- [x] **WebhookDelivery.model.ts** ✅ - Delivery tracking
   - Fields: status, attempt, httpStatusCode, requestPayload (JSONB)
   - Statuses: pending, success, failed, retrying
-  - Features: Retry scheduling, response tracking
+  - Methods: `findPendingDeliveries()`, `findByWebhook()`, `findByEvent()`, `markSuccess()`, `markFailed()`, `incrementAttempt()`
+  - Features: Retry scheduling, response tracking, exponential backoff support
 
 ---
 
-## 🔧 Pending Tasks
+## 🔧 Completed Tasks
 
-### 1. Model Associations (High Priority)
-Create `src/models/associations.ts` to define all relationships:
+### 1. ✅ Model Associations
+Created `src/models/associations.ts` with all relationships:
 
 **User relationships:**
-- User.hasMany(ExternalIdentity)
-- User.hasMany(MagicLinkToken)
-- User.hasMany(Device)
-- User.hasMany(UserSession)
+- User.hasMany(ExternalIdentity, MagicLinkToken, Device, UserSession)
+- User.hasMany(UserImpersonationSession) - as originalUser AND impersonatedUser
 - User.belongsToMany(Organization, through: OrganizationMember)
 - User.belongsToMany(Group, through: GroupMember)
 
 **Organization relationships:**
-- Organization.hasMany(Environment)
-- Organization.belongsTo(Environment, as: 'defaultEnvironment')
-- Organization.hasMany(OrganizationMember)
-- Organization.hasMany(Group)
+- Organization.hasMany(Environment, OrganizationMember, Group)
+- Organization.belongsTo(Environment, as: 'defaultEnvironment') - circular FK handled
+- Organization.belongsToMany(User, through: OrganizationMember)
 
 **Environment relationships:**
 - Environment.belongsTo(Organization)
-- Environment.hasMany(EnvironmentRoleAssignment)
+- Environment.hasMany(EnvironmentRoleAssignment, Event, Webhook, UserImpersonationSession)
 
 **RBAC relationships:**
 - Role.belongsToMany(Permission, through: RolePermission)
 - Permission.belongsToMany(Role, through: RolePermission)
-- Group.belongsTo(Group, as: 'parent')
-- Group.hasMany(Group, as: 'children')
+- Group.belongsTo(Group, as: 'parent') + hasMany(Group, as: 'children')
+- Group.belongsToMany(User, through: GroupMember)
+- EnvironmentRoleAssignment polymorphic: membershipId OR groupId
 
-### 2. Model Hooks (Medium Priority)
-Add hooks for denormalization and counter maintenance:
+**Event & Webhook relationships:**
+- Event.belongsTo(EventType) - via verb field
+- Event.hasMany(WebhookDelivery)
+- Webhook.hasMany(WebhookDelivery)
+- Webhook.belongsTo(Environment)
+
+**Session & Device relationships:**
+- UserSession.belongsTo(Device, Organization, Environment)
+- Device.hasMany(UserSession)
+
+**Impersonation chain:**
+- UserImpersonationSession self-referencing via parentSessionId
+
+### 2. ⏳ Model Hooks (Pending)
+Hooks for denormalization and counter maintenance:
 
 **Group hooks:**
 - `afterCreate/afterDestroy` on GroupMember → update Group.memberCount
@@ -156,8 +171,8 @@ Add hooks for denormalization and counter maintenance:
 **Event hooks:**
 - `beforeCreate` → denormalize org/env names from foreign keys
 
-### 3. Scopes & Query Helpers (Medium Priority)
-Add default scopes and query methods:
+### 3. ⏳ Scopes & Query Helpers (Pending)
+Default scopes and query methods to add:
 
 **User scopes:**
 - `defaultScope`: exclude deleted, only active
@@ -173,27 +188,34 @@ Add default scopes and query methods:
 - `byVerb(verb)`: filter by event type
 - `webhook`: only webhook events
 
-### 4. Index File (High Priority)
-Create `src/models/index.ts` to export all models:
-```typescript
-export { User } from './User.model';
-export { ExternalIdentity } from './ExternalIdentity.model';
-// ... etc
-export { default as sequelize } from '../config/database';
-```
+### 4. ✅ Index File
+Created `src/models/index.ts` to export all models and types:
+- All 19 model classes exported
+- All attribute and creation types exported
+- `initializeAssociations()` exported
+- Database connection (sequelize) exported
 
-### 5. Service Layer Updates (Critical)
+### 5. ⏳ Service Layer Updates (Next Priority)
 Update services to use Sequelize API instead of mock API:
 
-**auth.service.ts:**
+**auth.service.ts TypeScript Errors:**
 - ✅ Model imports updated (User, MagicLinkToken, UserSession, etc.)
 - ❌ Method calls need refactoring:
-  - `MagicLinkToken.findByToken()` → needs implementation
-  - `MagicLinkToken.delete()` → use `destroy()`
-  - `MagicLinkToken.markAsUsed()` → method exists, needs token lookup first
-  - `UserSession.findAll()` → avoid in production (use findByRefreshTokenHash)
-  - `Organization.exists()` → use `findByPk()` instead
-  - `Environment.exists()` → use `findByPk()` instead
+  - Line 175: `MagicLinkToken.findByToken()` → use `findByTokenHash()`
+  - Line 181: `MagicLinkToken.delete()` → use `magicToken.destroy()`
+  - Line 189: `MagicLinkToken.markAsUsed()` → method exists, call on instance
+  - Line 191: `User.findById()` → use `User.findByPk()`
+  - Line 208: Missing `ipAddress` field in UserSession creation
+  - Line 278: `User.findById()` → use `User.findByPk()`
+  - Line 287: `UserSession.update()` syntax error - needs `where` clause
+  - Line 318: `UserSession.findByUserId()` → needs implementation or use `findAll({ where: { userId } })`
+  - Line 323: `UserSession.revoke()` → method exists, call on instance
+  - Line 329: `UserSession.revokeAllForUser()` → needs implementation
+  - Line 340: `User.findById()` → use `User.findByPk()`
+  - Line 346: `Organization.userHasAccess()` → needs implementation
+  - Line 352: `Organization.exists()` → use `Organization.findByPk()`
+  - Line 358: `Environment.exists()` → use `Environment.findByPk()`
+  - Line 400: `token` field doesn't exist → use `tokenHash`
   - Field name mappings: `firstName` → `givenName`, `phone` → `phoneNumber`
 
 ---
@@ -202,45 +224,45 @@ Update services to use Sequelize API instead of mock API:
 
 | Table | Model Created | Associations | Hooks | Scopes |
 |-------|--------------|--------------|-------|--------|
-| user | ✅ | ⏳ | ⏳ | ⏳ |
-| external_identity | ✅ | ⏳ | N/A | ⏳ |
-| magic_link_token | ✅ | ⏳ | N/A | N/A |
-| device | ✅ | ⏳ | N/A | ⏳ |
-| user_session | ✅ | ⏳ | N/A | ⏳ |
-| organization | ✅ | ⏳ | N/A | ⏳ |
-| environment | ✅ | ⏳ | N/A | ⏳ |
-| organization_member | ✅ | ⏳ | N/A | ⏳ |
-| group | ✅ | ⏳ | ✅ (count) | ⏳ |
-| group_member | ✅ | ⏳ | N/A | N/A |
-| role | ✅ | ⏳ | ✅ (count) | ⏳ |
-| permission | ✅ | ⏳ | N/A | N/A |
-| role_permission | ✅ | ⏳ | N/A | N/A |
-| environment_role_assignment | ✅ | ⏳ | N/A | ⏳ |
-| user_impersonation_session | ❌ | ⏳ | N/A | ⏳ |
-| event_type | ❌ | ⏳ | N/A | N/A |
-| event | ❌ | ⏳ | ✅ (denorm) | ✅ |
-| webhook | ❌ | ⏳ | N/A | ⏳ |
-| webhook_delivery | ❌ | ⏳ | N/A | ⏳ |
+| user | ✅ | ✅ | ⏳ | ⏳ |
+| external_identity | ✅ | ✅ | N/A | ⏳ |
+| magic_link_token | ✅ | ✅ | N/A | N/A |
+| device | ✅ | ✅ | N/A | ⏳ |
+| user_session | ✅ | ✅ | N/A | ⏳ |
+| organization | ✅ | ✅ | N/A | ⏳ |
+| environment | ✅ | ✅ | N/A | ⏳ |
+| organization_member | ✅ | ✅ | N/A | ⏳ |
+| group | ✅ | ✅ | ⏳ | ⏳ |
+| group_member | ✅ | ✅ | N/A | N/A |
+| role | ✅ | ✅ | ⏳ | ⏳ |
+| permission | ✅ | ✅ | N/A | N/A |
+| role_permission | ✅ | ✅ | N/A | N/A |
+| environment_role_assignment | ✅ | ✅ | N/A | ⏳ |
+| user_impersonation_session | ✅ | ✅ | N/A | ⏳ |
+| event_type | ✅ | ✅ | N/A | N/A |
+| event | ✅ | ✅ | ⏳ | ⏳ |
+| webhook | ✅ | ✅ | N/A | ⏳ |
+| webhook_delivery | ✅ | ✅ | N/A | ⏳ |
 
 **Legend:** ✅ = Complete | ⏳ = Pending | ❌ = Not Started | N/A = Not Applicable
 
 ---
 
-## 🐛 Known Issues
+## ⚠️ Known Issues
 
 1. **TypeScript Errors in auth.service.ts:**
-   - Model method calls need updating for Sequelize API
+   - 16 errors remaining - all documented in Service Layer Updates section
    - Field names changed (firstName→givenName, phone→phoneNumber)
    - Methods like `.exists()` don't exist in Sequelize (use `findByPk`)
+   - Missing fields in model creation (e.g., ipAddress in UserSession)
 
-2. **Missing Op Import:**
-   - Fixed in User, Organization, Group, EnvironmentRoleAssignment
-   - Pattern: `import { Op } from 'sequelize'` for conditional indexes
+2. **ESLint Warning:**
+   - EventType.model.ts:22:18 - Empty interface warning (benign, can be ignored or fixed later)
 
-3. **Circular Dependency:**
-   - Organization.defaultEnvId → Environment
-   - Environment.organizationId → Organization
-   - Handled via deferred constraint in migration
+3. ✅ **Circular Dependency (RESOLVED):**
+   - Organization.defaultEnvId ↔ Environment.organizationId
+   - Handled via `constraints: false` in associations.ts
+   - Will be handled via deferred constraint in database migration
 
 ---
 
@@ -274,21 +296,36 @@ All models use `field: 'snake_case'` to map TypeScript camelCase to database sna
 
 ---
 
-## 🚀 Resume Prompt
+## 🚀 What's Next
 
-To resume work after context clear, use:
+All 19 Sequelize models are complete with associations defined! Next steps:
 
+### Immediate Priority:
+1. **Fix auth.service.ts** - 16 TypeScript errors need resolution:
+   - Replace mock API calls with Sequelize methods
+   - Update field names (firstName→givenName, phone→phoneNumber)
+   - Fix UserSession.create() to include ipAddress
+   - Implement missing helper methods or use Sequelize built-ins
+
+### Medium Priority:
+2. **Add Model Hooks** for denormalization and counters:
+   - Group.memberCount auto-update on GroupMember changes
+   - Role.permissionCount auto-update on RolePermission changes
+   - Event denormalization (org/env names) on create
+
+3. **Add Scopes** for common queries:
+   - User: defaultScope (active only), withProfile, withSessions
+   - Organization: active, withMembers
+   - Event: recent, byVerb, webhook
+
+### Low Priority:
+4. **Database Migrations** - Create Sequelize migrations for all tables
+5. **Integration Tests** - Test models against actual Postgres database
+6. **Seed Data** - Create seed scripts for development/testing
+
+### Resume Prompt (after /clear):
 ```
-Continue implementing Sequelize models. We've completed 14 of 19 models (all auth, tenancy, and RBAC models).
-
-Remaining tasks:
-1. Create the 5 remaining models: UserImpersonationSession, EventType, Event, Webhook, WebhookDelivery
-2. Create src/models/index.ts to export all models
-3. Create src/models/associations.ts for model relationships
-4. Add hooks for denormalization (Event) and counters (Group.memberCount, Role.permissionCount)
-5. Update auth.service.ts to use Sequelize API properly (field names, method calls)
-
-Reference SEQUELIZE_MODELS_PROGRESS.md for details. Follow existing model patterns. Use UUIDV1 for PKs, snake_case field mappings, and Op import for conditional indexes.
+All 19 Sequelize models are complete. auth.service.ts has 16 TypeScript errors that need fixing. See SEQUELIZE_MODELS_PROGRESS.md for details. Next: Fix auth.service.ts to use proper Sequelize API calls.
 ```
 
 ---
