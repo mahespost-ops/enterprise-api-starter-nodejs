@@ -99,22 +99,18 @@ src/config/rate-limits.prod.ts
 
 ### 2. Device Fingerprinting & Registration
 
-#### Fingerprint Composition
-```json
-{
-  "userAgent": "Mozilla/5.0...",
-  "timezone": "America/New_York",
-  "acceptLanguage": "en-US,en;q=0.9",
-  "screenResolution": "1920x1080",
-  "colorDepth": 24
-}
-```
+#### Fingerprint Format
+- **Client-Generated Hash**: 32-character hex string (e.g., "a1b2c3d4e5f67890abcdef1234567890")
+- **Client Libraries**: FingerprintJS, ThumbmarkJS, or ClientJS recommended
+- **Composition**: Client library generates hash from browser/device characteristics
+- **Server-Side**: Fingerprint received as opaque hash string, stored as-is
+- **Device Metadata**: Extracted from HTTP headers (`User-Agent`) server-side, NOT from fingerprint
 
 #### Device Identification Strategy
-- **Flexible Matching**: 10-minute window for timestamp, fuzzy match on User-Agent major version
-- **Hash**: SHA-256 of normalized fingerprint components
-- **Client Library**: Optional integration with FingerprintJS or similar for enhanced accuracy
-- **Why**: Balance between security and UX (handles browser updates, VPN changes)
+- **Fingerprint**: Used for device identification (matching against stored hashes)
+- **Metadata Extraction**: User-Agent, IP address, and other context from HTTP request headers
+- **Separation of Concerns**: Fingerprint = identification hash; Headers = device information
+- **Why**: Balance between security and UX, industry-standard approach with browser fingerprinting
 
 #### New Device Flow
 1. Device fingerprint not recognized → Flag as new device
@@ -298,7 +294,7 @@ CREATE TABLE magic_tokens (
   sent_to VARCHAR(255) NOT NULL,
 
   -- Context
-  device_fingerprint_hash VARCHAR(64),
+  device_fingerprint VARCHAR(128), -- Client-generated hash string
   ip_address INET,
   user_agent TEXT,
   is_new_device BOOLEAN DEFAULT false,
@@ -316,7 +312,7 @@ CREATE TABLE magic_tokens (
   INDEX idx_token_hash (token_hash),
   INDEX idx_user_id (user_id),
   INDEX idx_expires_at (expires_at),
-  INDEX idx_device_fingerprint (device_fingerprint_hash)
+  INDEX idx_device_fingerprint (device_fingerprint)
 );
 ```
 
@@ -327,18 +323,14 @@ CREATE TABLE devices (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   -- Identification
-  fingerprint_hash VARCHAR(64) UNIQUE NOT NULL,
+  fingerprint VARCHAR(128) UNIQUE NOT NULL, -- Client-generated hash
 
-  -- Metadata
-  device_name VARCHAR(100), -- User-defined or auto-generated
+  -- Metadata (extracted from HTTP headers server-side)
+  device_name VARCHAR(100), -- User-defined or auto-generated from User-Agent
   device_type VARCHAR(20), -- 'desktop', 'mobile', 'tablet'
   os VARCHAR(50),
   browser VARCHAR(50),
-
-  -- Raw fingerprint components (for debugging)
-  user_agent TEXT,
-  timezone VARCHAR(50),
-  screen_resolution VARCHAR(20),
+  user_agent TEXT, -- Full User-Agent string from HTTP headers
 
   -- Security
   trust_status VARCHAR(20) DEFAULT 'trusted', -- 'trusted', 'pending', 'revoked'
@@ -357,7 +349,7 @@ CREATE TABLE devices (
 
   -- Indexes
   INDEX idx_user_id (user_id),
-  INDEX idx_fingerprint_hash (fingerprint_hash),
+  INDEX idx_fingerprint (fingerprint),
   INDEX idx_trust_status (trust_status),
   INDEX idx_last_used_at (last_used_at)
 );
