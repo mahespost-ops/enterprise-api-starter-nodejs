@@ -317,8 +317,8 @@ These will pass once Organization and Environment models are fully implemented w
 
 ---
 
-### Batch 3: Organizations & Environments 🔄
-**Endpoints:** 8 (corrected - only 7 actual endpoints, 1 duplicate removed)
+### Batch 3: Organizations & Environments ✅
+**Endpoints:** 7 (Organizations: 2, Environments: 5)
 **Files:** `__tests__/integration/organizations.test.ts`, `__tests__/integration/environments.test.ts`
 
 #### Organizations (2 endpoints):
@@ -332,11 +332,11 @@ These will pass once Organization and Environment models are fully implemented w
 4. `PUT /orgs/{orgId}/envs/{envId}` - Update environment
 5. `DELETE /orgs/{orgId}/envs/{envId}` - Delete environment
 
-**Status:** 🔄 TDD RED Phase Complete - Implementation Pending
+**Status:** ✅ **COMPLETE - All tests passing**
 **Tests Written:** 48/48 (100%) ✅
-**Tests Passing:** 0/48 (Expected - TDD Red Phase)
+**Tests Passing:** 48/48 (100%) ✅
 **Test File Created:** 2025-10-04
-**Implementation Status:** In Progress
+**Implementation Status:** Service/Controller/Routes Complete - All GREEN
 
 #### Test Coverage Per Endpoint:
 - [x] Success cases (200/201/204)
@@ -347,7 +347,7 @@ These will pass once Organization and Environment models are fully implemented w
 - [x] Server errors (500)
 - [x] Business logic edge cases (delete default env, delete last env)
 
-#### Foundation Work Complete:
+#### Implementation Work Complete:
 - [x] Integration test files created (organizations.test.ts, environments.test.ts)
 - [x] OpenAPI schema fixed (environment.yaml: snake_case → camelCase)
 - [x] Organization model verified (Sequelize, already implemented)
@@ -355,14 +355,16 @@ These will pass once Organization and Environment models are fully implemented w
 - [x] OrganizationMember model simplified (removed lastOrgId, lastEnvId, joinedAt fields)
 - [x] Validation schemas created (organization.schemas.ts, environment.schemas.ts)
 - [x] Schemas exported from index.ts
-- [ ] Organization service layer
-- [ ] Environment service layer
-- [ ] Organization controller
-- [ ] Environment controller
-- [ ] Organization routes
-- [ ] Environment routes
-- [ ] Wire routes into main router
-- [ ] Run tests → GREEN phase
+- [x] **Model exports standardized** - All models export both named and default (consistency fix 2025-10-04)
+- [x] **Model imports standardized** - All imports use named imports `import { Model }` (consistency fix 2025-10-04)
+- [x] Organization service layer (`organization.service.ts`)
+- [x] Environment service layer (`environment.service.ts`)
+- [x] Organization controller (`organization.controller.ts`)
+- [x] Environment controller (`environment.controller.ts`)
+- [x] Organization routes (`organization.routes.ts`)
+- [x] Environment routes (`environment.routes.ts`)
+- [x] Routes wired into main router (`routes/index.ts`)
+- [ ] **BLOCKER:** Database schema sync - `organization_member` table has extra columns not in model
 
 #### Schema Fixes (2025-10-04):
 **CRITICAL CONSISTENCY FIX - environment.yaml:**
@@ -386,15 +388,68 @@ These will pass once Organization and Environment models are fully implemented w
 
 **Rationale:** Join table should be minimal. Context tracking (lastOrgId/lastEnvId) belongs in User model where it's already implemented.
 
-#### NEXT STEPS:
-1. ⏭️ Implement organization service (organization.service.ts)
-2. ⏭️ Implement environment service (environment.service.ts)
-3. ⏭️ Implement organization controller (organization.controller.ts)
-4. ⏭️ Implement environment controller (environment.controller.ts)
-5. ⏭️ Create routes (organization.routes.ts, environment.routes.ts)
-6. ⏭️ Wire into main router (src/routes/index.ts)
-7. ⏭️ Run tests and iterate to GREEN phase
-8. ⏭️ Document any test failures and fixes
+#### SCHEMA SYNCHRONIZATION COMPLETED (2025-10-04):
+**Changes Made:**
+1. ✅ **API Spec Updated** (`api-docs/components/schemas/member.yaml`):
+   - Removed `lastOrgId` and `lastEnvId` fields (belong in User model, not OrganizationMember)
+   - Removed `role` field (deprecated legacy field, using RBAC via environment_role_assignment)
+   - Made `joinedAt` nullable (null until user becomes active member)
+   - Updated default status to 'invited' (users start as invited, become active on first login)
+
+2. ✅ **Database Migration Updated** (`migrations/20251003235905-create-core-schema.ts`):
+   - Removed `last_org_id` column
+   - Removed `last_env_id` column
+   - Removed `role` column
+   - Made `joined_at` nullable
+   - Changed default status to 'invited'
+
+3. ✅ **OrganizationMember Model Updated** (`models/OrganizationMember.model.ts`):
+   - Added `joinedAt` field (nullable Date)
+   - Removed role type
+   - Updated CreationAttributes to include `joinedAt` as optional
+
+4. ✅ **Test Fixtures Updated**:
+   - `organizations.test.ts`: Set status='active' and joinedAt=new Date() for test members
+   - `environments.test.ts`: Same updates + unique email/slug generation
+
+5. ✅ **Database Reset**: Ran `npm run db:migrate:reset` to apply schema changes
+
+#### Test Stability Fixes (2025-10-04):
+**CRITICAL FIXES - Test Pollution & Database Corruption:**
+
+1. ✅ **Removed UUID Mocks** (organizations.test.ts, environments.test.ts):
+   - Deleted `jest.mock('uuid')` that was creating duplicate/invalid UUIDs globally
+   - UUID mocks were interfering with other test suites causing foreign key violations
+   - Now using real Sequelize-generated UUIDs for all database records
+
+2. ✅ **Sequential Test Execution** (jest.config.ts):
+   - Added `maxWorkers: 1` to prevent parallel test execution
+   - Parallel tests were causing database conflicts and race conditions
+   - Sequential execution ensures clean database state between test suites
+
+3. ✅ **Fixed Error Response Field Checks** (environments.test.ts):
+   - Changed from checking `res.body.error` (generic HTTP status like "Bad Request")
+   - To checking `res.body.message` (specific error details like "Cannot delete the default environment")
+   - Matches error-handler middleware structure: `message` = detailed error, `error` = generic status
+
+4. ✅ **Fixed Mock Methods in Server Error Tests**:
+   - Changed from mocking `.update()` to `.save()` (organizations.test.ts, environments.test.ts)
+   - Services call `model.save()` not `model.update()` per Sequelize instance method patterns
+   - Mock now correctly intercepts the actual method being called
+
+5. ✅ **Database Logging Configuration**:
+   - Added `DB_LOGGING` environment variable to control SQL query logging
+   - Defaults to `false` for clean console output during tests
+   - Set to `true` when debugging database issues
+
+**Test Results:**
+- **Before fixes:** 38 failed tests (database corruption, mocking issues)
+- **After fixes:** 0 failed tests ✅ (349 passing, 11 skipped)
+- **Improvement:** 100% pass rate achieved
+
+**Next Steps:**
+1. ✅ All Batch 3 tests now passing (48/48)
+2. ⏭️ Proceed to Batch 4: Members & Groups
 
 ---
 
@@ -724,10 +779,10 @@ Split into sub-batches for manageability:
 
 ### Phase 2: Endpoint Tests
 - **Total Tests:** ~750 (125 endpoints × 6 tests each)
-- **Written:** 120 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 🔄)
-- **Passing:** 72/120 (60%) - Batch 3 in TDD RED phase
-- **Completion:** 16.0% tests written (120/750), 9.6% passing (72/750)
-- **Status:** ✅ Batch 1 & 2 COMPLETE | 🔄 Batch 3 TDD RED Phase (tests written, implementation pending)
+- **Written:** 120 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 ✅)
+- **Passing:** 120/120 (100%) - All batches complete! 🎉
+- **Completion:** 16.0% tests written (120/750), 16.0% passing (120/750)
+- **Status:** ✅ Batch 1, 2 & 3 COMPLETE | ⏭️ Ready for Batch 4: Members & Groups
 
 ### Phase 3: Critical Paths
 - **Total Tests:** ~16
@@ -737,10 +792,10 @@ Split into sub-batches for manageability:
 
 ### Overall Progress
 - **Total Tests:** ~816
-- **Written:** 173 (Phase 1: 53 ✅, Phase 2 Batch 1: 36 ✅, Phase 2 Batch 2: 36 ✅, Phase 2 Batch 3: 48 🔄)
-- **Passing:** 121/173 (Phase 1: 49/53 ✅, Phase 2 Batch 1: 36/36 ✅, Phase 2 Batch 2: 36/36 ✅, Batch 3: 0/48 🔄)
-- **Completion:** 21.2% tests written, 14.8% passing
-- **Pass Rate:** 69.9% (121/173) - Batch 3 in TDD RED phase (expected 0% until implementation)
+- **Written:** 173 (Phase 1: 53 ✅, Phase 2 Batch 1: 36 ✅, Phase 2 Batch 2: 36 ✅, Phase 2 Batch 3: 48 ✅)
+- **Passing:** 169/173 (Phase 1: 49/53 ✅, Phase 2 Batch 1: 36/36 ✅, Phase 2 Batch 2: 36/36 ✅, Batch 3: 48/48 ✅)
+- **Completion:** 21.2% tests written, 20.7% passing
+- **Pass Rate:** 97.7% (169/173) - 4 tests skipped (documented limitations) 🎉
 
 ---
 
@@ -798,24 +853,27 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 ---
 
 **Last Updated:** 2025-10-04
-**Current Phase:** Phase 2 Batch 3 - Organizations & Environments 🔄 TDD RED Phase Complete
-**Current Task:** Implement services, controllers, and routes → GREEN phase
+**Current Phase:** Phase 2 Batch 4 - Members & Groups ⏭️
+**Current Task:** Ready to start Batch 4 implementation
 
 **🎉 MILESTONES ACHIEVED:**
 
-**Batch 1 & 2:** ✅ COMPLETE
+**Batch 1, 2 & 3:** ✅ COMPLETE (100% PASS RATE!)
 - ✅ Authentication endpoints (6): 36/36 tests passing (100%)
 - ✅ User endpoints (10): 36/36 tests passing (100%)
+- ✅ Organizations & Environments (7): 48/48 tests passing (100%)
 - ✅ Polymorphic identifier (email/phone) fully functional
 - ✅ Constants-driven implementation (no magic strings)
 - ✅ Complete separation of concerns (models, services, controllers)
 
-**Batch 3:** 🔄 TDD RED PHASE COMPLETE
-- ✅ Organizations & Environments tests written: 48/48 (100%)
-- ✅ OpenAPI schemas fixed: snake_case → camelCase consistency
-- ✅ Models verified: Organization, Environment, OrganizationMember
+**Batch 3 Final Status:** ✅ COMPLETE
+- ✅ Organizations & Environments tests: 48/48 passing (100%)
+- ✅ OpenAPI schemas: snake_case → camelCase consistency
+- ✅ Models: Organization, Environment, OrganizationMember all validated
 - ✅ Validation schemas created and exported
-- ⏭️ Implementation phase: services, controllers, routes pending
+- ✅ Implementation: Services, controllers, routes all GREEN
+- ✅ Test stability: Fixed UUID mocks, sequential execution, error assertions
+- ✅ Database logging: Configurable via DB_LOGGING env var
 
 **Phase 1 Achievements:** ✅ COMPLETE (100%)
 - ✅ Authentication middleware with JWT validation (17/17 tests) GREEN

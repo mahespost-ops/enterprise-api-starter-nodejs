@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import logger from '../config/logger';
 
 /**
@@ -17,8 +17,8 @@ export function requestIdMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  // Generate unique request ID
-  const requestId = uuidv4();
+  // Generate unique request ID (using Node.js built-in crypto.randomUUID for v4 UUID)
+  const requestId = randomUUID();
 
   // Attach to request object (augmented via src/types/express.d.ts)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

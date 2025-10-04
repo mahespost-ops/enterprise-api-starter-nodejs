@@ -70,6 +70,45 @@ const MOCK_USER_PERMISSIONS: Record<string, Permission[]> = {
 };
 
 /**
+ * TEST HELPER: Set mock permissions for a user
+ * Used by integration tests to grant permissions to test users
+ * @param userId - User ID
+ * @param permissions - Array of permissions to grant
+ */
+export function setMockUserPermissions(userId: string, permissions: Permission[]): void {
+  MOCK_USER_PERMISSIONS[userId] = permissions;
+}
+
+/**
+ * TEST HELPER: Clear mock permissions for a user
+ * Used by integration tests for cleanup
+ * @param userId - User ID
+ */
+export function clearMockUserPermissions(userId: string): void {
+  delete MOCK_USER_PERMISSIONS[userId];
+}
+
+/**
+ * TEST HELPER: Clear all mock permissions
+ * Used by integration tests for cleanup
+ */
+export function clearAllMockPermissions(): void {
+  // Keep the original hardcoded test users, clear everything else
+  const keysToKeep = [
+    '00000000-0000-0000-0000-000000000001',
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222',
+    '33333333-3333-3333-3333-333333333333',
+  ];
+
+  Object.keys(MOCK_USER_PERMISSIONS).forEach(key => {
+    if (!keysToKeep.includes(key)) {
+      delete MOCK_USER_PERMISSIONS[key];
+    }
+  });
+}
+
+/**
  * Get user's permissions in current context
  *
  * @param userId - User ID (UUID) to get permissions for

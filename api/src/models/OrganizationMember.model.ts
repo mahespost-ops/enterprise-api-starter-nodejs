@@ -16,6 +16,7 @@ export interface OrganizationMemberAttributes {
   invitedBy: string | null;
   invitationToken: string | null;
   invitationExpiresAt: Date | null;
+  joinedAt: Date | null; // Timestamp when user became active member (null until first login)
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -29,6 +30,7 @@ export interface OrganizationMemberCreationAttributes
     | 'invitedBy'
     | 'invitationToken'
     | 'invitationExpiresAt'
+    | 'joinedAt'
     | 'createdAt'
     | 'updatedAt'
     | 'deletedAt'
@@ -45,6 +47,7 @@ export class OrganizationMember
   declare invitedBy: string | null;
   declare invitationToken: string | null;
   declare invitationExpiresAt: Date | null;
+  declare joinedAt: Date | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
@@ -101,6 +104,11 @@ OrganizationMember.init(
       type: DataTypes.DATE,
       allowNull: true,
       field: 'invitation_expires_at',
+    },
+    joinedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'joined_at',
     },
     createdAt: {
       type: DataTypes.DATE,

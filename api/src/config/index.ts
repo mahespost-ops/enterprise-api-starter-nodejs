@@ -12,17 +12,28 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 /**
  * Required environment variables
+ * DB_PASSWORD is only required in production (local dev may use trust auth)
  */
-const requiredEnvVars = [
-  'NODE_ENV',
-  'PORT',
-  'DB_HOST',
-  'DB_PORT',
-  'DB_NAME',
-  'DB_USER',
-  'DB_PASSWORD',
-  'JWT_SECRET',
-] as const;
+const requiredEnvVars = process.env.NODE_ENV === 'production'
+  ? [
+      'NODE_ENV',
+      'PORT',
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER',
+      'DB_PASSWORD',
+      'JWT_SECRET',
+    ]
+  : [
+      'NODE_ENV',
+      'PORT',
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER',
+      'JWT_SECRET',
+    ];
 
 /**
  * Validate required environment variables

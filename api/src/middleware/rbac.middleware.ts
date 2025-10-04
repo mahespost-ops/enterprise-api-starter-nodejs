@@ -64,7 +64,7 @@ export type Permission =
  * @param requiredPermissions - Array of permissions, user needs at least one (OR logic)
  * @returns Middleware function
  */
-export const requirePermissions = (
+export const authorize = (
   requiredPermissions: Permission[]
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
@@ -120,7 +120,7 @@ export const requirePermissions = (
  * Admin-only middleware
  * Shorthand for requiring admin:* permissions
  */
-export const requireAdmin = requirePermissions(['admin:users:read']);
+export const requireAdmin = authorize(['admin:users:read']);
 
 /**
  * Check if user has permission (utility function)
@@ -143,4 +143,4 @@ export async function hasPermission(
   }
 }
 
-export default requirePermissions;
+export default authorize;

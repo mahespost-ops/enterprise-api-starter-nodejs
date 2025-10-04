@@ -6,12 +6,12 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { requirePermissions, hasPermission } from '../../../middleware/rbac.middleware';
+import { authorize, hasPermission } from '../../../middleware/rbac.middleware';
 import { ForbiddenError } from '../../../utils/errors';
 
 // Note: Using real rbac.service.ts stub (returns mock permissions based on userId pattern)
 
-describe('requirePermissions middleware', () => {
+describe('authorize middleware', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
@@ -44,7 +44,7 @@ describe('requirePermissions middleware', () => {
   describe('Permission Checks', () => {
     it('should allow access when user has required permission', async () => {
       // REGULAR_USER_ID has 'users:read' permission
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
       await middleware(
         mockRequest as Request,
         mockResponse as Response,
@@ -56,7 +56,7 @@ describe('requirePermissions middleware', () => {
 
     it('should deny access when user lacks permission', async () => {
       // REGULAR_USER_ID does NOT have admin permissions
-      const middleware = requirePermissions(['admin:users:manage']);
+      const middleware = authorize(['admin:users:manage']);
 
       await middleware(
         mockRequest as Request,
@@ -70,7 +70,7 @@ describe('requirePermissions middleware', () => {
 
     it('should handle multiple required permissions (OR logic)', async () => {
       // REGULAR_USER_ID has 'groups:read' (one of the required permissions)
-      const middleware = requirePermissions(['groups:read', 'groups:manage']);
+      const middleware = authorize(['groups:read', 'groups:manage']);
       await middleware(
         mockRequest as Request,
         mockResponse as Response,
@@ -82,7 +82,7 @@ describe('requirePermissions middleware', () => {
 
     it('should deny when user has none of multiple required permissions', async () => {
       // REGULAR_USER_ID does NOT have admin permissions
-      const middleware = requirePermissions(['admin:groups:read', 'admin:groups:manage']);
+      const middleware = authorize(['admin:groups:read', 'admin:groups:manage']);
 
       await middleware(
         mockRequest as Request,
@@ -100,7 +100,7 @@ describe('requirePermissions middleware', () => {
       // Use ADMIN_USER_ID which has all admin:* permissions
       mockRequest.user!.sub = ADMIN_USER_ID;
 
-      const middleware = requirePermissions(['admin:users:read']);
+      const middleware = authorize(['admin:users:read']);
       await middleware(
         mockRequest as Request,
         mockResponse as Response,
@@ -114,7 +114,7 @@ describe('requirePermissions middleware', () => {
       // ADMIN_USER_ID has admin:* permissions but NOT tenant permissions
       mockRequest.user!.sub = ADMIN_USER_ID;
 
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
 
       await middleware(
         mockRequest as Request,
@@ -155,7 +155,7 @@ describe('requirePermissions middleware', () => {
       };
 
       // IMPERSONATED_USER_ID has 'users:read' permission
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
       await middleware(
         mockRequest as Request,
         mockResponse as Response,
@@ -192,7 +192,7 @@ describe('requirePermissions middleware', () => {
       };
 
       // When permissions object is present in impersonation context, use those instead
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
       await middleware(
         mockRequest as Request,
         mockResponse as Response,
@@ -208,7 +208,7 @@ describe('requirePermissions middleware', () => {
     it('should call next with ForbiddenError when user not authenticated', async () => {
       mockRequest.user = undefined;
 
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
 
       await middleware(
         mockRequest as Request,
@@ -224,7 +224,7 @@ describe('requirePermissions middleware', () => {
       // Invalid UUID format should trigger error in stub service
       mockRequest.user!.sub = 'invalid-user-id-not-uuid';
 
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
 
       await middleware(
         mockRequest as Request,
@@ -242,7 +242,7 @@ describe('requirePermissions middleware', () => {
       // NO_PERMISSIONS_USER_ID has empty permissions array
       mockRequest.user!.sub = NO_PERMISSIONS_USER_ID;
 
-      const middleware = requirePermissions(['users:read']);
+      const middleware = authorize(['users:read']);
 
       await middleware(
         mockRequest as Request,

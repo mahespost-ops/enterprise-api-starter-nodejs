@@ -27,6 +27,8 @@ const config: Config = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  // Run integration tests sequentially to avoid database conflicts
+  maxWorkers: 1,
 };
 
 export default config;

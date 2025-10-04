@@ -6,13 +6,14 @@
 import { Sequelize } from 'sequelize';
 
 // Parse DATABASE_URL from environment
-const databaseUrl = process.env.DATABASE_URL || 'postgresql://mike@localhost:5432/enterprise';
+const databaseUrl = process.env.DATABASE_URL ||
+    `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
 
 // Initialize Sequelize with configuration optimized for performance
 const sequelize = new Sequelize(databaseUrl, {
   dialect: 'postgres',
-  // eslint-disable-next-line no-console
-  logging: process.env.NODE_ENV === 'development' ? console.log : false, // Simple logging for migrations
+  // Use DB_LOGGING env var to control SQL logging (defaults to false for clean console)
+  logging: process.env.DB_LOGGING === 'true' ? console.log : false, // eslint-disable-line no-console
   pool: {
     max: parseInt(process.env.DB_POOL_MAX || '20', 10),
     min: parseInt(process.env.DB_POOL_MIN || '5', 10),

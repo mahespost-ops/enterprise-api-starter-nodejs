@@ -2,13 +2,13 @@
 
 OrganizationMember:
   type: object
-  description: Organization member with role assignments and last context tracking
+  description: Organization member with role assignments and invitation tracking
   required:
     - id
     - organizationId
     - userId
     - user
-    - lastOrgId
+    - status
     - joinedAt
     - createdAt
     - updatedAt
@@ -31,27 +31,6 @@ OrganizationMember:
     user:
       $ref: './user.yaml#/User'
       description: Associated user object (denormalized for read performance)
-    lastOrgId:
-      type: string
-      format: uuid
-      description: Last organization context for JWT token
-      example: '550e8400-e29b-41d4-a716-446655440000'
-    lastEnvId:
-      type: string
-      format: uuid
-      nullable: true
-      description: Last environment context for JWT token
-      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
-    role:
-      type: string
-      description: Member role (legacy, use environment_role_assignment instead)
-      enum:
-        - owner
-        - admin
-        - member
-        - viewer
-      example: 'member'
-      deprecated: true
     status:
       type: string
       description: Member status
@@ -60,7 +39,7 @@ OrganizationMember:
         - invited
         - suspended
       example: 'active'
-      default: 'active'
+      default: 'invited'
     invitedBy:
       type: string
       format: uuid
@@ -82,7 +61,8 @@ OrganizationMember:
     joinedAt:
       type: string
       format: date-time
-      description: Timestamp when user joined (UTC)
+      nullable: true
+      description: Timestamp when user became active member (null until first login)
       example: '2025-10-02T14:45:00Z'
     createdAt:
       type: string
@@ -136,16 +116,6 @@ OrganizationMemberInviteRequest:
       minLength: 1
       maxLength: 50
       example: 'Smith'
-    role:
-      type: string
-      description: Initial role (legacy)
-      enum:
-        - admin
-        - member
-        - viewer
-      example: 'member'
-      default: 'member'
-      deprecated: true
     sendEmail:
       type: boolean
       description: Whether to send invitation email
@@ -162,15 +132,6 @@ OrganizationMemberInviteRequest:
 OrganizationMemberUpdateRequest:
   type: object
   properties:
-    role:
-      type: string
-      description: Member role (legacy)
-      enum:
-        - admin
-        - member
-        - viewer
-      example: 'admin'
-      deprecated: true
     status:
       type: string
       description: Member status

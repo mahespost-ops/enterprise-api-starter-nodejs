@@ -10,13 +10,13 @@ import config from '../config';
 import logger from '../config/logger';
 import { NotFoundError, UnauthorizedError, ConflictError, ForbiddenError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
-import User from '../models/User.model';
-import MagicLinkToken from '../models/MagicLinkToken.model';
-import UserSession from '../models/UserSession.model';
-import Device from '../models/Device.model';
-import Organization from '../models/Organization.model';
-import OrganizationMember from '../models/OrganizationMember.model';
-import Environment from '../models/Environment.model';
+import { User } from '../models/User.model';
+import { MagicLinkToken } from '../models/MagicLinkToken.model';
+import { UserSession } from '../models/UserSession.model';
+import { Device } from '../models/Device.model';
+import { Organization } from '../models/Organization.model';
+import { OrganizationMember } from '../models/OrganizationMember.model';
+import { Environment } from '../models/Environment.model';
 import { DELIVERY_METHOD, IDENTIFIER_REGEX, TOKEN_EXPIRATION, type DeliveryMethod } from '../constants/auth.constants';
 import { AdapterFactory } from './adapter.factory';
 
@@ -409,26 +409,26 @@ class AuthService {
       throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    // Check if user has access to organization
-    const orgMember = await OrganizationMember.findOne({
-      where: { userId: data.userId, organizationId: data.organizationId },
-    });
-    if (!orgMember) {
-      throw new ForbiddenError('You do not have access to this organization');
-    }
-
-    // Check if organization exists
+    // Check if organization exists first (return 404 if not)
     const org = await Organization.findByPk(data.organizationId);
     if (!org) {
       throw new NotFoundError('Organization not found');
     }
 
-    // Check if environment exists and belongs to the organization
+    // Check if environment exists and belongs to the organization (return 404 if not)
     const env = await Environment.findOne({
       where: { id: data.environmentId, organizationId: data.organizationId },
     });
     if (!env) {
       throw new NotFoundError('Environment not found');
+    }
+
+    // Check if user has access to organization (return 403 if not)
+    const orgMember = await OrganizationMember.findOne({
+      where: { userId: data.userId, organizationId: data.organizationId },
+    });
+    if (!orgMember) {
+      throw new ForbiddenError('You do not have access to this organization');
     }
 
     // Update user's last_org_id and last_env_id

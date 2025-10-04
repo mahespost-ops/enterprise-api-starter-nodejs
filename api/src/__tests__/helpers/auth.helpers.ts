@@ -6,9 +6,9 @@
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import config from '../../config';
-import MagicLinkToken from '../../models/MagicLinkToken.model';
-import User from '../../models/User.model';
-import UserSession from '../../models/UserSession.model';
+import { MagicLinkToken } from '../../models/MagicLinkToken.model';
+import { User } from '../../models/User.model';
+import { UserSession } from '../../models/UserSession.model';
 import { AdapterFactory } from '../../services/adapter.factory';
 import type { MockEmailAdapter } from '../../services/email/mock.email.adapter';
 
@@ -110,4 +110,35 @@ export async function clearAllDevices(): Promise<void> {
 export function clearAllSentEmails(): void {
   const emailAdapter = AdapterFactory.getInstance().getEmailAdapter() as MockEmailAdapter;
   emailAdapter.clearSentEmails();
+}
+
+/**
+ * Grant permissions to a user (for test setup)
+ * Uses the mock RBAC service to assign permissions
+ * @param userId - User ID to grant permissions to
+ * @param permissions - Array of permission strings
+ */
+export async function grantPermissions(
+  userId: string,
+  permissions: string[]
+): Promise<void> {
+  const { setMockUserPermissions } = await import('../../services/rbac.service');
+  setMockUserPermissions(userId, permissions as any[]);
+}
+
+/**
+ * Clear permissions for a user (for test cleanup)
+ * @param userId - User ID to clear permissions for
+ */
+export async function clearUserPermissions(userId: string): Promise<void> {
+  const { clearMockUserPermissions } = await import('../../services/rbac.service');
+  clearMockUserPermissions(userId);
+}
+
+/**
+ * Clear all mock permissions (for test cleanup)
+ */
+export async function clearAllPermissions(): Promise<void> {
+  const { clearAllMockPermissions } = await import('../../services/rbac.service');
+  clearAllMockPermissions();
 }
