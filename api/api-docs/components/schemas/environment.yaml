@@ -4,19 +4,19 @@ Environment:
   type: object
   required:
     - id
-    - organization_id
+    - organizationId
     - name
     - type
-    - is_default
-    - created_at
-    - updated_at
+    - isDefault
+    - createdAt
+    - updatedAt
   properties:
     id:
       type: string
       format: uuid
       description: Environment unique identifier
       example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
-    organization_id:
+    organizationId:
       type: string
       format: uuid
       description: Parent organization ID
@@ -39,7 +39,7 @@ Environment:
       description: Environment description
       maxLength: 500
       example: 'Production environment for live operations'
-    is_default:
+    isDefault:
       type: boolean
       description: Whether this is the default environment for the organization
       example: true
@@ -50,22 +50,22 @@ Environment:
       example:
         region: 'us-east-1'
         tier: 'production'
-    is_active:
+    isActive:
       type: boolean
       description: Whether the environment is active
       default: true
       example: true
-    created_at:
+    createdAt:
       type: string
       format: date-time
       description: Timestamp when environment was created (UTC)
       example: '2025-01-15T10:30:00Z'
-    updated_at:
+    updatedAt:
       type: string
       format: date-time
       description: Timestamp when environment was last updated (UTC)
       example: '2025-10-02T14:45:00Z'
-    deleted_at:
+    deletedAt:
       type: string
       format: date-time
       nullable: true
@@ -109,7 +109,7 @@ EnvironmentCreateRequest:
       description: Environment description
       maxLength: 500
       example: 'Staging environment for testing'
-    is_default:
+    isDefault:
       type: boolean
       description: Set as default environment for organization
       default: false
@@ -136,7 +136,7 @@ EnvironmentUpdateRequest:
       description: Environment description
       maxLength: 500
       example: 'Staging environment for testing'
-    is_default:
+    isDefault:
       type: boolean
       description: Set as default environment for organization
       example: false
@@ -144,7 +144,7 @@ EnvironmentUpdateRequest:
       type: object
       description: Custom metadata for environment
       additionalProperties: true
-    is_active:
+    isActive:
       type: boolean
       description: Whether the environment is active
       example: true

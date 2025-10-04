@@ -12,14 +12,10 @@ export interface OrganizationMemberAttributes {
   id: string;
   organizationId: string;
   userId: string;
-  lastOrgId: string;
-  lastEnvId: string | null;
-  role: string | null;
   status: MemberStatus;
   invitedBy: string | null;
   invitationToken: string | null;
   invitationExpiresAt: Date | null;
-  joinedAt: Date;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -29,8 +25,6 @@ export interface OrganizationMemberCreationAttributes
   extends Optional<
     OrganizationMemberAttributes,
     | 'id'
-    | 'lastEnvId'
-    | 'role'
     | 'status'
     | 'invitedBy'
     | 'invitationToken'
@@ -47,14 +41,10 @@ export class OrganizationMember
   declare id: string;
   declare organizationId: string;
   declare userId: string;
-  declare lastOrgId: string;
-  declare lastEnvId: string | null;
-  declare role: string | null;
   declare status: MemberStatus;
   declare invitedBy: string | null;
   declare invitationToken: string | null;
   declare invitationExpiresAt: Date | null;
-  declare joinedAt: Date;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
@@ -87,21 +77,6 @@ OrganizationMember.init(
       },
       onDelete: 'CASCADE',
     },
-    lastOrgId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      field: 'last_org_id',
-    },
-    lastEnvId: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      field: 'last_env_id',
-    },
-    role: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-      defaultValue: 'member',
-    },
     status: {
       type: DataTypes.ENUM('active', 'invited', 'suspended'),
       allowNull: false,
@@ -126,11 +101,6 @@ OrganizationMember.init(
       type: DataTypes.DATE,
       allowNull: true,
       field: 'invitation_expires_at',
-    },
-    joinedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      field: 'joined_at',
     },
     createdAt: {
       type: DataTypes.DATE,

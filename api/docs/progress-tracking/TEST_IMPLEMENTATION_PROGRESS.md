@@ -317,24 +317,84 @@ These will pass once Organization and Environment models are fully implemented w
 
 ---
 
-### Batch 3: Organizations & Environments ⏭️
-**Endpoints:** 8
+### Batch 3: Organizations & Environments 🔄
+**Endpoints:** 8 (corrected - only 7 actual endpoints, 1 duplicate removed)
 **Files:** `__tests__/integration/organizations.test.ts`, `__tests__/integration/environments.test.ts`
 
 #### Organizations (2 endpoints):
 1. `GET /orgs/{orgId}` - Get organization details
 2. `PATCH /orgs/{orgId}` - Update organization details
 
-#### Environments (6 endpoints):
+#### Environments (5 endpoints):
 1. `GET /orgs/{orgId}/envs` - List environments
 2. `POST /orgs/{orgId}/envs` - Create environment
 3. `GET /orgs/{orgId}/envs/{envId}` - Get environment details
 4. `PUT /orgs/{orgId}/envs/{envId}` - Update environment
 5. `DELETE /orgs/{orgId}/envs/{envId}` - Delete environment
 
-**Status:** Not started
-**Tests Written:** 0/48 (8 endpoints × 6 tests each)
-**Tests Passing:** 0/48
+**Status:** 🔄 TDD RED Phase Complete - Implementation Pending
+**Tests Written:** 48/48 (100%) ✅
+**Tests Passing:** 0/48 (Expected - TDD Red Phase)
+**Test File Created:** 2025-10-04
+**Implementation Status:** In Progress
+
+#### Test Coverage Per Endpoint:
+- [x] Success cases (200/201/204)
+- [x] Authentication errors (401)
+- [x] Authorization errors (403)
+- [x] Not found errors (404)
+- [x] Validation errors (422)
+- [x] Server errors (500)
+- [x] Business logic edge cases (delete default env, delete last env)
+
+#### Foundation Work Complete:
+- [x] Integration test files created (organizations.test.ts, environments.test.ts)
+- [x] OpenAPI schema fixed (environment.yaml: snake_case → camelCase)
+- [x] Organization model verified (Sequelize, already implemented)
+- [x] Environment model verified (Sequelize, already implemented)
+- [x] OrganizationMember model simplified (removed lastOrgId, lastEnvId, joinedAt fields)
+- [x] Validation schemas created (organization.schemas.ts, environment.schemas.ts)
+- [x] Schemas exported from index.ts
+- [ ] Organization service layer
+- [ ] Environment service layer
+- [ ] Organization controller
+- [ ] Environment controller
+- [ ] Organization routes
+- [ ] Environment routes
+- [ ] Wire routes into main router
+- [ ] Run tests → GREEN phase
+
+#### Schema Fixes (2025-10-04):
+**CRITICAL CONSISTENCY FIX - environment.yaml:**
+- ✅ Changed all field names from snake_case to camelCase
+- ✅ `organization_id` → `organizationId`
+- ✅ `is_default` → `isDefault`
+- ✅ `is_active` → `isActive`
+- ✅ `created_at` → `createdAt`
+- ✅ `updated_at` → `updatedAt`
+- ✅ `deleted_at` → `deletedAt`
+
+**Why:** All API responses must use camelCase per architectural standards. Database uses snake_case (via Sequelize field mapping), but API layer uses camelCase throughout.
+
+#### Model Simplifications (2025-10-04):
+**OrganizationMember Model:**
+- ✅ Removed `lastOrgId` field (belongs in User model, not join table)
+- ✅ Removed `lastEnvId` field (belongs in User model, not join table)
+- ✅ Removed `role` field (using RBAC via separate role assignment table)
+- ✅ Removed `joinedAt` field (createdAt serves same purpose)
+- ✅ Kept core fields: id, organizationId, userId, status, invitedBy, invitationToken, invitationExpiresAt
+
+**Rationale:** Join table should be minimal. Context tracking (lastOrgId/lastEnvId) belongs in User model where it's already implemented.
+
+#### NEXT STEPS:
+1. ⏭️ Implement organization service (organization.service.ts)
+2. ⏭️ Implement environment service (environment.service.ts)
+3. ⏭️ Implement organization controller (organization.controller.ts)
+4. ⏭️ Implement environment controller (environment.controller.ts)
+5. ⏭️ Create routes (organization.routes.ts, environment.routes.ts)
+6. ⏭️ Wire into main router (src/routes/index.ts)
+7. ⏭️ Run tests and iterate to GREEN phase
+8. ⏭️ Document any test failures and fixes
 
 ---
 
@@ -664,10 +724,10 @@ Split into sub-batches for manageability:
 
 ### Phase 2: Endpoint Tests
 - **Total Tests:** ~750 (125 endpoints × 6 tests each)
-- **Written:** 72 (Batch 1: 36 ✅, Batch 2: 36 ✅)
-- **Passing:** 72/72 (100%) ✅
-- **Completion:** 9.6% tests written (72/750), 9.6% passing (72/750)
-- **Status:** ✅ Batch 1 & 2 COMPLETE (100% pass rate) - Ready for Batch 3
+- **Written:** 120 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 🔄)
+- **Passing:** 72/120 (60%) - Batch 3 in TDD RED phase
+- **Completion:** 16.0% tests written (120/750), 9.6% passing (72/750)
+- **Status:** ✅ Batch 1 & 2 COMPLETE | 🔄 Batch 3 TDD RED Phase (tests written, implementation pending)
 
 ### Phase 3: Critical Paths
 - **Total Tests:** ~16
@@ -677,10 +737,10 @@ Split into sub-batches for manageability:
 
 ### Overall Progress
 - **Total Tests:** ~816
-- **Written:** 125 (Phase 1: 53 ✅, Phase 2 Batch 1: 36 ✅, Phase 2 Batch 2: 36 ✅)
-- **Passing:** 121/125 (Phase 1: 49/53 ✅, Phase 2 Batch 1: 36/36 ✅, Phase 2 Batch 2: 36/36 ✅)
-- **Completion:** 15.3% tests written, 14.8% passing
-- **Pass Rate:** 96.8% (121/125) - 4 skipped tests from Phase 1 (documented reasons)
+- **Written:** 173 (Phase 1: 53 ✅, Phase 2 Batch 1: 36 ✅, Phase 2 Batch 2: 36 ✅, Phase 2 Batch 3: 48 🔄)
+- **Passing:** 121/173 (Phase 1: 49/53 ✅, Phase 2 Batch 1: 36/36 ✅, Phase 2 Batch 2: 36/36 ✅, Batch 3: 0/48 🔄)
+- **Completion:** 21.2% tests written, 14.8% passing
+- **Pass Rate:** 69.9% (121/173) - Batch 3 in TDD RED phase (expected 0% until implementation)
 
 ---
 
@@ -737,17 +797,25 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 
 ---
 
-**Last Updated:** 2025-10-03 (Final Session - 100% Achievement!)
-**Current Phase:** Phase 2 Batch 1 - Authentication Flow ✅ COMPLETE (100% pass rate)
-**Current Task:** Ready for Phase 2 Batch 2 - Users endpoints
+**Last Updated:** 2025-10-04
+**Current Phase:** Phase 2 Batch 3 - Organizations & Environments 🔄 TDD RED Phase Complete
+**Current Task:** Implement services, controllers, and routes → GREEN phase
 
-**🎉 MILESTONE ACHIEVED:**
-- ✅ All 6 authentication endpoints implemented
-- ✅ All 36 integration tests passing (100%)
+**🎉 MILESTONES ACHIEVED:**
+
+**Batch 1 & 2:** ✅ COMPLETE
+- ✅ Authentication endpoints (6): 36/36 tests passing (100%)
+- ✅ User endpoints (10): 36/36 tests passing (100%)
 - ✅ Polymorphic identifier (email/phone) fully functional
 - ✅ Constants-driven implementation (no magic strings)
 - ✅ Complete separation of concerns (models, services, controllers)
-- ✅ Ready for production-level database implementation
+
+**Batch 3:** 🔄 TDD RED PHASE COMPLETE
+- ✅ Organizations & Environments tests written: 48/48 (100%)
+- ✅ OpenAPI schemas fixed: snake_case → camelCase consistency
+- ✅ Models verified: Organization, Environment, OrganizationMember
+- ✅ Validation schemas created and exported
+- ⏭️ Implementation phase: services, controllers, routes pending
 
 **Phase 1 Achievements:** ✅ COMPLETE (100%)
 - ✅ Authentication middleware with JWT validation (17/17 tests) GREEN
