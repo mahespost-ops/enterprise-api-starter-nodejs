@@ -18,6 +18,7 @@ import { Organization } from '../../models/Organization.model';
 import { Environment } from '../../models/Environment.model';
 import { OrganizationMember } from '../../models/OrganizationMember.model';
 import { generateTestJWT, grantPermissions, clearAllPermissions } from '../helpers/auth.helpers';
+import { TEST_UUIDS } from '../helpers/test-constants';
 import { HTTP_STATUS } from '../../constants/http-status.constants';
 
 describe('Environments API Integration Tests', () => {
@@ -336,10 +337,8 @@ describe('Environments API Integration Tests', () => {
     });
 
     it('should return 404 when environment does not exist', async () => {
-      const nonExistentEnvId = '00000000-0000-0000-0000-000000000000';
-
       const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/envs/${nonExistentEnvId}`)
+        .get(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
@@ -437,10 +436,8 @@ describe('Environments API Integration Tests', () => {
     });
 
     it('should return 404 when environment does not exist', async () => {
-      const nonExistentEnvId = '00000000-0000-0000-0000-000000000000';
-
       const res = await request(app)
-        .put(`/api/v1/orgs/${testOrg.id}/envs/${nonExistentEnvId}`)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated Name' });
 
@@ -562,10 +559,8 @@ describe('Environments API Integration Tests', () => {
     });
 
     it('should return 404 when environment does not exist', async () => {
-      const nonExistentEnvId = '00000000-0000-0000-0000-000000000000';
-
       const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/envs/${nonExistentEnvId}`)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);

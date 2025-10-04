@@ -14,6 +14,7 @@ import { User } from '../../models/User.model';
 import { Organization } from '../../models/Organization.model';
 import { OrganizationMember } from '../../models/OrganizationMember.model';
 import { generateTestJWT, grantPermissions, clearAllPermissions } from '../helpers/auth.helpers';
+import { TEST_UUIDS } from '../helpers/test-constants';
 import { HTTP_STATUS } from '../../constants/http-status.constants';
 
 describe('Organizations API Integration Tests', () => {
@@ -166,10 +167,8 @@ describe('Organizations API Integration Tests', () => {
     });
 
     it('should return 404 when organization does not exist', async () => {
-      const nonExistentOrgId = '00000000-0000-0000-0000-000000000000';
-
       const res = await request(app)
-        .get(`/api/v1/orgs/${nonExistentOrgId}`)
+        .get(`/api/v1/orgs/${TEST_UUIDS.NULL}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
@@ -272,10 +271,8 @@ describe('Organizations API Integration Tests', () => {
     });
 
     it('should return 404 when organization does not exist', async () => {
-      const nonExistentOrgId = '00000000-0000-0000-0000-000000000000';
-
       const res = await request(app)
-        .patch(`/api/v1/orgs/${nonExistentOrgId}`)
+        .patch(`/api/v1/orgs/${TEST_UUIDS.NULL}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated Name' });
 

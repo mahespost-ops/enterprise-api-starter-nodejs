@@ -22,6 +22,7 @@ import request from 'supertest';
 import { type Application } from 'express';
 import appPromise from '../../app';
 import { getLatestMagicTokenForUser, clearAllSentEmails, clearAllPermissions } from '../helpers/auth.helpers';
+import { TEST_UUIDS } from '../helpers/test-constants';
 import { DELIVERY_METHOD } from '../../constants/auth.constants';
 
 describe('Authentication Flow', () => {
@@ -784,13 +785,11 @@ describe('Authentication Flow', () => {
     });
 
     it('should return 404 when organization does not exist', async () => {
-      const nonexistentOrgId = '99999999-9999-9999-9999-999999999999';
-
       const res = await request(app)
         .post('/api/v1/auth/switch-context')
         .set('Authorization', `Bearer ${tokens.accessToken}`)
         .send({
-          organizationId: nonexistentOrgId,
+          organizationId: TEST_UUIDS.NONEXISTENT,
           environmentId: testEnvId,
           fingerprint: testUser.fingerprint,
         })
@@ -801,14 +800,12 @@ describe('Authentication Flow', () => {
     });
 
     it('should return 404 when environment does not exist', async () => {
-      const nonexistentEnvId = '99999999-9999-9999-9999-999999999999';
-
       const res = await request(app)
         .post('/api/v1/auth/switch-context')
         .set('Authorization', `Bearer ${tokens.accessToken}`)
         .send({
           organizationId: testOrgId,
-          environmentId: nonexistentEnvId,
+          environmentId: TEST_UUIDS.NONEXISTENT,
           fingerprint: testUser.fingerprint,
         })
         .expect('Content-Type', /json/)

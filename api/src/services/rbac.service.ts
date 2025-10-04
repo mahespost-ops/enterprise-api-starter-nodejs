@@ -11,13 +11,13 @@
  * - Impersonation context overrides
  */
 
-import { Permission } from '../middleware/rbac.middleware';
+import { PermissionKey } from '../middleware/rbac.middleware';
 
 /**
  * Mock user permission mappings for testing
  * Maps UUIDs to permission sets
  */
-const MOCK_USER_PERMISSIONS: Record<string, Permission[]> = {
+const MOCK_USER_PERMISSIONS: Record<string, PermissionKey[]> = {
   // System Admin User
   '00000000-0000-0000-0000-000000000001': [
     'admin:users:read',
@@ -75,7 +75,7 @@ const MOCK_USER_PERMISSIONS: Record<string, Permission[]> = {
  * @param userId - User ID
  * @param permissions - Array of permissions to grant
  */
-export function setMockUserPermissions(userId: string, permissions: Permission[]): void {
+export function setMockUserPermissions(userId: string, permissions: PermissionKey[]): void {
   MOCK_USER_PERMISSIONS[userId] = permissions;
 }
 
@@ -121,7 +121,7 @@ export function clearAllMockPermissions(): void {
  * 3. Consider group hierarchy (inherited permissions)
  * 4. Return unique list of permissions
  */
-export async function getUserPermissions(userId: string): Promise<Permission[]> {
+export async function getUserPermissions(userId: string): Promise<PermissionKey[]> {
   // Validate UUID format (basic check)
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(userId)) {
@@ -141,7 +141,7 @@ export async function getUserPermissions(userId: string): Promise<Permission[]> 
  */
 export async function hasPermission(
   userId: string,
-  permission: Permission
+  permission: PermissionKey
 ): Promise<boolean> {
   const permissions = await getUserPermissions(userId);
   return permissions.includes(permission);
@@ -158,12 +158,12 @@ export async function hasPermission(
 export async function getImpersonationPermissions(
   effectiveUserId: string,
   permissionOverrides?: Record<string, boolean> | null
-): Promise<Permission[]> {
+): Promise<PermissionKey[]> {
   // If permission overrides specified, use those
   if (permissionOverrides) {
     return Object.entries(permissionOverrides)
       .filter(([_, allowed]) => allowed)
-      .map(([perm]) => perm as Permission);
+      .map(([perm]) => perm as PermissionKey);
   }
 
   // Otherwise, get effective user's normal permissions

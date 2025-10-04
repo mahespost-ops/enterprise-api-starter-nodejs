@@ -8,6 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authorize, hasPermission } from '../../../middleware/rbac.middleware';
 import { ForbiddenError } from '../../../utils/errors';
+import { TEST_UUIDS } from '../../helpers/test-constants';
 
 // Note: Using real rbac.service.ts stub (returns mock permissions based on userId pattern)
 
@@ -16,9 +17,9 @@ describe('authorize middleware', () => {
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
 
-  // Realistic test UUIDs matching mock data in rbac.service.ts
-  const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000001';
-  const REGULAR_USER_ID = '11111111-1111-1111-1111-111111111111';
+  // Test UUIDs matching mock data in rbac.service.ts
+  const ADMIN_USER_ID = TEST_UUIDS.USER_ADMIN;
+  const REGULAR_USER_ID = TEST_UUIDS.USER_REGULAR;
   const IMPERSONATED_USER_ID = '22222222-2222-2222-2222-222222222222';
   const NO_PERMISSIONS_USER_ID = '33333333-3333-3333-3333-333333333333';
 
@@ -26,8 +27,8 @@ describe('authorize middleware', () => {
     mockRequest = {
       user: {
         sub: REGULAR_USER_ID,
-        orgId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        envId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: {
           fullName: 'Test User',
           email: 'test@example.com',

@@ -13,6 +13,7 @@ import {
   grantPermissions,
   clearAllPermissions,
 } from '../helpers/auth.helpers';
+import { TEST_UUIDS } from '../helpers/test-constants';
 
 // Mock uuid to avoid ESM issues in Jest
 jest.mock('uuid', () => ({
@@ -56,8 +57,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: {
           fullName: user.fullName,
           email: user.email,
@@ -84,9 +85,9 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
     it('should return 401 when JWT is expired', async () => {
       const token = generateTestJWT({
-        sub: '123e4567-e89b-12d3-a456-426614174000',
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        sub: TEST_UUIDS.USER_TEST,
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: 'Test User', email: 'test@example.com' },
         expiresIn: '-1h',
       }); // Expired 1 hour ago
@@ -103,9 +104,9 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
       // Authorization middleware correctly blocks this as 403 (no permissions)
       // rather than leaking information about whether the user exists (404)
       const token = generateTestJWT({
-        sub: '123e4567-e89b-12d3-a456-426614174000', // Non-existent user
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        sub: TEST_UUIDS.USER_DELETED, // Non-existent user
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: 'Test User', email: 'test@example.com' },
       });
 
@@ -128,14 +129,14 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
       // Mock database error in permission lookup (happens during authorize middleware)
-      const { getUserPermissions } = await import('../../services/rbac.service');
-      jest.spyOn({ getUserPermissions } as any, 'getUserPermissions').mockRejectedValueOnce(
+      const rbacService = await import('../../services/rbac.service');
+      jest.spyOn(rbacService, 'getUserPermissions').mockRejectedValueOnce(
         new Error('Database error')
       );
 
@@ -143,7 +144,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
         .get('/api/v1/users/me')
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error');
 
       // Restore mock
       jest.restoreAllMocks();
@@ -163,8 +165,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -198,8 +200,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -216,9 +218,9 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
     it('should return 404 when user not found', async () => {
       const token = generateTestJWT({
-        sub: '123e4567-e89b-12d3-a456-426614174000',
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        sub: TEST_UUIDS.USER_TEST,
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: 'Test User', email: 'test@example.com' },
       });
 
@@ -244,8 +246,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -276,8 +278,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -303,8 +305,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -337,8 +339,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -386,8 +388,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -416,8 +418,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -456,8 +458,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -478,7 +480,7 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
     it('should return 401 when not authenticated', async () => {
       const res = await request(app)
-        .put('/api/v1/users/me/devices/123e4567-e89b-12d3-a456-426614174000')
+        .put(`/api/v1/users/me/devices/${TEST_UUIDS.DEVICE_TRUSTED}`)
         .send({ name: 'New Name' });
 
       expect(res.status).toBe(401);
@@ -505,8 +507,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user1.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user1.fullName, email: user1.email },
       });
 
@@ -530,13 +532,13 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
       const res = await request(app)
-        .put('/api/v1/users/me/devices/123e4567-e89b-12d3-a456-426614174000')
+        .put(`/api/v1/users/me/devices/${TEST_UUIDS.DEVICE_TRUSTED}`)
         .set('Authorization', `Bearer ${token}`)
         .send({ name: 'New Name' });
 
@@ -552,8 +554,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -585,8 +587,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -603,7 +605,7 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
     it('should return 401 when not authenticated', async () => {
       const res = await request(app).delete(
-        '/api/v1/users/me/devices/123e4567-e89b-12d3-a456-426614174000'
+        `/api/v1/users/me/devices/${TEST_UUIDS.DEVICE_TRUSTED}`
       );
 
       expect(res.status).toBe(401);
@@ -630,8 +632,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user1.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user1.fullName, email: user1.email },
       });
 
@@ -654,8 +656,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -696,8 +698,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -723,8 +725,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -771,8 +773,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -789,7 +791,7 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
     it('should return 401 when not authenticated', async () => {
       const res = await request(app).delete(
-        '/api/v1/users/me/sessions/123e4567-e89b-12d3-a456-426614174000'
+        `/api/v1/users/me/sessions/${TEST_UUIDS.SESSION_ACTIVE}`
       );
 
       expect(res.status).toBe(401);
@@ -825,8 +827,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user1.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user1.fullName, email: user1.email },
       });
 
@@ -849,8 +851,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 
@@ -900,8 +902,8 @@ describe('Users Integration Tests (Phase 2 Batch 2)', () => {
 
       const token = generateTestJWT({
         sub: user.id,
-        orgId: '550e8400-e29b-41d4-a716-446655440000',
-        envId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        orgId: TEST_UUIDS.ORG_TEST,
+        envId: TEST_UUIDS.ENV_LIVE,
         user: { fullName: user.fullName, email: user.email },
       });
 

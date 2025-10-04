@@ -856,6 +856,78 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 **Current Phase:** Phase 2 Batch 4 - Members & Groups ⏭️
 **Current Task:** Ready to start Batch 4 implementation
 
+---
+
+## Test Standardization Completed (2025-10-04)
+
+### UUID Test Constants Standardization ✅
+
+**Objective:** Eliminate hardcoded UUIDs across test files and establish consistent, semantic test data patterns.
+
+**Changes Completed:**
+1. ✅ **Created centralized test constants** (`__tests__/helpers/test-constants.ts`):
+   - Pattern-based UUIDs for easy identification in logs and tests
+   - Semantic naming: `TEST_UUIDS.USER_ADMIN`, `TEST_UUIDS.ORG_TEST`, etc.
+   - Entity-type patterns: Users end in `1`, Orgs in `2`, Envs in `3`, Devices in `4`, Sessions in `5`
+   - Helper functions: `createTestUUID()` for dynamic generation, `createTestIdentifier()` for slugs/emails
+
+2. ✅ **Refactored all test files** to use centralized constants:
+   - `auth.test.ts` - Replaced `99999999-9999-9999-9999-999999999999` → `TEST_UUIDS.NONEXISTENT`
+   - `users.test.ts` - Standardized all hardcoded UUIDs to semantic constants
+   - `organizations.test.ts` - Replaced `00000000-0000-0000-0000-000000000000` → `TEST_UUIDS.NULL`
+   - `environments.test.ts` - Consistent UUID usage across all test cases
+   - `rbac.middleware.test.ts` - Updated to use `TEST_UUIDS.USER_ADMIN`, `TEST_UUIDS.USER_REGULAR`
+
+3. ✅ **Preserved backward compatibility**:
+   - Kept `jest.mock('uuid')` in auth.test.ts (ESM compatibility fix)
+   - Maintained dynamic UUID generation for test isolation where needed
+   - Legacy UUIDs converted to constants (e.g., `550e8400-e29b-41d4-a716-446655440002` → `TEST_UUIDS.ORG_TEST`)
+
+**Results:**
+- ✅ All 360 tests passing (349 passed, 11 skipped)
+- ✅ 13 test suites passed
+- ✅ TypeScript compilation clean (no errors)
+- ✅ Test run time: ~16 seconds
+
+**Benefits Achieved:**
+1. **Readability:** `TEST_UUIDS.USER_ADMIN` vs `00000000-0000-0000-0000-000000000001`
+2. **Consistency:** Single source of truth for test UUIDs
+3. **Debugging:** Pattern-based UUIDs make logs instantly recognizable
+4. **Maintainability:** Easy to update/extend test constants in one place
+5. **Type Safety:** TypeScript autocomplete prevents typos
+
+**Test Constants Pattern Convention:**
+```typescript
+// Special/System UUIDs
+NULL: '00000000-0000-0000-0000-000000000000'
+NONEXISTENT: '99999999-9999-9999-9999-999999999999'
+
+// Users (ending in 1)
+USER_ADMIN: '00000000-0000-0000-0000-000000000001'
+USER_REGULAR: '11111111-1111-1111-1111-111111111111'
+USER_TEST: '12345678-1234-1234-1234-123456789001'
+
+// Organizations (ending in 2)
+ORG_DEFAULT: '22222222-2222-2222-2222-222222222222'
+ORG_TEST: '550e8400-e29b-41d4-a716-446655440002'
+
+// Environments (ending in 3)
+ENV_LIVE: '7c9e6679-7425-40de-944b-e07fc1f90003'
+ENV_SANDBOX: '33333333-3333-3333-3333-333333333333'
+
+// Devices (ending in 4)
+DEVICE_TRUSTED: '44444444-4444-4444-4444-444444444444'
+
+// Sessions (ending in 5)
+SESSION_ACTIVE: '77777777-7777-7777-7777-777777777775'
+```
+
+**Usage Guidelines Established:**
+- **Use Test Constants When:** Testing with JWT tokens, non-existent entity scenarios, permission checks, shared test data
+- **Use `crypto.randomUUID()` When:** Creating unique entities, integration tests with create/destroy cycles, concurrent operations
+
+---
+
 **🎉 MILESTONES ACHIEVED:**
 
 **Batch 1, 2 & 3:** ✅ COMPLETE (100% PASS RATE!)

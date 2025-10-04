@@ -11,6 +11,7 @@ import { User } from '../../models/User.model';
 import { UserSession } from '../../models/UserSession.model';
 import { AdapterFactory } from '../../services/adapter.factory';
 import type { MockEmailAdapter } from '../../services/email/mock.email.adapter';
+import type { PermissionKey } from '../../middleware/rbac.middleware';
 
 /**
  * Generate a valid JWT token for testing
@@ -116,14 +117,14 @@ export function clearAllSentEmails(): void {
  * Grant permissions to a user (for test setup)
  * Uses the mock RBAC service to assign permissions
  * @param userId - User ID to grant permissions to
- * @param permissions - Array of permission strings
+ * @param permissions - Array of permission key strings
  */
 export async function grantPermissions(
   userId: string,
   permissions: string[]
 ): Promise<void> {
   const { setMockUserPermissions } = await import('../../services/rbac.service');
-  setMockUserPermissions(userId, permissions as any[]);
+  setMockUserPermissions(userId, permissions as PermissionKey[]);
 }
 
 /**

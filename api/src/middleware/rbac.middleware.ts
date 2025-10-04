@@ -10,9 +10,14 @@ import { Request, Response, NextFunction } from 'express';
 import { ForbiddenError } from '../utils/errors';
 
 /**
- * Permission types as documented in OpenAPI spec
+ * Permission key types as documented in OpenAPI spec
+ * These are the string values stored in the permission.key field
+ *
+ * Note: This is distinct from the Permission model class (models/Permission.model.ts)
+ * - PermissionKey = string literal type for permission keys (e.g., 'users:read')
+ * - Permission = Sequelize model class for permission database records
  */
-export type Permission =
+export type PermissionKey =
   // User-scoped permissions
   | 'users:read'
   | 'devices:manage'
@@ -65,7 +70,7 @@ export type Permission =
  * @returns Middleware function
  */
 export const authorize = (
-  requiredPermissions: Permission[]
+  requiredPermissions: PermissionKey[]
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -74,7 +79,7 @@ export const authorize = (
         throw new ForbiddenError('Authentication required');
       }
 
-      let userPermissions: Permission[];
+      let userPermissions: PermissionKey[];
 
       // Check for impersonation context with permission overrides
       if (req.user.impersonation?.impersonationChain?.length) {
@@ -86,7 +91,7 @@ export const authorize = (
         if (latestImpersonation.permissions) {
           userPermissions = Object.entries(latestImpersonation.permissions)
             .filter(([_, allowed]) => allowed)
-            .map(([perm]) => perm as Permission);
+            .map(([perm]) => perm as PermissionKey);
         } else {
           // No overrides, get effective user's permissions
           const { getUserPermissions: getPerms } = await import('../services/rbac.service');
@@ -132,7 +137,7 @@ export const requireAdmin = authorize(['admin:users:read']);
  */
 export async function hasPermission(
   userId: string,
-  permission: Permission
+  permission: PermissionKey
 ): Promise<boolean> {
   try {
     const { getUserPermissions } = await import('../services/rbac.service');
