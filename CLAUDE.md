@@ -31,9 +31,11 @@ You are an enterprise software architect that pays special care to clean code, b
 - **CRITICAL SECURITY: security-sensitive fields (trustStatus, roles, permissions) are system-managed and never user-modifiable - exclude from update DTOs and validation schemas**
 
 
-## Project Structure
+## Project Overview
 
-This is a reduce-config-drift-demo project focused on the API service:
+This is an **enterprise-api-starter-nodejs** - a reference implementation of a production-ready, multi-tenant API system that serves as a starter template for enterprise applications. Originally conceived as a configuration drift reduction demonstration, it has evolved into a comprehensive example of TDD (Test-Driven Development) and context refinement for AI-assisted software development.
+
+## Project Structure
 
 ### `/api`
 Backend API service with comprehensive structure:
@@ -51,49 +53,31 @@ Backend API service with comprehensive structure:
 - **`server.ts`** - Application entry point
 - **`app.ts`** - Express application setup
 - **`types/`** - TypeScript type definitions
-  - `express.d.ts` - Express request/response type extensions
-- **`config/`** - Application configuration
-  - `index.ts` - Configuration management
-  - `logger.ts` - Winston logger setup
-- **`constants/`** - Centralized constants
-  - `error-messages.constants.ts` - Standardized error messages
-  - `http-status.constants.ts` - HTTP status code constants
-- **`middleware/`** - Express middleware
-  - `error-handler.middleware.ts` - Global error handling
-  - `rate-limit.middleware.ts` - Rate limiting
-  - `request-id.middleware.ts` - Request ID tracking
-  - `xss.middleware.ts` - XSS protection
-  - `STANDARDS.md` - Middleware design patterns
-- **`routes/`** - Route definitions
-  - `index.ts` - Route aggregation
-  - `health.routes.ts` - Health check routes
-  - `STANDARDS.md` - Route design patterns
-- **`controllers/`** - Request handlers
-  - `health.controller.ts` - Health check controller
-  - `STANDARDS.md` - Controller design patterns
-- **`services/`** - Business logic and adapters
+- **`config/`** - Configuration management and logger setup
+- **`constants/`** - Centralized constants (error messages, HTTP status codes, etc.)
+- **`middleware/`** - Express middleware (error handling, rate limiting, request ID, XSS protection, auth, validation)
+- **`routes/`** - Route definitions (health, auth, users, organizations, environments, members, groups, events, webhooks, admin)
+- **`controllers/`** - Request handlers for all endpoints
+- **`services/`** - Business logic and external service adapters
   - `adapter.factory.ts` - Factory for service adapters
-  - `health.service.ts` - Health check business logic
-  - `config/adapter.config.ts` - Adapter configuration
-  - `email/` - Email service adapters (SendGrid, SMTP, Mock)
-  - `secrets/` - Secrets management adapters (GCP, AWS, Vault, File, Env, Memory)
-  - `storage/` - Object storage adapters (GCS, S3, Local)
-  - `queue/` - Message queue adapters (Pub/Sub, SQS, Redis, Kafka, Memory)
-- **`utils/`** - Utility functions
-  - `errors.ts` - Custom error classes
-  - `async-handler.ts` - Async route wrapper
-  - `pagination-response.ts` - Pagination helpers
-  - `query-params.ts` - Query parameter parsing
-  - `__tests__/` - Unit tests for utilities
+  - `auth/` - Authentication and JWT services
+  - `email/` - Email adapters (SendGrid, SMTP, Mock)
+  - `secrets/` - Secrets management (GCP, AWS, Vault, File, Env, Memory)
+  - `storage/` - Object storage (GCS, S3, Local)
+  - `queue/` - Message queues (Pub/Sub, SQS, Redis, Kafka, Memory)
+- **`models/`** - Sequelize ORM models (user, organization, environment, group, role, permission, event, webhook, etc.)
+- **`utils/`** - Utility functions (errors, async handlers, pagination, query parsing, validation)
+- **`__tests__/`** - Test files organized by component
 
 #### Documentation (`docs/`)
-- `ADAPTER_PATTERN.md` - Adapter pattern overview
-- `ADAPTER_USAGE.md` - How to use adapters
-- `ADAPTER_IMPLEMENTATION_PROGRESS.md` - Adapter completion status
-- `AUTHENTICATION_DESIGN.md` - Auth system design
-- `QUERY_PARAMETER_STANDARDS.md` - Query parameter conventions
-- `OAPI_IMPLEMENTATION_PROGRESS.md` - OpenAPI implementation status
-- `SECURITY_ASSESSMENT.md` - Security analysis
+- **Design & Patterns:**
+  - `ADAPTER_PATTERN.md` - Adapter pattern overview
+  - `ADAPTER_USAGE.md` - How to use adapters
+  - `AUTHENTICATION_DESIGN.md` - Auth system design
+  - `QUERY_PARAMETER_STANDARDS.md` - Query parameter conventions
+- **Progress Tracking:**
+  - `progress-tracking/` - Implementation progress files
+  - `security-analysis/` - Security assessment documents
 
 #### OpenAPI Specifications (`api-docs/`)
 - `index.yaml` - Main OpenAPI specification
@@ -110,17 +94,18 @@ Backend API service with comprehensive structure:
   - `schemas/` - Data models (auth, user, organization, environment, group, member, role, event, webhook, etc.)
 
 #### Database (`migrations/`)
-- Empty directory - migrations to be added
+- Sequelize migration files (to be added)
 
-#### Testing (`coverage/`)
-- Code coverage reports from Jest
+#### Testing
+- `__tests__/` - Test files co-located with source code
+- `coverage/` - Jest coverage reports
 
 ### `/infra`
 Infrastructure as Code (IaC) definitions - not yet implemented
 
 ## Architecture
 
-This repository demonstrates configuration drift reduction patterns across API services and infrastructure. The project is organized to maintain separation between application code (`api/`) and infrastructure definitions (`infra/`).
+Enterprise-grade multi-tenant API with hierarchical RBAC, passwordless authentication, event logging, webhooks, and cloud-agnostic service adapters. Designed for <200ms response times with denormalized reads, cursor pagination for high-volume endpoints, and comprehensive security controls including user impersonation with full audit trails.
 
 ### Multi-Tenant Architecture
 
