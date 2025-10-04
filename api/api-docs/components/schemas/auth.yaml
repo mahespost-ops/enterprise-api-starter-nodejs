@@ -210,12 +210,10 @@ AuthResponse:
 
 RefreshTokenRequest:
   type: object
-  required:
-    - refreshToken
   properties:
     refreshToken:
       type: string
-      description: Current refresh token (from cookie or request body)
+      description: Current refresh token (optional if provided in cookie)
       example: a7b3c4d5e6f7890123456789abcdef01234567890123456789abcdef012345
 
 RefreshTokenResponse:

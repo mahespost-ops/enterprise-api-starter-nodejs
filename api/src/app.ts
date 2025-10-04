@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import SwaggerParser from '@apidevtools/swagger-parser';
 import path from 'path';
@@ -94,6 +95,7 @@ async function createApp(): Promise<Application> {
   // ============================================
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(cookieParser()); // Parse cookies for refresh token handling
 
   // ============================================
   // 4a. XSS Sanitization (After body parsing)

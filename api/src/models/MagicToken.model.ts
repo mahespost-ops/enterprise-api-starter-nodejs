@@ -19,6 +19,11 @@ export interface MagicToken {
 // Using token/code as key for quick lookup
 const tokens: Map<string, MagicToken> = new Map();
 
+// Export for test helpers (will be removed when replaced with database)
+export const __testOnly__ = {
+  getTokensMap: () => tokens,
+};
+
 export class MagicTokenModel {
   /**
    * Create a new magic token

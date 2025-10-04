@@ -243,7 +243,8 @@ class AuthService {
     }
 
     // Find session with matching refresh token
-    const sessions = await SessionModel.findByUserId(''); // TODO: Need to search all sessions
+    // Must check all sessions since refresh token is hashed
+    const sessions = await SessionModel.findAll();
     let matchedSession = null;
 
     for (const session of sessions) {
@@ -254,8 +255,6 @@ class AuthService {
       }
     }
 
-    // Workaround: For now, get all sessions by iterating
-    // TODO: Implement SessionModel.findAll() when database is ready
     if (!matchedSession) {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }

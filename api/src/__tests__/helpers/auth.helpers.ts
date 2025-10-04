@@ -4,6 +4,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import config from '../../config';
 import { MagicTokenModel } from '../../models/MagicToken.model';
 import { UserModel } from '../../models/User.model';
@@ -11,6 +12,8 @@ import { SessionModel } from '../../models/Session.model';
 
 /**
  * Generate a valid JWT token for testing
+ * @param payload - JWT payload with optional expiresIn (e.g., '1h', '15m', '7d')
+ * @returns Signed JWT token
  */
 export function generateTestJWT(payload: {
   sub: string;
@@ -31,13 +34,11 @@ export function generateTestJWT(payload: {
       permissions: any;
     }>;
   };
-  expiresIn?: string | number;
+  expiresIn?: StringValue;
 }): string {
   const { expiresIn = '1h', ...jwtPayload } = payload;
 
-  return jwt.sign(jwtPayload, config.jwt.secret, {
-    expiresIn: expiresIn as string | number,
-  });
+  return jwt.sign(jwtPayload, config.jwt.secret, { expiresIn });
 }
 
 /**
@@ -71,31 +72,15 @@ export async function getLatestMagicTokenForUser(email: string): Promise<{
     return null;
   }
 
-  // Access the internal token map (this is a hack for testing only)
-  // In production, we'd query the database
-  // TypeScript hack to access private storage
-  const MagicTokenModelAny = MagicTokenModel as any;
-  const tokensModule = await import('../../models/MagicToken.model');
+  // Access the test-only token map
+  const { __testOnly__ } = await import('../../models/MagicToken.model');
+  const tokensMap = __testOnly__.getTokensMap();
 
-  // Get all map entries
+  // Collect all tokens for this user
   const tokenEntries: any[] = [];
-
-  // Try to find the tokens map through various methods
-  // Method 1: Check if it's exposed on the class
-  if (MagicTokenModelAny.tokens) {
-    for (const [, value] of MagicTokenModelAny.tokens.entries()) {
-      if (value.userId === user.id && !value.usedAt) {
-        tokenEntries.push(value);
-      }
-    }
-  }
-
-  // Method 2: Try accessing through module scope
-  if (tokenEntries.length === 0 && (tokensModule as any).tokens) {
-    for (const [, value] of (tokensModule as any).tokens.entries()) {
-      if (value.userId === user.id && !value.usedAt) {
-        tokenEntries.push(value);
-      }
+  for (const [, value] of tokensMap.entries()) {
+    if (value.userId === user.id && !value.usedAt) {
+      tokenEntries.push(value);
     }
   }
 

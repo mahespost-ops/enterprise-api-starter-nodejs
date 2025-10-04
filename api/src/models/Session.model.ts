@@ -44,6 +44,13 @@ export class SessionModel {
   }
 
   /**
+   * Find all sessions (for refresh token validation)
+   */
+  static async findAll(): Promise<Session[]> {
+    return Array.from(sessions.values());
+  }
+
+  /**
    * Find session by refresh token hash
    */
   static async findByRefreshTokenHash(hash: string): Promise<Session | null> {
