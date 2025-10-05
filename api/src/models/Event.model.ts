@@ -26,11 +26,11 @@ export interface EventAttributes {
 }
 
 // Optional fields for creation
-export interface EventCreationAttributes
-  extends Optional<
+export type EventCreationAttributes =
+  Optional<
     EventAttributes,
     'id' | 'target' | 'audit' | 'description' | 'timestamp' | 'organizationName' | 'environmentName' | 'isWebhookEvent'
-  > {}
+  >;
 
 /**
  * Event Model Class
@@ -65,6 +65,7 @@ export class Event extends Model<EventAttributes, EventCreationAttributes> imple
     } = {},
   ): Promise<{ data: Event[]; nextCursor: string | null; hasMore: boolean }> {
     const limit = Math.min(options.limit || 100, 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { environmentId };
 
     // Apply cursor (timestamp + id for tie-breaking)

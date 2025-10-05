@@ -21,8 +21,8 @@ export interface GroupAttributes {
   deletedAt: Date | null;
 }
 
-export interface GroupCreationAttributes
-  extends Optional<
+export type GroupCreationAttributes =
+  Optional<
     GroupAttributes,
     | 'id'
     | 'description'
@@ -34,7 +34,7 @@ export interface GroupCreationAttributes
     | 'createdAt'
     | 'updatedAt'
     | 'deletedAt'
-  > {}
+  >;
 
 export class Group extends Model<GroupAttributes, GroupCreationAttributes> implements GroupAttributes {
   declare id: string;

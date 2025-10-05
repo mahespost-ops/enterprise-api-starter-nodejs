@@ -31,8 +31,8 @@ export interface WebhookAttributes {
 }
 
 // Optional fields for creation
-export interface WebhookCreationAttributes
-  extends Optional<
+export type WebhookCreationAttributes =
+  Optional<
     WebhookAttributes,
     | 'id'
     | 'authMethod'
@@ -46,7 +46,7 @@ export interface WebhookCreationAttributes
     | 'createdAt'
     | 'updatedAt'
     | 'deletedAt'
-  > {}
+  >;
 
 /**
  * Webhook Model Class

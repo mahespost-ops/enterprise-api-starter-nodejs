@@ -18,11 +18,11 @@ export interface EnvironmentRoleAssignmentAttributes {
   deletedAt: Date | null;
 }
 
-export interface EnvironmentRoleAssignmentCreationAttributes
-  extends Optional<
+export type EnvironmentRoleAssignmentCreationAttributes =
+  Optional<
     EnvironmentRoleAssignmentAttributes,
     'id' | 'membershipId' | 'groupId' | 'assignedBy' | 'createdAt' | 'updatedAt' | 'deletedAt'
-  > {}
+  >;
 
 export class EnvironmentRoleAssignment
   extends Model<EnvironmentRoleAssignmentAttributes, EnvironmentRoleAssignmentCreationAttributes>

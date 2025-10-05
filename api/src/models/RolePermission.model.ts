@@ -13,8 +13,8 @@ export interface RolePermissionAttributes {
   createdAt: Date;
 }
 
-export interface RolePermissionCreationAttributes
-  extends Optional<RolePermissionAttributes, 'id' | 'createdAt'> {}
+export type RolePermissionCreationAttributes =
+  Optional<RolePermissionAttributes, 'id' | 'createdAt'>;
 
 export class RolePermission
   extends Model<RolePermissionAttributes, RolePermissionCreationAttributes>

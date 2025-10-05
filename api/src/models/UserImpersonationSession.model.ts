@@ -26,8 +26,8 @@ export interface UserImpersonationSessionAttributes {
 }
 
 // Optional fields for creation
-export interface UserImpersonationSessionCreationAttributes
-  extends Optional<
+export type UserImpersonationSessionCreationAttributes =
+  Optional<
     UserImpersonationSessionAttributes,
     | 'id'
     | 'parentSessionId'
@@ -39,7 +39,7 @@ export interface UserImpersonationSessionCreationAttributes
     | 'endedAt'
     | 'isActive'
     | 'metadata'
-  > {}
+  >;
 
 /**
  * UserImpersonationSession Model Class

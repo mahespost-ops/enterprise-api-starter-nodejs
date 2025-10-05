@@ -25,8 +25,8 @@ export interface UserSessionAttributes {
   revocationReason: string | null;
 }
 
-export interface UserSessionCreationAttributes
-  extends Optional<
+export type UserSessionCreationAttributes =
+  Optional<
     UserSessionAttributes,
     | 'id'
     | 'userAgent'
@@ -39,7 +39,7 @@ export interface UserSessionCreationAttributes
     | 'revokedAt'
     | 'revokedBy'
     | 'revocationReason'
-  > {}
+  >;
 
 export class UserSession
   extends Model<UserSessionAttributes, UserSessionCreationAttributes>

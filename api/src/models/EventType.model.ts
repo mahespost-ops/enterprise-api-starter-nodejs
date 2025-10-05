@@ -19,8 +19,10 @@ export interface EventTypeAttributes {
 }
 
 // Optional fields for creation
-export interface EventTypeCreationAttributes
-  extends Optional<EventTypeAttributes, 'id' | 'isWebhookEvent' | 'description' | 'createdAt' | 'updatedAt'> {}
+export type EventTypeCreationAttributes = Optional<
+  EventTypeAttributes,
+  'id' | 'isWebhookEvent' | 'description' | 'createdAt' | 'updatedAt'
+>;
 
 /**
  * EventType Model Class

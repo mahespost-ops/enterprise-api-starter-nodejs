@@ -23,8 +23,8 @@ export interface ExternalIdentityAttributes {
   updatedAt: Date;
 }
 
-export interface ExternalIdentityCreationAttributes
-  extends Optional<
+export type ExternalIdentityCreationAttributes =
+  Optional<
     ExternalIdentityAttributes,
     | 'id'
     | 'providerEmail'
@@ -35,7 +35,7 @@ export interface ExternalIdentityCreationAttributes
     | 'profileData'
     | 'createdAt'
     | 'updatedAt'
-  > {}
+  >;
 
 export class ExternalIdentity
   extends Model<ExternalIdentityAttributes, ExternalIdentityCreationAttributes>

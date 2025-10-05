@@ -17,11 +17,11 @@ export interface RoleAttributes {
   deletedAt: Date | null;
 }
 
-export interface RoleCreationAttributes
-  extends Optional<
+export type RoleCreationAttributes =
+  Optional<
     RoleAttributes,
     'id' | 'description' | 'isSystem' | 'permissionCount' | 'createdAt' | 'updatedAt' | 'deletedAt'
-  > {}
+  >;
 
 export class Role extends Model<RoleAttributes, RoleCreationAttributes> implements RoleAttributes {
   declare id: string;

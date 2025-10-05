@@ -17,8 +17,8 @@ export interface MagicLinkTokenAttributes {
   createdAt: Date;
 }
 
-export interface MagicLinkTokenCreationAttributes
-  extends Optional<MagicLinkTokenAttributes, 'id' | 'fingerprint' | 'usedAt' | 'createdAt'> {}
+export type MagicLinkTokenCreationAttributes =
+  Optional<MagicLinkTokenAttributes, 'id' | 'fingerprint' | 'usedAt' | 'createdAt'>;
 
 export class MagicLinkToken
   extends Model<MagicLinkTokenAttributes, MagicLinkTokenCreationAttributes>

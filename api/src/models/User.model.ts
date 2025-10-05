@@ -36,8 +36,8 @@ export interface UserAttributes {
 }
 
 // Optional fields for creation
-export interface UserCreationAttributes
-  extends Optional<
+export type UserCreationAttributes =
+  Optional<
     UserAttributes,
     | 'id'
     | 'emailVerified'
@@ -61,7 +61,7 @@ export interface UserCreationAttributes
     | 'createdAt'
     | 'updatedAt'
     | 'deletedAt'
-  > {}
+  >;
 
 /**
  * User Model Class

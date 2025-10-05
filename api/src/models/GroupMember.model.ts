@@ -14,8 +14,8 @@ export interface GroupMemberAttributes {
   createdAt: Date;
 }
 
-export interface GroupMemberCreationAttributes
-  extends Optional<GroupMemberAttributes, 'id' | 'addedBy' | 'createdAt'> {}
+export type GroupMemberCreationAttributes =
+  Optional<GroupMemberAttributes, 'id' | 'addedBy' | 'createdAt'>;
 
 export class GroupMember
   extends Model<GroupMemberAttributes, GroupMemberCreationAttributes>

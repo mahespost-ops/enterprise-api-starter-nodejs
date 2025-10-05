@@ -25,8 +25,8 @@ export interface WebhookDeliveryAttributes {
 }
 
 // Optional fields for creation
-export interface WebhookDeliveryCreationAttributes
-  extends Optional<
+export type WebhookDeliveryCreationAttributes =
+  Optional<
     WebhookDeliveryAttributes,
     | 'id'
     | 'status'
@@ -39,7 +39,7 @@ export interface WebhookDeliveryCreationAttributes
     | 'completedAt'
     | 'nextRetryAt'
     | 'createdAt'
-  > {}
+  >;
 
 /**
  * WebhookDelivery Model Class

@@ -22,11 +22,11 @@ export interface EnvironmentAttributes {
   deletedAt: Date | null;
 }
 
-export interface EnvironmentCreationAttributes
-  extends Optional<
+export type EnvironmentCreationAttributes =
+  Optional<
     EnvironmentAttributes,
     'id' | 'description' | 'isDefault' | 'metadata' | 'isActive' | 'createdAt' | 'updatedAt' | 'deletedAt'
-  > {}
+  >;
 
 export class Environment
   extends Model<EnvironmentAttributes, EnvironmentCreationAttributes>

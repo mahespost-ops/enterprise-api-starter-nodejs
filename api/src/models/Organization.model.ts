@@ -30,8 +30,8 @@ export interface OrganizationAttributes {
   deletedAt: Date | null;
 }
 
-export interface OrganizationCreationAttributes
-  extends Optional<
+export type OrganizationCreationAttributes =
+  Optional<
     OrganizationAttributes,
     | 'id'
     | 'description'
@@ -52,7 +52,7 @@ export interface OrganizationCreationAttributes
     | 'createdAt'
     | 'updatedAt'
     | 'deletedAt'
-  > {}
+  >;
 
 export class Organization
   extends Model<OrganizationAttributes, OrganizationCreationAttributes>

@@ -19,8 +19,8 @@ export interface PermissionAttributes {
   createdAt: Date;
 }
 
-export interface PermissionCreationAttributes
-  extends Optional<PermissionAttributes, 'id' | 'description' | 'isSystem' | 'createdAt'> {}
+export type PermissionCreationAttributes =
+  Optional<PermissionAttributes, 'id' | 'description' | 'isSystem' | 'createdAt'>;
 
 export class Permission
   extends Model<PermissionAttributes, PermissionCreationAttributes>

@@ -31,26 +31,25 @@ export interface DeviceAttributes {
   revokedAt: Date | null;
 }
 
-export interface DeviceCreationAttributes
-  extends Optional<
-    DeviceAttributes,
-    | 'id'
-    | 'deviceName'
-    | 'deviceType'
-    | 'os'
-    | 'browser'
-    | 'userAgent'
-    | 'timezone'
-    | 'screenResolution'
-    | 'trustStatus'
-    | 'lastSeenIp'
-    | 'lastCountry'
-    | 'lastRegion'
-    | 'lastCity'
-    | 'createdAt'
-    | 'lastUsedAt'
-    | 'revokedAt'
-  > {}
+export type DeviceCreationAttributes = Optional<
+  DeviceAttributes,
+  | 'id'
+  | 'deviceName'
+  | 'deviceType'
+  | 'os'
+  | 'browser'
+  | 'userAgent'
+  | 'timezone'
+  | 'screenResolution'
+  | 'trustStatus'
+  | 'lastSeenIp'
+  | 'lastCountry'
+  | 'lastRegion'
+  | 'lastCity'
+  | 'createdAt'
+  | 'lastUsedAt'
+  | 'revokedAt'
+>;
 
 export class Device extends Model<DeviceAttributes, DeviceCreationAttributes> implements DeviceAttributes {
   declare id: string;
