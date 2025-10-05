@@ -115,6 +115,19 @@ export const TEST_UUIDS = {
 
   /** Revoked session */
   SESSION_REVOKED: '99999999-9999-9999-9999-999999999995',
+
+  // ============================================================================
+  // Groups (ending in 6)
+  // ============================================================================
+
+  /** Engineering group */
+  GROUP_ENGINEERING: '66666666-6666-6666-6666-666666666666',
+
+  /** Admin group */
+  GROUP_ADMIN: '77777777-7777-7777-7777-777777777776',
+
+  /** Secondary test group */
+  GROUP_TEST: '88888888-8888-8888-8888-888888888886',
 } as const;
 
 /**
@@ -132,11 +145,20 @@ export const TEST_UUIDS = {
 export const createTestUUID = (): string => crypto.randomUUID();
 
 /**
- * Generate a unique test identifier combining timestamp and random string
+ * Generate a unique test identifier combining prefix, timestamp, and random string
  * Useful for slugs, emails, and other string identifiers that need uniqueness.
  *
- * @returns A unique string in format: timestamp-randomchars
- * @example "1704123456789-a3b2c1"
+ * @param prefix - Optional prefix for the identifier (e.g., 'admin', 'user', 'org')
+ * @param type - Optional type suffix ('email' or 'slug')
+ * @returns A unique string in format: prefix-timestamp-randomchars[@example.com]
+ * @example createTestIdentifier('admin', 'email') => "admin-1704123456789-a3b2c1@example.com"
+ * @example createTestIdentifier('org', 'slug') => "org-1704123456789-a3b2c1"
+ * @example createTestIdentifier('org') => "org-1704123456789-a3b2c1"
  */
-export const createTestIdentifier = (): string =>
-  `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+export const createTestIdentifier = (prefix = 'test', type?: 'email' | 'slug'): string => {
+  const base = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  if (type === 'email') {
+    return `${base}@example.com`;
+  }
+  return base;
+};
