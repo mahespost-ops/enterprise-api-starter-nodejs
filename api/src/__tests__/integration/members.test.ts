@@ -186,7 +186,8 @@ describe('Members API', () => {
       // Create invited member
       const invitedUser = await User.create({
         email: createTestIdentifier('invited', 'email'),
-        displayName: 'Invited User',
+        givenName: 'Invited',
+        familyName: 'User',
         isActive: false,
       });
 
@@ -261,10 +262,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:invite permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
       });
 
       const res = await request(app)
@@ -344,10 +344,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
       });
 
       const res = await request(app)
@@ -412,10 +411,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:write permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
       });
 
       const res = await request(app)
@@ -482,10 +480,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:delete permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
       });
 
       const res = await request(app)
@@ -548,10 +545,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
       });
 
       const res = await request(app)
@@ -573,7 +569,8 @@ describe('Members API', () => {
       // Create member without organizations
       const orphanUser = await User.create({
         email: createTestIdentifier('orphan', 'email'),
-        displayName: 'Orphan User',
+        givenName: 'Orphan',
+        familyName: 'User',
         isActive: true,
       });
 
@@ -628,10 +625,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
       });
 
       const res = await request(app)
@@ -653,7 +649,8 @@ describe('Members API', () => {
       // Create member without role assignments
       const noRolesUser = await User.create({
         email: createTestIdentifier('noroles', 'email'),
-        displayName: 'No Roles User',
+        givenName: 'No Roles',
+        familyName: 'User',
         isActive: true,
       });
 
@@ -711,10 +708,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:impersonate permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
       });
 
       const res = await request(app)
@@ -764,19 +760,22 @@ describe('Members API', () => {
     it('should end org-scoped impersonation (200)', async () => {
       // Start impersonation first
       const impersonationToken = generateTestJWT({
-        userId: TEST_UUIDS.USER_ADMIN,
+        sub: TEST_UUIDS.USER_ADMIN,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
-        effectiveUserId: testUser.id,
-        impersonationChain: [
-          {
-            impersonatorUserId: TEST_UUIDS.USER_ADMIN,
-            impersonatedUserId: testUser.id,
-            startedAt: new Date().toISOString(),
-            reason: 'Support troubleshooting',
-          },
-        ],
+        impersonation: {
+          originalUserId: TEST_UUIDS.USER_ADMIN,
+          effectiveUserId: testUser.id,
+          impersonationChain: [
+            {
+              sessionId: TEST_UUIDS.SESSION_ACTIVE,
+              userId: testUser.id,
+              startedAt: new Date().toISOString(),
+              impersonationType: 'organization' as const,
+              permissions: null,
+            },
+          ],
+        },
       });
 
       const res = await request(app)
@@ -806,19 +805,22 @@ describe('Members API', () => {
 
     it('should return 404 when member not found', async () => {
       const impersonationToken = generateTestJWT({
-        userId: TEST_UUIDS.USER_ADMIN,
+        sub: TEST_UUIDS.USER_ADMIN,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
-        effectiveUserId: testUser.id,
-        impersonationChain: [
-          {
-            impersonatorUserId: TEST_UUIDS.USER_ADMIN,
-            impersonatedUserId: testUser.id,
-            startedAt: new Date().toISOString(),
-            reason: 'Support troubleshooting',
-          },
-        ],
+        impersonation: {
+          originalUserId: TEST_UUIDS.USER_ADMIN,
+          effectiveUserId: testUser.id,
+          impersonationChain: [
+            {
+              sessionId: TEST_UUIDS.SESSION_ACTIVE,
+              userId: testUser.id,
+              startedAt: new Date().toISOString(),
+              impersonationType: 'organization' as const,
+              permissions: null,
+            },
+          ],
+        },
       });
 
       const res = await request(app)
@@ -830,19 +832,22 @@ describe('Members API', () => {
 
     it('should return 422 when memberId is invalid UUID', async () => {
       const impersonationToken = generateTestJWT({
-        userId: TEST_UUIDS.USER_ADMIN,
+        sub: TEST_UUIDS.USER_ADMIN,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
-        effectiveUserId: testUser.id,
-        impersonationChain: [
-          {
-            impersonatorUserId: TEST_UUIDS.USER_ADMIN,
-            impersonatedUserId: testUser.id,
-            startedAt: new Date().toISOString(),
-            reason: 'Support troubleshooting',
-          },
-        ],
+        impersonation: {
+          originalUserId: TEST_UUIDS.USER_ADMIN,
+          effectiveUserId: testUser.id,
+          impersonationChain: [
+            {
+              sessionId: TEST_UUIDS.SESSION_ACTIVE,
+              userId: testUser.id,
+              startedAt: new Date().toISOString(),
+              impersonationType: 'organization' as const,
+              permissions: null,
+            },
+          ],
+        },
       });
 
       const res = await request(app)
@@ -854,19 +859,22 @@ describe('Members API', () => {
 
     it('should return 500 on server error', async () => {
       const impersonationToken = generateTestJWT({
-        userId: TEST_UUIDS.USER_ADMIN,
+        sub: TEST_UUIDS.USER_ADMIN,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
-        effectiveUserId: testUser.id,
-        impersonationChain: [
-          {
-            impersonatorUserId: TEST_UUIDS.USER_ADMIN,
-            impersonatedUserId: testUser.id,
-            startedAt: new Date().toISOString(),
-            reason: 'Support troubleshooting',
-          },
-        ],
+        impersonation: {
+          originalUserId: TEST_UUIDS.USER_ADMIN,
+          effectiveUserId: testUser.id,
+          impersonationChain: [
+            {
+              sessionId: TEST_UUIDS.SESSION_ACTIVE,
+              userId: testUser.id,
+              startedAt: new Date().toISOString(),
+              impersonationType: 'organization' as const,
+              permissions: null,
+            },
+          ],
+        },
       });
 
       jest.spyOn(OrganizationMember, 'findByPk').mockRejectedValueOnce(new Error('Database error'));
@@ -886,19 +894,22 @@ describe('Members API', () => {
   describe('GET /api/v1/orgs/:orgId/envs/:envId/members/:memberId/impersonate', () => {
     it('should get current impersonation status (200)', async () => {
       const impersonationToken = generateTestJWT({
-        userId: TEST_UUIDS.USER_ADMIN,
+        sub: TEST_UUIDS.USER_ADMIN,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
-        effectiveUserId: testUser.id,
-        impersonationChain: [
-          {
-            impersonatorUserId: TEST_UUIDS.USER_ADMIN,
-            impersonatedUserId: testUser.id,
-            startedAt: new Date().toISOString(),
-            reason: 'Support troubleshooting',
-          },
-        ],
+        impersonation: {
+          originalUserId: TEST_UUIDS.USER_ADMIN,
+          effectiveUserId: testUser.id,
+          impersonationChain: [
+            {
+              sessionId: TEST_UUIDS.SESSION_ACTIVE,
+              userId: testUser.id,
+              startedAt: new Date().toISOString(),
+              impersonationType: 'organization' as const,
+              permissions: null,
+            },
+          ],
+        },
       });
 
       const res = await request(app)
@@ -919,10 +930,9 @@ describe('Members API', () => {
 
     it('should return 403 when lacking members:impersonate permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['members:read'],
       });
 
       const res = await request(app)

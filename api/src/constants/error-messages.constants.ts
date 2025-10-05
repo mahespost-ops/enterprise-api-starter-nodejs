@@ -38,6 +38,9 @@ export const ERROR_MESSAGES = {
   ORGANIZATION_NOT_FOUND: 'Organization not found',
   ENVIRONMENT_NOT_FOUND: 'Environment not found',
   NOT_ORGANIZATION_MEMBER: 'You are not a member of this organization',
+  MEMBER_NOT_FOUND: 'Member not found',
+  GROUP_NOT_FOUND: 'Group not found',
+  GROUP_MEMBER_NOT_FOUND: 'User is not a member of this group',
 
   // Conflicts
   USER_EXISTS: 'User with this email already exists',

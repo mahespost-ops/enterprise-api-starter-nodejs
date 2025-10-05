@@ -453,36 +453,91 @@ These will pass once Organization and Environment models are fully implemented w
 
 ---
 
-### Batch 4: Members & Groups ⏭️
-**Endpoints:** 18
+### Batch 4: Members & Groups ✅ (IMPLEMENTATION COMPLETE - TESTS PENDING)
+**Endpoints:** 19 (10 members functional + 3 impersonation placeholders + 9 groups)
 **Files:** `__tests__/integration/members.test.ts`, `__tests__/integration/groups.test.ts`
+**Date Implemented:** 2025-10-04
 
-#### Members (12 endpoints):
-1. `GET /orgs/{orgId}/members` - List organization members
-2. `POST /orgs/{orgId}/members` - Invite member
-3. `GET /orgs/{orgId}/members/{memberId}` - Get member details
-4. `PUT /orgs/{orgId}/members/{memberId}` - Update member
-5. `DELETE /orgs/{orgId}/members/{memberId}` - Remove member
-6. `GET /orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
-7. `GET /orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
-8. `POST /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start org-scoped impersonation
-9. `DELETE /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End org-scoped impersonation
-10. `GET /orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get impersonation status
+#### Members (10 functional + 3 placeholders):
+1. ✅ `GET /api/v1/orgs/{orgId}/members` - List organization members
+2. ✅ `POST /api/v1/orgs/{orgId}/members` - Invite member
+3. ✅ `GET /api/v1/orgs/{orgId}/members/{memberId}` - Get member details
+4. ✅ `PUT /api/v1/orgs/{orgId}/members/{memberId}` - Update member
+5. ✅ `DELETE /api/v1/orgs/{orgId}/members/{memberId}` - Remove member
+6. ✅ `GET /api/v1/orgs/{orgId}/members/{memberId}/organizations` - Get member's organizations
+7. ✅ `GET /api/v1/orgs/{orgId}/members/{memberId}/permissions` - Get member's permissions
+8. ⚠️ `POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Start impersonation (placeholder)
+9. ⚠️ `DELETE /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - End impersonation (placeholder)
+10. ⚠️ `GET /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate` - Get status (placeholder)
 
 #### Groups (9 endpoints):
-1. `GET /orgs/{orgId}/groups` - List groups
-2. `POST /orgs/{orgId}/groups` - Create group
-3. `GET /orgs/{orgId}/groups/{groupId}` - Get group details
-4. `PUT /orgs/{orgId}/groups/{groupId}` - Update group
-5. `DELETE /orgs/{orgId}/groups/{groupId}` - Delete group
-6. `GET /orgs/{orgId}/groups/{groupId}/members` - List group members
-7. `POST /orgs/{orgId}/groups/{groupId}/members` - Add member to group
-8. `DELETE /orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member from group
-9. `GET /orgs/{orgId}/groups/{groupId}/children` - Get child groups
+1. ✅ `GET /api/v1/orgs/{orgId}/groups` - List groups
+2. ✅ `POST /api/v1/orgs/{orgId}/groups` - Create group
+3. ✅ `GET /api/v1/orgs/{orgId}/groups/{groupId}` - Get group details
+4. ✅ `PUT /api/v1/orgs/{orgId}/groups/{groupId}` - Update group
+5. ✅ `DELETE /api/v1/orgs/{orgId}/groups/{groupId}` - Delete group
+6. ✅ `GET /api/v1/orgs/{orgId}/groups/{groupId}/members` - List group members
+7. ✅ `POST /api/v1/orgs/{orgId}/groups/{groupId}/members` - Add member to group
+8. ✅ `DELETE /api/v1/orgs/{orgId}/groups/{groupId}/members/{userId}` - Remove member from group
+9. ✅ `GET /api/v1/orgs/{orgId}/groups/{groupId}/children` - Get child groups
 
-**Status:** Not started
-**Tests Written:** 0/108 (18 endpoints × 6 tests each)
-**Tests Passing:** 0/108
+**Status:** ✅ Implementation complete, ⏭️ Tests need execution and fixes
+**Tests Written:** 114/114 (60 members + 54 groups)
+**Tests Passing:** TBD (awaiting execution)
+**Test File Created:** 2025-10-04
+**Implementation Completed:** 2025-10-04
+
+#### Implementation Work Complete:
+- [x] Integration test files created (members.test.ts, groups.test.ts)
+- [x] Validation schemas created (member.schemas.ts, group.schemas.ts)
+- [x] Schemas exported from validation-schemas/index.ts
+- [x] Member service layer (`member.service.ts`)
+- [x] Group service layer (`group.service.ts`)
+- [x] Member controller (`member.controller.ts`)
+- [x] Group controller (`group.controller.ts`)
+- [x] Member routes (`member.routes.ts`)
+- [x] Group routes (`group.routes.ts`)
+- [x] Routes wired into main router (`routes/index.ts`)
+- [x] TypeScript compilation clean (0 errors)
+- [x] Error message constants updated (MEMBER_NOT_FOUND, GROUP_NOT_FOUND, GROUP_MEMBER_NOT_FOUND)
+- [x] Test constants updated (GROUP_* UUIDs, enhanced createTestIdentifier)
+- [x] MemberStatus enum aligned with model ('invited' | 'active' | 'suspended')
+- [x] Permission keys aligned with RBAC middleware (members:read, members:manage, groups:read, groups:manage)
+
+#### Known Pending Items:
+- [ ] **Model Associations:** Configure Sequelize associations (User ↔ OrganizationMember ↔ Organization)
+- [ ] **Impersonation:** Full implementation of impersonation endpoints (currently placeholders)
+- [ ] **Test Execution:** Run tests and fix any database/association errors
+- [ ] **RBAC Seeds:** Ensure permission records exist in database for tests
+
+#### Files Created:
+- `src/__tests__/integration/members.test.ts` (60 tests)
+- `src/__tests__/integration/groups.test.ts` (54 tests)
+- `src/middleware/validation-schemas/member.schemas.ts`
+- `src/middleware/validation-schemas/group.schemas.ts`
+- `src/services/member.service.ts`
+- `src/services/group.service.ts`
+- `src/controllers/member.controller.ts`
+- `src/controllers/group.controller.ts`
+- `src/routes/member.routes.ts`
+- `src/routes/group.routes.ts`
+
+#### Test Coverage Summary:
+Each endpoint has 6 comprehensive test cases covering:
+- Success cases (200/201/204)
+- Authentication errors (401)
+- Authorization errors (403)
+- Not found errors (404)
+- Validation errors (422)
+- Server errors (500)
+- Business logic edge cases
+
+**NEXT STEPS:**
+1. Execute tests: `npm test -- members.test.ts`
+2. Configure model associations if needed
+3. Fix any test failures
+4. Execute tests: `npm test -- groups.test.ts`
+5. Mark batch as complete when all tests pass
 
 ---
 
@@ -779,10 +834,10 @@ Split into sub-batches for manageability:
 
 ### Phase 2: Endpoint Tests
 - **Total Tests:** ~750 (125 endpoints × 6 tests each)
-- **Written:** 120 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 ✅)
-- **Passing:** 120/120 (100%) - All batches complete! 🎉
-- **Completion:** 16.0% tests written (120/750), 16.0% passing (120/750)
-- **Status:** ✅ Batch 1, 2 & 3 COMPLETE | ⏭️ Ready for Batch 4: Members & Groups
+- **Written:** 234 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 ✅, Batch 4: 114 ✅)
+- **Passing:** 120/120 from Batches 1-3 (100%) | Batch 4: TBD (awaiting execution)
+- **Completion:** 31.2% tests written (234/750)
+- **Status:** ✅ Batch 1, 2, 3 COMPLETE | ✅ Batch 4 IMPLEMENTED (tests pending) | ⏭️ Batch 5: Events & Webhooks
 
 ### Phase 3: Critical Paths
 - **Total Tests:** ~16
@@ -792,10 +847,10 @@ Split into sub-batches for manageability:
 
 ### Overall Progress
 - **Total Tests:** ~816
-- **Written:** 173 (Phase 1: 53 ✅, Phase 2 Batch 1: 36 ✅, Phase 2 Batch 2: 36 ✅, Phase 2 Batch 3: 48 ✅)
-- **Passing:** 169/173 (Phase 1: 49/53 ✅, Phase 2 Batch 1: 36/36 ✅, Phase 2 Batch 2: 36/36 ✅, Batch 3: 48/48 ✅)
-- **Completion:** 21.2% tests written, 20.7% passing
-- **Pass Rate:** 97.7% (169/173) - 4 tests skipped (documented limitations) 🎉
+- **Written:** 287 (Phase 1: 53 ✅, Phase 2: 234 - Batches 1-3: 120 ✅, Batch 4: 114 🔄)
+- **Passing:** 169/287 known results (Phase 1: 49/53 ✅, Phase 2 Batches 1-3: 120/120 ✅, Batch 4: TBD)
+- **Completion:** 35.2% tests written
+- **Pass Rate:** 97.7% (169/173 executed tests) - 4 tests skipped (documented limitations)
 
 ---
 
@@ -853,8 +908,8 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 ---
 
 **Last Updated:** 2025-10-04
-**Current Phase:** Phase 2 Batch 4 - Members & Groups ⏭️
-**Current Task:** Ready to start Batch 4 implementation
+**Current Phase:** Phase 2 Batch 4 - Members & Groups 🔄
+**Current Task:** Implementation complete - executing tests and fixing failures
 
 ---
 

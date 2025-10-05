@@ -60,12 +60,12 @@ export const listMembersQuerySchema = Joi.object({
   fields: Joi.string().optional(),
 
   // Filters
-  'filter[status]': Joi.string().valid('invited', 'active', 'suspended', 'inactive').optional(),
+  'filter[status]': Joi.string().valid('invited', 'active', 'suspended').optional(),
   'filter[status][in]': Joi.string()
     .custom((value) => {
       const statuses = value.split(',');
       const valid = statuses.every((s: string) =>
-        ['invited', 'active', 'suspended', 'inactive'].includes(s)
+        ['invited', 'active', 'suspended'].includes(s)
       );
       if (!valid) throw new Error('Invalid status in filter');
       return value;
@@ -108,10 +108,10 @@ export const inviteMemberSchema = Joi.object({
  */
 export const updateMemberSchema = Joi.object({
   status: Joi.string()
-    .valid('invited', 'active', 'suspended', 'inactive')
+    .valid('invited', 'active', 'suspended')
     .required()
     .messages({
-      'any.only': 'Status must be one of: invited, active, suspended, inactive',
+      'any.only': 'Status must be one of: invited, active, suspended',
       'any.required': 'Status is required',
     }),
 });

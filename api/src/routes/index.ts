@@ -9,6 +9,8 @@ import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import organizationRoutes from './organization.routes';
 import environmentRoutes from './environment.routes';
+import memberRoutes from './member.routes';
+import groupRoutes from './group.routes';
 
 const router = Router();
 
@@ -18,6 +20,8 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/orgs', organizationRoutes);
 router.use('/orgs', environmentRoutes);
+router.use('/orgs/:orgId/members', memberRoutes);
+router.use('/orgs/:orgId/groups', groupRoutes);
 
 // Future routes will be added here:
 // router.use('/devices', deviceRoutes);
