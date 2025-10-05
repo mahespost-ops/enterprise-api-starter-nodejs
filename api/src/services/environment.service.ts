@@ -143,7 +143,7 @@ class EnvironmentService {
 
     if (!environment || environment.organizationId !== orgId) {
       logger.warn(`Environment not found: ${envId} in organization: ${orgId}`);
-      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND_IN_ORG);
     }
 
     logger.debug(`Environment retrieved: ${envId}`);

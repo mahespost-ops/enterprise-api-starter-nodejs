@@ -8,6 +8,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { ForbiddenError } from '../utils/errors';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 
 /**
  * Permission key types as documented in OpenAPI spec
@@ -76,7 +77,7 @@ export const authorize = (
     try {
       // User must be authenticated
       if (!req.user) {
-        throw new ForbiddenError('Authentication required');
+        throw new ForbiddenError(ERROR_MESSAGES.USER_NOT_AUTHENTICATED);
       }
 
       let userPermissions: PermissionKey[];
@@ -128,9 +129,7 @@ export const authorize = (
       );
 
       if (!hasRequiredPermission) {
-        throw new ForbiddenError(
-          `Insufficient permissions. Required: ${requiredPermissions.join(' OR ')}`
-        );
+        throw new ForbiddenError(ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
       }
 
       next();

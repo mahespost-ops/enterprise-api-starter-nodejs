@@ -238,13 +238,13 @@ class UserService {
     const device = await Device.findByPk(deviceId);
 
     if (!device) {
-      throw new NotFoundError(ERROR_MESSAGES.DEVICE_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.DEVICE_NOT_FOUND_OR_ACCESS_DENIED);
     }
 
     // Verify ownership
     if (device.userId !== userId) {
       logger.warn(`User ${userId} attempted to update device ${deviceId} owned by ${device.userId}`);
-      throw new ForbiddenError(ERROR_MESSAGES.FORBIDDEN);
+      throw new ForbiddenError(ERROR_MESSAGES.DEVICE_ACCESS_DENIED);
     }
 
     // Update allowed fields
@@ -271,13 +271,13 @@ class UserService {
     const device = await Device.findByPk(deviceId);
 
     if (!device) {
-      throw new NotFoundError(ERROR_MESSAGES.DEVICE_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.DEVICE_NOT_FOUND_OR_ACCESS_DENIED);
     }
 
     // Verify ownership
     if (device.userId !== userId) {
       logger.warn(`User ${userId} attempted to revoke device ${deviceId} owned by ${device.userId}`);
-      throw new ForbiddenError(ERROR_MESSAGES.FORBIDDEN);
+      throw new ForbiddenError(ERROR_MESSAGES.DEVICE_ACCESS_DENIED);
     }
 
     // Mark device as revoked
@@ -349,13 +349,13 @@ class UserService {
     const session = await UserSession.findByPk(sessionId);
 
     if (!session) {
-      throw new NotFoundError(ERROR_MESSAGES.SESSION_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.SESSION_NOT_FOUND_OR_ACCESS_DENIED);
     }
 
     // Verify ownership
     if (session.userId !== userId) {
       logger.warn(`User ${userId} attempted to revoke session ${sessionId} owned by ${session.userId}`);
-      throw new ForbiddenError(ERROR_MESSAGES.FORBIDDEN);
+      throw new ForbiddenError(ERROR_MESSAGES.SESSION_ACCESS_DENIED);
     }
 
     // Mark session as inactive

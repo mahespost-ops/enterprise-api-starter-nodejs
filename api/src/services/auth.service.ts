@@ -166,7 +166,7 @@ class AuthService {
     // Find user by polymorphic identifier (email or phone)
     const user = await User.findByIdentifier(data.identifier);
     if (!user) {
-      throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.IDENTIFIER_NOT_FOUND);
     }
 
     const { token, code } = await this.generateMagicToken(user.id, data.fingerprint);
@@ -242,7 +242,7 @@ class AuthService {
 
     const user = await User.findByPk(magicToken.userId);
     if (!user) {
-      throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.TOKEN_USER_NOT_FOUND);
     }
 
     // Create or find device
@@ -251,7 +251,7 @@ class AuthService {
 
     // SECURITY: Validate fingerprint format
     if (!data.fingerprint || data.fingerprint.length < 32) {
-      throw new UnauthorizedError('Invalid device fingerprint. Please ensure cookies are enabled.');
+      throw new UnauthorizedError(ERROR_MESSAGES.INVALID_FINGERPRINT);
     }
 
     // Parse user agent for device information (MEDIUM #10 security fix)
@@ -368,7 +368,7 @@ class AuthService {
 
     const user = await User.findByPk(matchedSession.userId);
     if (!user) {
-      throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.SESSION_USER_NOT_FOUND);
     }
 
     // Token rotation for security
@@ -463,7 +463,7 @@ class AuthService {
       where: { id: data.environmentId, organizationId: data.organizationId },
     });
     if (!env) {
-      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
+      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_IN_ORGANIZATION);
     }
 
     // Check if user has access to organization (return 403 if not)

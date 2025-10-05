@@ -118,16 +118,12 @@ export const validateTenantContext = (
 
   // Validate orgId if present in path
   if (orgId && orgId !== req.user.orgId) {
-    throw new ForbiddenError(
-      `Access denied: Organization context mismatch (expected: ${req.user.orgId}, got: ${orgId})`
-    );
+    throw new ForbiddenError(ERROR_MESSAGES.ORGANIZATION_CONTEXT_MISMATCH);
   }
 
   // Validate envId if present in path
   if (envId && envId !== req.user.envId) {
-    throw new ForbiddenError(
-      `Access denied: Environment context mismatch (expected: ${req.user.envId}, got: ${envId})`
-    );
+    throw new ForbiddenError(ERROR_MESSAGES.ENVIRONMENT_CONTEXT_MISMATCH);
   }
 
   next();
