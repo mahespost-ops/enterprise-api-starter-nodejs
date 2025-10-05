@@ -420,6 +420,7 @@ startMemberImpersonation:
       - Hierarchy check is enforced at the group level
 
       **Impersonation Type:** organization
+      **Scope:** Organization-level (not environment-specific)
 
       Returns a new JWT token with impersonation context.
     operationId: startMemberImpersonation
@@ -427,7 +428,6 @@ startMemberImpersonation:
       - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
       - $ref: '../components/parameters.yaml#/memberId'
     requestBody:
       required: true
@@ -451,6 +451,11 @@ startMemberImpersonation:
                 maximum: 480
                 default: 60
                 example: 120
+              environmentId:
+                type: string
+                format: uuid
+                description: Optional environment context (defaults to impersonated user's last_env_id)
+                example: '123e4567-e89b-12d3-a456-426614174002'
     responses:
       '201':
         description: Impersonation session started successfully
@@ -529,7 +534,6 @@ endMemberImpersonation:
       - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
       - $ref: '../components/parameters.yaml#/memberId'
     responses:
       '200':
@@ -582,7 +586,6 @@ getMemberImpersonationStatus:
       - bearerAuth: ["members:impersonate"]
     parameters:
       - $ref: '../components/parameters.yaml#/orgId'
-      - $ref: '../components/parameters.yaml#/envId'
       - $ref: '../components/parameters.yaml#/memberId'
     responses:
       '200':

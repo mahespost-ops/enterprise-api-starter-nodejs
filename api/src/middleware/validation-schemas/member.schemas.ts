@@ -119,11 +119,22 @@ export const updateMemberSchema = Joi.object({
 /**
  * Start Impersonation Request Body
  * POST /api/v1/orgs/{orgId}/envs/{envId}/members/{memberId}/impersonate
+ * POST /api/v1/admin/users/{userId}/impersonate
  */
 export const startImpersonationSchema = Joi.object({
   reason: Joi.string().min(10).max(500).required().messages({
     'string.min': 'Reason must be at least 10 characters (for audit trail)',
     'string.max': 'Reason must not exceed 500 characters',
     'any.required': 'Reason is required for audit trail',
+  }),
+  expiresInMinutes: Joi.number().integer().min(5).max(480).default(60).optional().messages({
+    'number.min': 'Session duration must be at least 5 minutes',
+    'number.max': 'Session duration cannot exceed 480 minutes (8 hours)',
+  }),
+  organizationId: Joi.string().uuid().optional().messages({
+    'string.guid': 'Organization ID must be a valid UUID',
+  }),
+  environmentId: Joi.string().uuid().optional().messages({
+    'string.guid': 'Environment ID must be a valid UUID',
   }),
 });

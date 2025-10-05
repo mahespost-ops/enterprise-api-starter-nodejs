@@ -67,6 +67,10 @@ export type PermissionKey =
  * RBAC Middleware Factory
  * Creates middleware that checks if user has required permissions
  *
+ * For impersonation security:
+ * - Admin/system permissions (admin:*, members:impersonate) → Check ORIGINAL user
+ * - Environment-scoped permissions (devices:*, sessions:*) → Check EFFECTIVE user
+ *
  * @param requiredPermissions - Array of permissions, user needs at least one (OR logic)
  * @returns Middleware function
  */
@@ -80,24 +84,20 @@ export const authorize = (
         throw new ForbiddenError(ERROR_MESSAGES.USER_NOT_AUTHENTICATED);
       }
 
-      let userPermissions: PermissionKey[];
+      const isImpersonating = req.user.impersonation?.impersonationChain &&
+                               req.user.impersonation.impersonationChain.length > 0;
 
-      // Check for impersonation context with permission overrides
-      if (req.user.impersonation?.impersonationChain?.length) {
-        const latestImpersonation = req.user.impersonation.impersonationChain[
-          req.user.impersonation.impersonationChain.length - 1
-        ];
-
-        // SECURITY: Log all actions performed under impersonation
+      // SECURITY: Log all actions performed under impersonation
+      if (isImpersonating) {
         const logger = await import('../config/logger');
         logger.default.warn('Action performed under impersonation', {
           path: req.path,
           method: req.method,
-          originalUserId: req.user.impersonation.originalUserId,
-          effectiveUserId: req.user.impersonation.effectiveUserId,
+          originalUserId: req.user.impersonation!.originalUserId,
+          effectiveUserId: req.user.impersonation!.effectiveUserId,
           targetUserId: req.user.sub,
           targetEmail: req.user.user?.email,
-          impersonationChain: req.user.impersonation.impersonationChain.map(i => ({
+          impersonationChain: req.user.impersonation!.impersonationChain.map(i => ({
             sessionId: i.sessionId,
             userId: i.userId,
             startedAt: i.startedAt,
@@ -106,21 +106,47 @@ export const authorize = (
           ipAddress: req.ip,
           userAgent: req.get('user-agent'),
         });
+      }
 
-        // If permission overrides specified in impersonation, use those
-        if (latestImpersonation.permissions) {
-          userPermissions = Object.entries(latestImpersonation.permissions)
+      // Separate admin/system permissions from environment-scoped permissions
+      const adminPermissions = requiredPermissions.filter(p =>
+        p.startsWith('admin:') || p.startsWith('system:') || p.includes(':impersonate')
+      );
+      const envPermissions = requiredPermissions.filter(p =>
+        !p.startsWith('admin:') && !p.startsWith('system:') && !p.includes(':impersonate')
+      );
+
+      let userPermissions: PermissionKey[] = [];
+      const { getUserPermissions: getPerms } = await import('../services/rbac.service');
+
+      // For admin/system permissions, ALWAYS check ORIGINAL user (security)
+      if (adminPermissions.length > 0) {
+        const userId = isImpersonating
+          ? req.user.impersonation!.originalUserId
+          : req.user.sub;
+        const adminPerms = await getPerms(userId);
+        userPermissions = userPermissions.concat(adminPerms);
+      }
+
+      // For environment permissions, check EFFECTIVE user
+      if (envPermissions.length > 0) {
+        const latestImpersonation = isImpersonating
+          ? req.user.impersonation!.impersonationChain[
+              req.user.impersonation!.impersonationChain.length - 1
+            ]
+          : null;
+
+        if (latestImpersonation?.permissions) {
+          // Permission overrides specified in impersonation
+          const overridePerms = Object.entries(latestImpersonation.permissions)
             .filter(([_, allowed]) => allowed)
             .map(([perm]) => perm as PermissionKey);
+          userPermissions = userPermissions.concat(overridePerms);
         } else {
-          // No overrides, get effective user's permissions
-          const { getUserPermissions: getPerms } = await import('../services/rbac.service');
-          userPermissions = await getPerms(req.user.sub);
+          // Get effective user's permissions
+          const effectivePerms = await getPerms(req.user.sub);
+          userPermissions = userPermissions.concat(effectivePerms);
         }
-      } else {
-        // No impersonation, get user's normal permissions
-        const { getUserPermissions: getPerms } = await import('../services/rbac.service');
-        userPermissions = await getPerms(req.user.sub);
       }
 
       // Check if user has ANY of the required permissions (OR logic)

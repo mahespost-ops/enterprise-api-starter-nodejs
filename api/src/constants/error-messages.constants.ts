@@ -85,6 +85,14 @@ export const ERROR_MESSAGES = {
   ORGANIZATION_CONTEXT_MISMATCH: 'Access denied: Organization context mismatch',
   ENVIRONMENT_CONTEXT_MISMATCH: 'Access denied: Environment context mismatch',
 
+  // Impersonation
+  IMPERSONATION_SESSION_NOT_FOUND: 'Impersonation session not found',
+  NOT_CURRENTLY_IMPERSONATING: 'You are not currently impersonating anyone',
+  CANNOT_IMPERSONATE_SELF: 'Cannot impersonate yourself',
+  CANNOT_IMPERSONATE_PEER_OR_SUPERIOR: 'Cannot impersonate member at same or higher hierarchy level',
+  IMPERSONATION_SESSION_EXPIRED: 'Impersonation session has expired',
+  INVALID_IMPERSONATION_DURATION: 'Impersonation duration must be between 5 and 480 minutes',
+
   // Generic
   UNKNOWN_ERROR: 'Unknown error',
 } as const;

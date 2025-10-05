@@ -6,7 +6,10 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/async-handler';
 import { HTTP_STATUS } from '../constants/http-status.constants';
+import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import memberService from '../services/member.service';
+import impersonationService from '../services/impersonation.service';
+import { ForbiddenError, NotFoundError } from '../utils/errors';
 import logger from '../config/logger';
 
 /**
@@ -182,57 +185,120 @@ export const getMemberPermissions = asyncHandler(
 
 /**
  * @desc    Start org-scoped impersonation
- * @route   POST /api/v1/orgs/:orgId/envs/:envId/members/:memberId/impersonate
+ * @route   POST /api/v1/orgs/:orgId/members/:memberId/impersonate
  * @access  Private (requires members:impersonate permission)
  */
 export const startImpersonation = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { memberId } = req.params;
+    const { orgId, memberId } = req.params;
+    const { reason, expiresInMinutes, environmentId } = req.body;
+    const originalUserId = req.user!.sub;
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
 
-    logger.debug(`Starting impersonation for member: ${memberId}`);
+    logger.debug(`Starting impersonation for member: ${memberId} by user: ${originalUserId}`);
 
-    // TODO: Implement impersonation logic
-    // For now, return placeholder response
-    res.status(HTTP_STATUS.OK).json({
-      token: 'placeholder-impersonation-token',
-      impersonationChain: [],
+    // Verify member exists and get their userId
+    const member = await memberService.getMemberById(memberId, orgId);
+    const impersonatedUserId = member.userId;
+
+    // Use provided environmentId or default to user's current environment
+    const targetEnvId = environmentId || req.user!.envId;
+
+    // Start organization impersonation
+    const result = await impersonationService.startOrganizationImpersonation({
+      originalUserId,
+      impersonatedUserId,
+      impersonationType: 'organization',
+      reason,
+      expiresInMinutes,
+      environmentId: targetEnvId,
+      ipAddress,
+      userAgent,
     });
+
+    res.status(HTTP_STATUS.CREATED).json(result);
   }
 );
 
 /**
  * @desc    End org-scoped impersonation
- * @route   DELETE /api/v1/orgs/:orgId/envs/:envId/members/:memberId/impersonate
+ * @route   DELETE /api/v1/orgs/:orgId/members/:memberId/impersonate
  * @access  Private (currently impersonating)
  */
 export const endImpersonation = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { memberId } = req.params;
+    const { orgId, memberId } = req.params;
+    const impersonation = req.user?.impersonation;
 
     logger.debug(`Ending impersonation for member: ${memberId}`);
 
-    // TODO: Implement end impersonation logic
-    res.status(HTTP_STATUS.OK).json({
-      token: 'placeholder-restored-token',
-    });
+    // Verify currently impersonating
+    if (!impersonation) {
+      throw new ForbiddenError(ERROR_MESSAGES.NOT_CURRENTLY_IMPERSONATING);
+    }
+
+    // SECURITY: Verify member exists
+    const member = await memberService.getMemberById(memberId, orgId);
+
+    // SECURITY: Verify we're actually impersonating THIS member (not someone else)
+    if (member.userId !== impersonation.effectiveUserId) {
+      throw new NotFoundError(ERROR_MESSAGES.IMPERSONATION_SESSION_NOT_FOUND);
+    }
+
+    // Get session ID from impersonation chain
+    const sessionId = impersonation.impersonationChain[0]?.sessionId;
+    if (!sessionId) {
+      throw new NotFoundError(ERROR_MESSAGES.IMPERSONATION_SESSION_NOT_FOUND);
+    }
+
+    // End the impersonation session
+    const result = await impersonationService.endImpersonation(
+      sessionId,
+      impersonation.originalUserId
+    );
+
+    res.status(HTTP_STATUS.OK).json(result);
   }
 );
 
 /**
  * @desc    Get impersonation status
- * @route   GET /api/v1/orgs/:orgId/envs/:envId/members/:memberId/impersonate
+ * @route   GET /api/v1/orgs/:orgId/members/:memberId/impersonate
  * @access  Private (requires members:impersonate permission)
  */
 export const getImpersonationStatus = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { memberId } = req.params;
+    const { orgId, memberId } = req.params;
     const isImpersonating = req.user?.impersonation !== undefined;
 
     logger.debug(`Getting impersonation status for member: ${memberId}`);
 
+    // SECURITY: Verify member exists before revealing impersonation status
+    const member = await memberService.getMemberById(memberId, orgId);
+
+    // SECURITY: Verify we're actually impersonating THIS member (not someone else)
+    if (isImpersonating) {
+      const effectiveUserId = req.user!.impersonation!.effectiveUserId;
+      if (member.userId !== effectiveUserId) {
+        // Currently impersonating, but not this member
+        res.status(HTTP_STATUS.OK).json({
+          isImpersonating: false,
+          originalUserId: null,
+          effectiveUserId: null,
+          impersonationType: null,
+        });
+        return;
+      }
+    }
+
     res.status(HTTP_STATUS.OK).json({
       isImpersonating,
-      impersonationChain: req.user?.impersonation?.impersonationChain || undefined,
+      originalUserId: isImpersonating ? req.user!.impersonation!.originalUserId : null,
+      effectiveUserId: isImpersonating ? req.user!.impersonation!.effectiveUserId : null,
+      impersonationType: isImpersonating
+        ? req.user!.impersonation!.impersonationChain[0]?.impersonationType
+        : null,
     });
   }
 );

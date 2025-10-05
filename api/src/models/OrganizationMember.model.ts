@@ -5,6 +5,7 @@
 
 import { Model, DataTypes, Optional, UUIDV1 } from 'sequelize';
 import sequelize from '../config/database';
+import type { User } from './User.model';
 
 export type MemberStatus = 'active' | 'invited' | 'suspended';
 
@@ -53,7 +54,7 @@ export class OrganizationMember
   declare deletedAt: Date | null;
 
   // Association declarations for TypeScript
-  declare user?: any; // User model association
+  declare user?: User; // User model association
 
   /**
    * Find members by organization with optional filters
@@ -73,6 +74,7 @@ export class OrganizationMember
     const { Op } = await import('sequelize');
     const { User } = await import('./User.model');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId };
 
     if (filters.status) {

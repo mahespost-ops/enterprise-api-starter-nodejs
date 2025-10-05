@@ -116,4 +116,44 @@ router.get(
   controller.getMemberPermissions
 );
 
+/**
+ * @route   POST /api/v1/orgs/:orgId/members/:memberId/impersonate
+ * @desc    Start organization-scoped impersonation
+ * @access  Private (requires members:impersonate)
+ */
+router.post(
+  '/:memberId/impersonate',
+  authenticate,
+  validate.params(memberSchemas.memberPathParamsSchema),
+  authorize(['members:impersonate']),
+  validate.body(memberSchemas.startImpersonationSchema),
+  controller.startImpersonation
+);
+
+/**
+ * @route   DELETE /api/v1/orgs/:orgId/members/:memberId/impersonate
+ * @desc    End organization-scoped impersonation
+ * @access  Private (requires members:impersonate)
+ */
+router.delete(
+  '/:memberId/impersonate',
+  authenticate,
+  validate.params(memberSchemas.memberPathParamsSchema),
+  authorize(['members:impersonate']),
+  controller.endImpersonation
+);
+
+/**
+ * @route   GET /api/v1/orgs/:orgId/members/:memberId/impersonate
+ * @desc    Get impersonation status
+ * @access  Private (requires members:impersonate)
+ */
+router.get(
+  '/:memberId/impersonate',
+  authenticate,
+  validate.params(memberSchemas.memberPathParamsSchema),
+  authorize(['members:impersonate']),
+  controller.getImpersonationStatus
+);
+
 export default router;

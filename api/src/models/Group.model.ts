@@ -67,6 +67,7 @@ export class Group extends Model<GroupAttributes, GroupCreationAttributes> imple
   ): Promise<{ rows: Group[]; count: number }> {
     const { Op } = await import('sequelize');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId };
 
     if (filters.parentId !== undefined) {
