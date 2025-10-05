@@ -66,10 +66,38 @@ validateEnv();
 function validateCors(): void {
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
+  // SECURITY: Reject wildcard origin in production
+  if (corsOrigin === '*' && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'SECURITY ERROR: Wildcard CORS origin (*) is not allowed in production. ' +
+      'Set CORS_ORIGIN to specific domain(s) separated by commas.'
+    );
+  }
+
+  // SECURITY: Reject 'null' origin (dangerous for security)
+  if (corsOrigin === 'null') {
+    throw new Error(
+      'SECURITY ERROR: CORS origin "null" is forbidden. Use specific domain(s).'
+    );
+  }
+
+  // SECURITY: Validate origin format (must be valid URLs)
+  if (corsOrigin !== '*') {
+    const origins = corsOrigin.split(',').map(o => o.trim());
+    for (const origin of origins) {
+      try {
+        new URL(origin);
+      } catch {
+        throw new Error(
+          `SECURITY ERROR: Invalid CORS origin "${origin}". Must be valid URL (e.g., https://example.com) or "*" for development only.`
+        );
+      }
+    }
+  }
+
+  // Warning for wildcard in development
   if (corsOrigin === '*') {
-    // Using wildcard origin - credentials must be disabled
-    // Note: This is enforced in app.ts CORS config
-    console.warn('⚠️  SECURITY WARNING: CORS configured with wildcard origin (*). Credentials will be disabled for security.');
+    console.warn('⚠️  SECURITY WARNING: CORS configured with wildcard origin (*). Credentials will be disabled for security. Use specific origins in production.');
   }
 }
 

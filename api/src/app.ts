@@ -110,20 +110,13 @@ async function createApp(): Promise<Application> {
   // ============================================
   // 6. API Documentation (Swagger UI)
   // ============================================
-  if (config.apiDocs.enabled) {
-    // Security Warning: API docs should be disabled in production or protected with authentication
-    if (config.isProduction) {
-      logger.warn('⚠️  SECURITY WARNING: API documentation is enabled in production without authentication. ' +
-        'Set API_DOCS_ENABLED=false or add authentication middleware.');
-    }
-
+  // SECURITY: Only enable API docs in non-production environments
+  if (config.apiDocs.enabled && !config.isProduction) {
     try {
       const swaggerDocument = await SwaggerParser.dereference(
         path.join(__dirname, '../api-docs/index.yaml')
       );
 
-      // TODO: Add authentication middleware when implemented
-      // app.use('/api-docs', authMiddleware, requireAdmin, swaggerUi.serve, ...)
       app.use(
         '/api-docs',
         swaggerUi.serve,
@@ -141,6 +134,9 @@ async function createApp(): Promise<Application> {
         details: error,
       });
     }
+  } else if (config.apiDocs.enabled && config.isProduction) {
+    logger.warn('⚠️  SECURITY: API documentation disabled in production for security. ' +
+      'Set NODE_ENV=development to enable docs in non-production environments.');
   }
 
   // ============================================

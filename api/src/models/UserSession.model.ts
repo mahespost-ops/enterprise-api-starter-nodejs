@@ -75,6 +75,19 @@ export class UserSession
   }
 
   /**
+   * Find active sessions by user ID
+   * Used for logout and token refresh with constant-time lookup
+   */
+  static async findActiveByUserId(userId: string): Promise<UserSession[]> {
+    return this.findAll({
+      where: {
+        userId,
+        isActive: true,
+      },
+    });
+  }
+
+  /**
    * Revoke session
    */
   async revoke(revokedBy?: string, reason?: string): Promise<void> {

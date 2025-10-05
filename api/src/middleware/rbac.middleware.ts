@@ -87,6 +87,25 @@ export const authorize = (
           req.user.impersonation.impersonationChain.length - 1
         ];
 
+        // SECURITY: Log all actions performed under impersonation
+        const logger = await import('../config/logger');
+        logger.default.warn('Action performed under impersonation', {
+          path: req.path,
+          method: req.method,
+          originalUserId: req.user.impersonation.originalUserId,
+          effectiveUserId: req.user.impersonation.effectiveUserId,
+          targetUserId: req.user.sub,
+          targetEmail: req.user.user?.email,
+          impersonationChain: req.user.impersonation.impersonationChain.map(i => ({
+            sessionId: i.sessionId,
+            userId: i.userId,
+            startedAt: i.startedAt,
+            impersonationType: i.impersonationType
+          })),
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+
         // If permission overrides specified in impersonation, use those
         if (latestImpersonation.permissions) {
           userPermissions = Object.entries(latestImpersonation.permissions)

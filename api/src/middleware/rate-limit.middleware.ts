@@ -86,10 +86,45 @@ export const publicLimiter = rateLimitLib({
 });
 
 /**
+ * Very strict rate limiter for magic token verification
+ * Prevents brute force attacks on 6-digit codes
+ * SECURITY: Only 3 attempts per 15 minutes to prevent enumeration
+ * Disabled in test environment to prevent test interference
+ */
+export const verifyLimiter = rateLimitLib({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Only 3 verification attempts
+  skip: () => config.env === 'test',
+  skipSuccessfulRequests: true, // Don't count successful verifications
+  message: {
+    error: 'Too many verification attempts',
+    message: 'Too many verification attempts. Please request a new magic link.',
+    retryAfter: 15, // minutes
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Verify rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      requestId: (req as any).id,
+    });
+
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Too many verification attempts. Please request a new magic link.',
+      retryAfter: 15,
+    });
+  },
+});
+
+/**
  * Export rate limiters as named object for convenience
  */
 export const rateLimit = {
   apiEndpoint: apiLimiter,
   authEndpoint: authLimiter,
   publicEndpoint: publicLimiter,
+  verifyEndpoint: verifyLimiter,
 };

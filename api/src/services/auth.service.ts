@@ -249,6 +249,11 @@ class AuthService {
     const deviceId = crypto.randomUUID();
     const deviceName = this.extractDeviceName(data.userAgent);
 
+    // SECURITY: Validate fingerprint format
+    if (!data.fingerprint || data.fingerprint.length < 32) {
+      throw new UnauthorizedError('Invalid device fingerprint. Please ensure cookies are enabled.');
+    }
+
     // Parse user agent for device information (MEDIUM #10 security fix)
     const parsedUA = parseUserAgent(data.userAgent);
 
@@ -256,12 +261,12 @@ class AuthService {
     await Device.create({
       id: deviceId,
       userId: user.id,
-      fingerprintHash: data.fingerprint ? await bcrypt.hash(data.fingerprint, 10) : await bcrypt.hash(deviceId, 10),
+      fingerprintHash: await bcrypt.hash(data.fingerprint, 10),
       deviceName: deviceName,
       deviceType: parsedUA.deviceType,
       os: parsedUA.os,
       browser: parsedUA.browser,
-      trustStatus: TRUST_STATUS.TRUSTED,
+      trustStatus: TRUST_STATUS.PENDING, // SECURITY: New devices start as pending, not auto-trusted
       firstSeenIp: data.ipAddress || NETWORK_DEFAULTS.LOCALHOST_IP, // Use real IP from request
       lastSeenIp: data.ipAddress || NETWORK_DEFAULTS.LOCALHOST_IP, // Use real IP from request
       createdAt: new Date(),
@@ -316,6 +321,7 @@ class AuthService {
 
   /**
    * Refresh access token using refresh token
+   * SECURITY: Uses constant-time lookup to prevent timing attacks
    */
   async refreshAccessToken(refreshToken: string): Promise<RefreshResponse> {
     logger.info('Refreshing access token');
@@ -324,20 +330,31 @@ class AuthService {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
 
-    // Find session with matching refresh token
-    // Must check all sessions since refresh token is hashed
-    const sessions = await UserSession.findAll();
-    let matchedSession = null;
+    // SECURITY FIX: Find all active sessions (prevents timing oracle)
+    // We must check all sessions since refresh token is hashed
+    // However, we limit to active sessions only to reduce attack surface
+    const sessions = await UserSession.findAll({
+      where: { isActive: true },
+    });
 
+    let matchedSession: UserSession | null = null;
+    let foundMatch = false;
+
+    // SECURITY: Always iterate through ALL sessions to prevent timing oracle
+    // Early exit would reveal valid tokens via response time differences
     for (const session of sessions) {
       const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
-      if (isMatch && session.isActive) {
+      if (isMatch && !foundMatch) {
         matchedSession = session;
-        break;
+        foundMatch = true;
+        // Don't break - continue iterating to maintain constant time
       }
     }
 
+    // SECURITY: Add artificial delay if no match to normalize timing
     if (!matchedSession) {
+      // Sleep to match average bcrypt comparison time
+      await new Promise(resolve => setTimeout(resolve, 100));
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
 
@@ -384,24 +401,39 @@ class AuthService {
 
   /**
    * Logout user and invalidate session
+   * SECURITY: Uses constant-time lookup to prevent timing attacks
    */
   async logout(userId: string, refreshToken?: string): Promise<void> {
     logger.info(`Logging out user: ${userId}`);
 
     if (refreshToken) {
-      const sessions = await UserSession.findAll({ where: { userId } });
+      // SECURITY FIX: Only fetch user's sessions (not all sessions)
+      const sessions = await UserSession.findActiveByUserId(userId);
 
+      let matchedSession: UserSession | null = null;
+      let foundMatch = false;
+
+      // SECURITY: Always iterate through ALL user sessions to prevent timing oracle
       for (const session of sessions) {
         const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
-        if (isMatch) {
-          await session.revoke();
-          logger.info(`Session ${session.id} revoked`);
-          return;
+        if (isMatch && !foundMatch) {
+          matchedSession = session;
+          foundMatch = true;
+          // Don't break - continue iterating to maintain constant time
         }
+      }
+
+      if (matchedSession) {
+        await matchedSession.revoke();
+        logger.info(`Session ${matchedSession.id} revoked`);
+      } else {
+        // SECURITY: Add artificial delay if no match to normalize timing
+        await new Promise(resolve => setTimeout(resolve, 100));
+        logger.warn(`Logout attempted with invalid refresh token for user ${userId}`);
       }
     } else {
       // Revoke all sessions for user
-      const sessions = await UserSession.findAll({ where: { userId } });
+      const sessions = await UserSession.findActiveByUserId(userId);
       for (const session of sessions) {
         await session.revoke();
       }

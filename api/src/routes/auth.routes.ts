@@ -52,11 +52,11 @@ router.post(
  * @route   POST /api/v1/auth/verify-token
  * @desc    Verify magic token and return JWT tokens
  * @access  Public
- * @rateLimit Standard API rate limit
+ * @rateLimit STRICT: 3 attempts per 15 minutes (prevents brute force)
  */
 router.post(
   '/verify-token',
-  rateLimit.apiEndpoint,
+  rateLimit.verifyEndpoint,
   validate.body(authSchemas.verifyTokenSchema),
   authController.verifyMagicToken
 );
