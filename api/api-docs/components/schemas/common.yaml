@@ -10,12 +10,12 @@ Error:
       example: 400
     message:
       type: string
-      description: Error message
-      example: Bad Request
+      description: Detailed, human-readable explanation of what went wrong
+      example: Invalid input parameters
     error:
       type: string
-      description: Detailed error description
-      example: Invalid input parameters
+      description: Generic HTTP status message
+      example: Bad Request
     timestamp:
       type: string
       format: date-time
@@ -39,7 +39,7 @@ ValidationError:
       example: 422
     message:
       type: string
-      description: Error message
+      description: Detailed, human-readable explanation of what went wrong
       example: Validation Failed
     errors:
       type: array

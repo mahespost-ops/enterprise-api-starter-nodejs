@@ -254,8 +254,10 @@ getEnvironment:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 400
-              message: Bad Request
-              error: Cannot delete default environment or last remaining environment
+              message: Cannot delete default environment or last remaining environment
+              error: Bad Request
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/orgs/123/envs/456
       '401':
         $ref: '../index.yaml#/components/responses/UnauthorizedError'
       '403':

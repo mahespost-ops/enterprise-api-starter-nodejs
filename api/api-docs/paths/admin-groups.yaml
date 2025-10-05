@@ -281,8 +281,10 @@ updateGroup:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: Invalid parent relationship would create a cycle
+              message: Invalid parent relationship would create a cycle
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/groups/123
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':

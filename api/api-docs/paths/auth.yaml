@@ -27,8 +27,10 @@ register:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: User with this email already exists
+              message: User with this email already exists
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/auth/request-token
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '429':

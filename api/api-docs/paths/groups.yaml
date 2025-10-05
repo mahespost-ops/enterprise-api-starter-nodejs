@@ -239,8 +239,10 @@ updateGroup:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: Cannot move group - would create circular reference
+              message: Cannot move group - would create circular reference
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/orgs/123/envs/456/groups/789
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -390,8 +392,10 @@ addGroupMember:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: User is already a member of this group
+              message: User is already a member of this group
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/orgs/123/envs/456/groups/789/members
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':

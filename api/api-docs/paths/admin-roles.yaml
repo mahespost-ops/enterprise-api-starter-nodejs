@@ -207,8 +207,10 @@ updateRole:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: System-defined roles cannot be updated
+              message: System-defined roles cannot be updated
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -245,8 +247,10 @@ deleteRole:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: System-defined roles cannot be deleted
+              message: System-defined roles cannot be deleted
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123
       '500':
         $ref: '../index.yaml#/components/responses/InternalServerError'
 
@@ -284,8 +288,10 @@ createRole:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: Role with this name already exists
+              message: Role with this name already exists
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -362,8 +368,10 @@ addRolePermission:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: Permission is already assigned to this role
+              message: Permission is already assigned to this role
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123/permissions
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -400,8 +408,10 @@ removeRolePermission:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: System-defined roles cannot be modified
+              message: System-defined roles cannot be modified
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123/permissions/456
       '500':
         $ref: '../index.yaml#/components/responses/InternalServerError'
 

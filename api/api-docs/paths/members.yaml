@@ -276,8 +276,10 @@ inviteMember:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: User is already a member of this organization
+              message: User is already a member of this organization
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/orgs/123/members
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
@@ -496,13 +498,17 @@ startMemberImpersonation:
               hierarchyViolation:
                 value:
                   status: 403
-                  message: Forbidden
-                  error: Cannot impersonate member at same or higher hierarchy level
+                  message: Cannot impersonate member at same or higher hierarchy level
+                  error: Forbidden
+                  timestamp: '2025-10-04T12:34:56.789Z'
+                  path: /api/v1/orgs/123/members/456/impersonate
               insufficientPermissions:
                 value:
                   status: 403
-                  message: Forbidden
-                  error: Insufficient permissions to impersonate members
+                  message: Insufficient permissions to impersonate members
+                  error: Forbidden
+                  timestamp: '2025-10-04T12:34:56.789Z'
+                  path: /api/v1/orgs/123/members/456/impersonate
       '404':
         $ref: '../index.yaml#/components/responses/NotFoundError'
       '422':

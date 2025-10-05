@@ -483,8 +483,10 @@ addGroupMember:
               $ref: '../components/schemas/common.yaml#/Error'
             example:
               status: 409
-              message: Conflict
-              error: User is already a member of this group
+              message: User is already a member of this group
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/members/123/groups
       '422':
         $ref: '../index.yaml#/components/responses/ValidationError'
       '500':
