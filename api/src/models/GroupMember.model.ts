@@ -26,6 +26,34 @@ export class GroupMember
   declare userId: string;
   declare addedBy: string | null;
   declare readonly createdAt: Date;
+
+  /**
+   * Find members by group
+   */
+  static async findByGroup(
+    groupId: string,
+    limit = 20,
+    offset = 0
+  ): Promise<{ rows: GroupMember[]; count: number }> {
+    return this.findAndCountAll({
+      where: { groupId },
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+  }
+
+  /**
+   * Find member by group and user
+   */
+  static async findByGroupAndUser(groupId: string, userId: string): Promise<GroupMember | null> {
+    return this.findOne({
+      where: {
+        groupId,
+        userId,
+      },
+    });
+  }
 }
 
 GroupMember.init(

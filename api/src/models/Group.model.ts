@@ -49,6 +49,87 @@ export class Group extends Model<GroupAttributes, GroupCreationAttributes> imple
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
+
+  /**
+   * Find groups by organization with optional filters
+   */
+  static async findByOrganization(
+    organizationId: string,
+    filters: {
+      parentId?: string | null;
+      hierarchyLevel?: number;
+      isActive?: boolean;
+      createdAtGte?: Date;
+      createdAtLte?: Date;
+    } = {},
+    limit = 20,
+    offset = 0
+  ): Promise<{ rows: Group[]; count: number }> {
+    const { Op } = await import('sequelize');
+
+    const where: any = { organizationId };
+
+    if (filters.parentId !== undefined) {
+      where.parentId = filters.parentId;
+    }
+
+    if (filters.hierarchyLevel !== undefined) {
+      where.hierarchyLevel = filters.hierarchyLevel;
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    if (filters.createdAtGte || filters.createdAtLte) {
+      where.createdAt = {};
+      if (filters.createdAtGte) {
+        where.createdAt[Op.gte] = filters.createdAtGte;
+      }
+      if (filters.createdAtLte) {
+        where.createdAt[Op.lte] = filters.createdAtLte;
+      }
+    }
+
+    return this.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+  }
+
+  /**
+   * Find group by ID in specific organization
+   */
+  static async findByIdInOrg(groupId: string, organizationId: string): Promise<Group | null> {
+    return this.findOne({
+      where: {
+        id: groupId,
+        organizationId,
+      },
+    });
+  }
+
+  /**
+   * Find child groups of a parent
+   */
+  static async findChildren(
+    parentId: string,
+    organizationId: string,
+    limit = 20,
+    offset = 0
+  ): Promise<{ rows: Group[]; count: number }> {
+    return this.findAndCountAll({
+      where: {
+        organizationId,
+        parentId,
+      },
+      limit,
+      offset,
+      order: [['hierarchyLevel', 'ASC'], ['name', 'ASC']],
+    });
+  }
 }
 
 Group.init(

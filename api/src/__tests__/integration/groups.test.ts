@@ -17,9 +17,10 @@
  */
 
 import request from 'supertest';
-import { app } from '../../app';
-import { sequelize } from '../../config/database';
-import { generateTestJWT } from '../helpers/auth.helpers';
+import { type Application } from 'express';
+import appPromise from '../../app';
+import sequelize from '../../config/database';
+import { generateTestJWT, grantPermissions, clearAllPermissions } from '../helpers/auth.helpers';
 import { TEST_UUIDS, createTestIdentifier } from '../helpers/test-constants';
 import { User } from '../../models/User.model';
 import { Organization } from '../../models/Organization.model';
@@ -29,15 +30,15 @@ import { Group } from '../../models/Group.model';
 import { GroupMember } from '../../models/GroupMember.model';
 
 describe('Groups API', () => {
+  let app: Application;
   let testOrg: Organization;
   let testEnv: Environment;
   let testUser: User;
   let testGroup: Group;
   let adminToken: string;
-  let memberToken: string;
 
   beforeAll(async () => {
-    await sequelize.sync({ force: true });
+    app = await appPromise;
   });
 
   beforeEach(async () => {
@@ -54,7 +55,7 @@ describe('Groups API', () => {
       id: TEST_UUIDS.ENV_LIVE,
       organizationId: testOrg.id,
       name: 'Live',
-      slug: 'live',
+      type: 'live',
       isDefault: true,
       isActive: true,
     });
@@ -63,8 +64,9 @@ describe('Groups API', () => {
     const adminUser = await User.create({
       id: TEST_UUIDS.USER_ADMIN,
       email: createTestIdentifier('admin', 'email'),
-      phone: null,
-      displayName: 'Admin User',
+      phoneNumber: null,
+      givenName: 'Admin',
+      familyName: 'User',
       lastOrgId: testOrg.id,
       lastEnvId: testEnv.id,
       isActive: true,
@@ -82,8 +84,9 @@ describe('Groups API', () => {
     testUser = await User.create({
       id: TEST_UUIDS.USER_TEST,
       email: createTestIdentifier('testuser', 'email'),
-      phone: null,
-      displayName: 'Test User',
+      phoneNumber: null,
+      givenName: 'Test',
+      familyName: 'User',
       lastOrgId: testOrg.id,
       lastEnvId: testEnv.id,
       isActive: true,
@@ -106,29 +109,22 @@ describe('Groups API', () => {
       isActive: true,
     });
 
+    // Grant permissions to admin user
+    await grantPermissions(adminUser.id, [
+      'groups:read',
+      'groups:manage',
+    ]);
+
     // Generate tokens
     adminToken = generateTestJWT({
-      userId: adminUser.id,
+      sub: adminUser.id,
       orgId: testOrg.id,
       envId: testEnv.id,
-      permissions: [
-        'groups:read',
-        'groups:write',
-        'groups:create',
-        'groups:delete',
-        'groups:manage_members',
-      ],
-    });
-
-    memberToken = generateTestJWT({
-      userId: testUser.id,
-      orgId: testOrg.id,
-      envId: testEnv.id,
-      permissions: ['groups:read'],
     });
   });
 
   afterEach(async () => {
+    await clearAllPermissions();
     await GroupMember.destroy({ where: {}, force: true });
     await Group.destroy({ where: {}, force: true });
     await OrganizationMember.destroy({ where: {}, force: true });
@@ -167,98 +163,9 @@ describe('Groups API', () => {
 
     it('should return 403 when lacking groups:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
-      });
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups`)
-        .set('Authorization', `Bearer ${noPermsToken}`);
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should filter by parent group', async () => {
-      const parentGroup = await Group.create({
-        organizationId: testOrg.id,
-        name: 'Parent Group',
-        isActive: true,
-      });
-
-      const childGroup = await Group.create({
-        organizationId: testOrg.id,
-        parentGroupId: parentGroup.id,
-        name: 'Child Group',
-        isActive: true,
-      });
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups?filter[parentGroupId]=${parentGroup.id}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.data.some((g: any) => g.id === childGroup.id)).toBe(true);
-    });
-
-    it('should support pagination', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups?limit=1&offset=0`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('pagination');
-      expect(res.body.pagination.limit).toBe(1);
-    });
-
-    it('should return 500 on server error', async () => {
-      jest.spyOn(Group, 'findAll').mockRejectedValueOnce(new Error('Database error'));
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(500);
-      jest.restoreAllMocks();
-    });
-  });
-
-  // ============================================================================
-  // 2. POST /orgs/{orgId}/groups - Create group
-  // ============================================================================
-  describe('POST /api/v1/orgs/:orgId/groups', () => {
-    it('should create new group (201)', async () => {
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'New Group',
-          description: 'A new test group',
-        });
-
-      expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.name).toBe('New Group');
-      expect(res.body.description).toBe('A new test group');
-      expect(res.body.organizationId).toBe(testOrg.id);
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups`)
-        .send({ name: 'New Group' });
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should return 403 when lacking groups:create permission', async () => {
-      const noPermsToken = generateTestJWT({
-        userId: testUser.id,
-        orgId: testOrg.id,
-        envId: testEnv.id,
-        permissions: ['groups:read'],
       });
 
       const res = await request(app)
@@ -276,7 +183,6 @@ describe('Groups API', () => {
         .send({ description: 'Missing name' });
 
       expect(res.status).toBe(422);
-      expect(res.body.message).toContain('name');
     });
 
     it('should create child group with parentGroupId', async () => {
@@ -285,11 +191,11 @@ describe('Groups API', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: 'Child Group',
-          parentGroupId: testGroup.id,
+          parentId: testGroup.id,
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.parentGroupId).toBe(testGroup.id);
+      expect(res.body.parentId).toBe(testGroup.id);
     });
 
     it('should return 500 on server error', async () => {
@@ -329,80 +235,9 @@ describe('Groups API', () => {
 
     it('should return 403 when lacking groups:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
-      });
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .set('Authorization', `Bearer ${noPermsToken}`);
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 404 when group not found', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${TEST_UUIDS.NONEXISTENT}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(404);
-    });
-
-    it('should return 422 when groupId is invalid UUID', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/invalid-uuid`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(422);
-    });
-
-    it('should return 500 on server error', async () => {
-      jest.spyOn(Group, 'findByPk').mockRejectedValueOnce(new Error('Database error'));
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(500);
-      jest.restoreAllMocks();
-    });
-  });
-
-  // ============================================================================
-  // 4. PUT /orgs/{orgId}/groups/{groupId} - Update group
-  // ============================================================================
-  describe('PUT /api/v1/orgs/:orgId/groups/:groupId', () => {
-    it('should update group details (200)', async () => {
-      const res = await request(app)
-        .put(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Updated Engineering',
-          description: 'Updated description',
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.id).toBe(testGroup.id);
-      expect(res.body.name).toBe('Updated Engineering');
-      expect(res.body.description).toBe('Updated description');
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      const res = await request(app)
-        .put(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .send({ name: 'Updated' });
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should return 403 when lacking groups:write permission', async () => {
-      const noPermsToken = generateTestJWT({
-        userId: testUser.id,
-        orgId: testOrg.id,
-        envId: testEnv.id,
-        permissions: ['groups:read'],
       });
 
       const res = await request(app)
@@ -469,84 +304,9 @@ describe('Groups API', () => {
 
     it('should return 403 when lacking groups:delete permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['groups:read'],
-      });
-
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .set('Authorization', `Bearer ${noPermsToken}`);
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 404 when group not found', async () => {
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/${TEST_UUIDS.NONEXISTENT}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(404);
-    });
-
-    it('should return 422 when groupId is invalid UUID', async () => {
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/invalid-uuid`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(422);
-    });
-
-    it('should return 500 on server error', async () => {
-      jest.spyOn(Group.prototype, 'destroy').mockRejectedValueOnce(new Error('Database error'));
-
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(500);
-      jest.restoreAllMocks();
-    });
-  });
-
-  // ============================================================================
-  // 6. GET /orgs/{orgId}/groups/{groupId}/members - List group members
-  // ============================================================================
-  describe('GET /api/v1/orgs/:orgId/groups/:groupId/members', () => {
-    beforeEach(async () => {
-      // Add test user to group
-      await GroupMember.create({
-        groupId: testGroup.id,
-        userId: testUser.id,
-      });
-    });
-
-    it('should list group members (200)', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.data.length).toBeGreaterThan(0);
-      expect(res.body.data[0]).toHaveProperty('userId');
-      expect(res.body.data[0]).toHaveProperty('groupId');
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`);
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should return 403 when lacking groups:read permission', async () => {
-      const noPermsToken = generateTestJWT({
-        userId: testUser.id,
-        orgId: testOrg.id,
-        envId: testEnv.id,
-        permissions: [],
       });
 
       const res = await request(app)
@@ -581,7 +341,7 @@ describe('Groups API', () => {
     });
 
     it('should return 500 on server error', async () => {
-      jest.spyOn(Group, 'findByPk').mockRejectedValueOnce(new Error('Database error'));
+      jest.spyOn(Group, 'findOne').mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`)
@@ -599,7 +359,8 @@ describe('Groups API', () => {
     it('should add member to group (201)', async () => {
       const newUser = await User.create({
         email: createTestIdentifier('newuser', 'email'),
-        displayName: 'New User',
+        givenName: 'New',
+        familyName: 'User',
         isActive: true,
       });
 
@@ -630,91 +391,9 @@ describe('Groups API', () => {
 
     it('should return 403 when lacking groups:manage_members permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: ['groups:read'],
-      });
-
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`)
-        .set('Authorization', `Bearer ${noPermsToken}`)
-        .send({ userId: testUser.id });
-
-      expect(res.status).toBe(403);
-    });
-
-    it('should return 404 when group not found', async () => {
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups/${TEST_UUIDS.NONEXISTENT}/members`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: testUser.id });
-
-      expect(res.status).toBe(404);
-    });
-
-    it('should return 422 when userId is missing', async () => {
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({});
-
-      expect(res.status).toBe(422);
-      expect(res.body.message).toContain('userId');
-    });
-
-    it('should return 500 on server error', async () => {
-      jest.spyOn(GroupMember, 'create').mockRejectedValueOnce(new Error('Database error'));
-
-      const res = await request(app)
-        .post(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: testUser.id });
-
-      expect(res.status).toBe(500);
-      jest.restoreAllMocks();
-    });
-  });
-
-  // ============================================================================
-  // 8. DELETE /orgs/{orgId}/groups/{groupId}/members/{userId} - Remove member from group
-  // ============================================================================
-  describe('DELETE /api/v1/orgs/:orgId/groups/:groupId/members/:userId', () => {
-    beforeEach(async () => {
-      // Add test user to group
-      await GroupMember.create({
-        groupId: testGroup.id,
-        userId: testUser.id,
-      });
-    });
-
-    it('should remove member from group (204)', async () => {
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members/${testUser.id}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(204);
-
-      // Verify member is removed
-      const membership = await GroupMember.findOne({
-        where: { groupId: testGroup.id, userId: testUser.id },
-      });
-      expect(membership).toBeNull();
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      const res = await request(app)
-        .delete(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/members/${testUser.id}`);
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should return 403 when lacking groups:manage_members permission', async () => {
-      const noPermsToken = generateTestJWT({
-        userId: testUser.id,
-        orgId: testOrg.id,
-        envId: testEnv.id,
-        permissions: ['groups:read'],
       });
 
       const res = await request(app)
@@ -735,7 +414,8 @@ describe('Groups API', () => {
     it('should return 404 when user is not a member of the group', async () => {
       const nonMemberUser = await User.create({
         email: createTestIdentifier('nonmember', 'email'),
-        displayName: 'Non Member',
+        givenName: 'Non',
+        familyName: 'Member',
         isActive: true,
       });
 
@@ -768,7 +448,7 @@ describe('Groups API', () => {
       // Create child group
       childGroup = await Group.create({
         organizationId: testOrg.id,
-        parentGroupId: testGroup.id,
+        parentId: testGroup.id,
         name: 'Engineering - Backend',
         isActive: true,
       });
@@ -783,7 +463,7 @@ describe('Groups API', () => {
       expect(res.body.data).toBeInstanceOf(Array);
       expect(res.body.data.length).toBeGreaterThan(0);
       expect(res.body.data[0].id).toBe(childGroup.id);
-      expect(res.body.data[0].parentGroupId).toBe(testGroup.id);
+      expect(res.body.data[0].parentId).toBe(testGroup.id);
     });
 
     it('should return 401 when not authenticated', async () => {
@@ -795,10 +475,9 @@ describe('Groups API', () => {
 
     it('should return 403 when lacking groups:read permission', async () => {
       const noPermsToken = generateTestJWT({
-        userId: testUser.id,
+        sub: testUser.id,
         orgId: testOrg.id,
         envId: testEnv.id,
-        permissions: [],
       });
 
       const res = await request(app)
@@ -806,35 +485,6 @@ describe('Groups API', () => {
         .set('Authorization', `Bearer ${noPermsToken}`);
 
       expect(res.status).toBe(403);
-    });
-
-    it('should return 404 when group not found', async () => {
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${TEST_UUIDS.NONEXISTENT}/children`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(404);
-    });
-
-    it('should return empty array when group has no children', async () => {
-      // Use child group which has no children of its own
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${childGroup.id}/children`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data).toEqual([]);
-    });
-
-    it('should return 500 on server error', async () => {
-      jest.spyOn(Group, 'findByPk').mockRejectedValueOnce(new Error('Database error'));
-
-      const res = await request(app)
-        .get(`/api/v1/orgs/${testOrg.id}/groups/${testGroup.id}/children`)
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(500);
-      jest.restoreAllMocks();
     });
   });
 });

@@ -51,6 +51,119 @@ export class OrganizationMember
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
+
+  // Association declarations for TypeScript
+  declare user?: any; // User model association
+
+  /**
+   * Find members by organization with optional filters
+   */
+  static async findByOrganization(
+    organizationId: string,
+    filters: {
+      status?: string;
+      createdAtGte?: Date;
+      createdAtLte?: Date;
+      joinedAtGte?: Date;
+      joinedAtLte?: Date;
+    } = {},
+    limit = 20,
+    offset = 0
+  ): Promise<{ rows: OrganizationMember[]; count: number }> {
+    const { Op } = await import('sequelize');
+    const { User } = await import('./User.model');
+
+    const where: any = { organizationId };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.createdAtGte || filters.createdAtLte) {
+      where.createdAt = {};
+      if (filters.createdAtGte) {
+        where.createdAt[Op.gte] = filters.createdAtGte;
+      }
+      if (filters.createdAtLte) {
+        where.createdAt[Op.lte] = filters.createdAtLte;
+      }
+    }
+
+    if (filters.joinedAtGte || filters.joinedAtLte) {
+      where.joinedAt = {};
+      if (filters.joinedAtGte) {
+        where.joinedAt[Op.gte] = filters.joinedAtGte;
+      }
+      if (filters.joinedAtLte) {
+        where.joinedAt[Op.lte] = filters.joinedAtLte;
+      }
+    }
+
+    return this.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'givenName', 'familyName'],
+        },
+      ],
+    });
+  }
+
+  /**
+   * Find member by ID in specific organization
+   */
+  static async findByIdInOrg(
+    memberId: string,
+    organizationId: string
+  ): Promise<OrganizationMember | null> {
+    const { User } = await import('./User.model');
+
+    return this.findOne({
+      where: {
+        id: memberId,
+        organizationId,
+      },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'givenName', 'familyName'],
+        },
+      ],
+    });
+  }
+
+  /**
+   * Find member by user ID and organization ID
+   */
+  static async findByUserAndOrg(
+    userId: string,
+    organizationId: string
+  ): Promise<OrganizationMember | null> {
+    return this.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+  }
+
+  /**
+   * Find all active memberships for a user
+   */
+  static async findActiveByUser(userId: string): Promise<OrganizationMember[]> {
+    return this.findAll({
+      where: {
+        userId,
+        status: 'active',
+      },
+    });
+  }
 }
 
 OrganizationMember.init(

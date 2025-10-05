@@ -21,6 +21,10 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.middle
 import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
 import { xssSanitizationMiddleware } from './middleware/xss.middleware';
+import { initializeAssociations } from './models/associations';
+
+// Initialize Sequelize model associations
+initializeAssociations();
 
 /**
  * Create and configure Express application

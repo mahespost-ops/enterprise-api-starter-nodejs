@@ -60,7 +60,7 @@ export const listGroupsQuerySchema = Joi.object({
   fields: Joi.string().optional(),
 
   // Filters
-  'filter[parentGroupId]': Joi.string().uuid().allow(null).optional(),
+  'filter[parentId]': Joi.string().uuid().allow(null).optional(),
   'filter[hierarchyLevel]': Joi.number().integer().min(0).optional(),
   'filter[isActive]': Joi.string().valid('true', 'false').optional(),
   'filter[createdAt][gte]': Joi.date().iso().optional(),
@@ -80,8 +80,8 @@ export const createGroupSchema = Joi.object({
   description: Joi.string().max(500).allow(null, '').optional().messages({
     'string.max': 'Description must not exceed 500 characters',
   }),
-  parentGroupId: Joi.string().uuid().allow(null).optional().messages({
-    'string.guid': 'Parent group ID must be a valid UUID',
+  parentId: Joi.string().uuid().allow(null).optional().messages({
+    'string.guid': 'Parent ID must be a valid UUID',
   }),
   metadata: Joi.object().allow(null).optional().messages({
     'object.base': 'Metadata must be an object',
@@ -96,7 +96,7 @@ export const createGroupSchema = Joi.object({
  * - name, description, metadata, isActive
  *
  * System-managed fields excluded:
- * - organizationId, parentGroupId (use separate endpoints for hierarchy changes)
+ * - organizationId, parentId (use separate endpoints for hierarchy changes)
  * - hierarchyLevel, memberCount (auto-calculated)
  */
 export const updateGroupSchema = Joi.object({

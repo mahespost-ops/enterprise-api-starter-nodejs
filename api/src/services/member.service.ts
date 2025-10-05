@@ -9,7 +9,6 @@ import { Organization } from '../models/Organization.model';
 import { NotFoundError, ConflictError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import logger from '../config/logger';
-import { Op } from 'sequelize';
 
 interface ListMembersFilters {
   status?: string;
@@ -40,44 +39,12 @@ class MemberService {
   ): Promise<{ members: OrganizationMember[]; total: number }> {
     logger.debug(`Listing members for organization: ${organizationId}`);
 
-    const where: any = { organizationId };
-
-    if (filters.status) {
-      where.status = filters.status;
-    }
-
-    if (filters.createdAtGte || filters.createdAtLte) {
-      where.createdAt = {};
-      if (filters.createdAtGte) {
-        where.createdAt[Op.gte] = filters.createdAtGte;
-      }
-      if (filters.createdAtLte) {
-        where.createdAt[Op.lte] = filters.createdAtLte;
-      }
-    }
-
-    if (filters.joinedAtGte || filters.joinedAtLte) {
-      where.joinedAt = {};
-      if (filters.joinedAtGte) {
-        where.joinedAt[Op.gte] = filters.joinedAtGte;
-      }
-      if (filters.joinedAtLte) {
-        where.joinedAt[Op.lte] = filters.joinedAtLte;
-      }
-    }
-
-    const { count, rows } = await OrganizationMember.findAndCountAll({
-      where,
+    const { rows, count } = await OrganizationMember.findByOrganization(
+      organizationId,
+      filters,
       limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'email', 'givenName', 'familyName'],
-        },
-      ],
-    });
+      offset
+    );
 
     logger.debug(`Found ${count} members`);
     return { members: rows, total: count };
@@ -89,18 +56,7 @@ class MemberService {
   async getMemberById(memberId: string, organizationId: string): Promise<OrganizationMember> {
     logger.debug(`Finding member: ${memberId} in org: ${organizationId}`);
 
-    const member = await OrganizationMember.findOne({
-      where: {
-        id: memberId,
-        organizationId,
-      },
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'email', 'givenName', 'familyName'],
-        },
-      ],
-    });
+    const member = await OrganizationMember.findByIdInOrg(memberId, organizationId);
 
     if (!member) {
       throw new NotFoundError(ERROR_MESSAGES.MEMBER_NOT_FOUND);
@@ -137,12 +93,7 @@ class MemberService {
     }
 
     // Check if user is already a member
-    const existingMember = await OrganizationMember.findOne({
-      where: {
-        userId: user.id,
-        organizationId,
-      },
-    });
+    const existingMember = await OrganizationMember.findByUserAndOrg(user.id, organizationId);
 
     if (existingMember) {
       throw new ConflictError('User is already a member of this organization');
@@ -212,12 +163,7 @@ class MemberService {
     const member = await this.getMemberById(memberId, organizationId);
 
     // Find all organizations this user is a member of
-    const memberships = await OrganizationMember.findAll({
-      where: {
-        userId: member.userId,
-        status: 'active',
-      },
-    });
+    const memberships = await OrganizationMember.findActiveByUser(member.userId);
 
     // Fetch organizations separately (associations not yet configured)
     const orgIds = memberships.map((m) => m.organizationId);

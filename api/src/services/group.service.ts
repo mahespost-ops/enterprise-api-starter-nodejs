@@ -8,10 +8,9 @@ import { GroupMember } from '../models/GroupMember.model';
 import { NotFoundError, ConflictError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import logger from '../config/logger';
-import { Op } from 'sequelize';
 
 interface ListGroupsFilters {
-  parentGroupId?: string | null;
+  parentId?: string | null;
   hierarchyLevel?: number;
   isActive?: boolean;
   createdAtGte?: Date;
@@ -21,7 +20,7 @@ interface ListGroupsFilters {
 interface CreateGroupDto {
   name: string;
   description?: string | null;
-  parentGroupId?: string | null;
+  parentId?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -44,36 +43,12 @@ class GroupService {
   ): Promise<{ groups: Group[]; total: number }> {
     logger.debug(`Listing groups for organization: ${organizationId}`);
 
-    const where: any = { organizationId };
-
-    if (filters.parentGroupId !== undefined) {
-      where.parentId = filters.parentGroupId;
-    }
-
-    if (filters.hierarchyLevel !== undefined) {
-      where.hierarchyLevel = filters.hierarchyLevel;
-    }
-
-    if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
-    }
-
-    if (filters.createdAtGte || filters.createdAtLte) {
-      where.createdAt = {};
-      if (filters.createdAtGte) {
-        where.createdAt[Op.gte] = filters.createdAtGte;
-      }
-      if (filters.createdAtLte) {
-        where.createdAt[Op.lte] = filters.createdAtLte;
-      }
-    }
-
-    const { count, rows } = await Group.findAndCountAll({
-      where,
+    const { rows, count } = await Group.findByOrganization(
+      organizationId,
+      filters,
       limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-    });
+      offset
+    );
 
     logger.debug(`Found ${count} groups`);
     return { groups: rows, total: count };
@@ -85,12 +60,7 @@ class GroupService {
   async getGroupById(groupId: string, organizationId: string): Promise<Group> {
     logger.debug(`Finding group: ${groupId} in org: ${organizationId}`);
 
-    const group = await Group.findOne({
-      where: {
-        id: groupId,
-        organizationId,
-      },
-    });
+    const group = await Group.findByIdInOrg(groupId, organizationId);
 
     if (!group) {
       throw new NotFoundError(ERROR_MESSAGES.GROUP_NOT_FOUND);
@@ -110,8 +80,8 @@ class GroupService {
 
     // Calculate hierarchy level if parent is specified
     let hierarchyLevel = 0;
-    if (groupData.parentGroupId) {
-      const parentGroup = await this.getGroupById(groupData.parentGroupId, organizationId);
+    if (groupData.parentId) {
+      const parentGroup = await this.getGroupById(groupData.parentId, organizationId);
       hierarchyLevel = parentGroup.hierarchyLevel + 1;
     }
 
@@ -119,7 +89,7 @@ class GroupService {
       organizationId,
       name: groupData.name,
       description: groupData.description,
-      parentId: groupData.parentGroupId,
+      parentId: groupData.parentId,
       hierarchyLevel,
       metadata: groupData.metadata,
       isActive: true,
@@ -187,12 +157,7 @@ class GroupService {
     // Verify group exists in this organization
     await this.getGroupById(groupId, organizationId);
 
-    const { count, rows } = await GroupMember.findAndCountAll({
-      where: { groupId },
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-    });
+    const { rows, count } = await GroupMember.findByGroup(groupId, limit, offset);
 
     logger.debug(`Found ${count} group members`);
     return { members: rows, total: count };
@@ -213,12 +178,7 @@ class GroupService {
     await this.getGroupById(groupId, organizationId);
 
     // Check if user is already a member
-    const existingMember = await GroupMember.findOne({
-      where: {
-        groupId,
-        userId,
-      },
-    });
+    const existingMember = await GroupMember.findByGroupAndUser(groupId, userId);
 
     if (existingMember) {
       throw new ConflictError('User is already a member of this group');
@@ -252,12 +212,7 @@ class GroupService {
     // Verify group exists
     await this.getGroupById(groupId, organizationId);
 
-    const member = await GroupMember.findOne({
-      where: {
-        groupId,
-        userId,
-      },
-    });
+    const member = await GroupMember.findByGroupAndUser(groupId, userId);
 
     if (!member) {
       throw new NotFoundError(ERROR_MESSAGES.GROUP_MEMBER_NOT_FOUND);
@@ -287,15 +242,7 @@ class GroupService {
     // Verify parent group exists
     await this.getGroupById(groupId, organizationId);
 
-    const { count, rows } = await Group.findAndCountAll({
-      where: {
-        organizationId,
-        parentId: groupId,
-      },
-      limit,
-      offset,
-      order: [['hierarchyLevel', 'ASC'], ['name', 'ASC']],
-    });
+    const { rows, count } = await Group.findChildren(groupId, organizationId, limit, offset);
 
     logger.debug(`Found ${count} child groups`);
     return { groups: rows, total: count };

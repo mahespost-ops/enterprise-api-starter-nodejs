@@ -10,7 +10,7 @@ import { authorize } from '../middleware/rbac.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { memberSchemas } from '../middleware/validation-schemas';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 /**
  * Middleware order (applied in sequence):
