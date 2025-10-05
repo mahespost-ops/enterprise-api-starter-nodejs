@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/async-handler';
+import { extractClientIP } from '../utils/request.utils';
 import { HTTP_STATUS } from '../constants/http-status.constants';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import { COOKIE_NAMES, COOKIE_OPTIONS } from '../constants/cookie.constants';
@@ -62,6 +63,7 @@ export const verifyMagicToken = asyncHandler(
     const result = await authService.verifyMagicToken({
       ...req.body,
       userAgent: req.headers[HTTP_HEADERS.USER_AGENT],
+      ipAddress: extractClientIP(req), // Extract real client IP from headers
     });
 
     // Set refresh token as HTTP-only cookie (for web apps)

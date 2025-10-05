@@ -84,10 +84,10 @@ export const verifyTokenSchema = Joi.object({
     'any.required': 'Token or code is required',
   }),
   code: Joi.string()
-    .pattern(/^\d{6}$/)
+    .pattern(/^\d{8}$/) // Updated to 8 digits (was 6) for improved security
     .optional()
     .messages({
-      'string.pattern.base': 'Code must be a 6-digit number',
+      'string.pattern.base': 'Code must be an 8-digit number',
     }),
   fingerprint: fingerprintSchema.required().messages({
     'any.required': 'Fingerprint is required for security',

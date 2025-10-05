@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import config from '../config';
 import logger from '../config/logger';
 import { NotFoundError, UnauthorizedError, ConflictError, ForbiddenError } from '../utils/errors';
+import { parseUserAgent } from '../utils/request.utils';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import { SUCCESS_MESSAGES } from '../constants/messages.constants';
 import { EMAIL_SUBJECTS } from '../constants/email.constants';
@@ -47,6 +48,7 @@ interface VerifyTokenData {
   code?: string;
   fingerprint: string;
   userAgent?: string;
+  ipAddress?: string; // Client IP address (extracted from X-Forwarded-For or similar)
 }
 
 interface SwitchContextData {
@@ -247,18 +249,21 @@ class AuthService {
     const deviceId = crypto.randomUUID();
     const deviceName = this.extractDeviceName(data.userAgent);
 
+    // Parse user agent for device information (MEDIUM #10 security fix)
+    const parsedUA = parseUserAgent(data.userAgent);
+
     // Create Device record
     await Device.create({
       id: deviceId,
       userId: user.id,
       fingerprintHash: data.fingerprint ? await bcrypt.hash(data.fingerprint, 10) : await bcrypt.hash(deviceId, 10),
       deviceName: deviceName,
-      deviceType: DEVICE_DEFAULTS.UNKNOWN_TYPE, // TODO: Parse from user agent
-      os: DEVICE_DEFAULTS.UNKNOWN_OS, // TODO: Parse from user agent
-      browser: DEVICE_DEFAULTS.UNKNOWN_BROWSER, // TODO: Parse from user agent
+      deviceType: parsedUA.deviceType,
+      os: parsedUA.os,
+      browser: parsedUA.browser,
       trustStatus: TRUST_STATUS.TRUSTED,
-      firstSeenIp: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
-      lastSeenIp: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
+      firstSeenIp: data.ipAddress || NETWORK_DEFAULTS.LOCALHOST_IP, // Use real IP from request
+      lastSeenIp: data.ipAddress || NETWORK_DEFAULTS.LOCALHOST_IP, // Use real IP from request
       createdAt: new Date(),
       lastUsedAt: new Date(),
     });
@@ -278,7 +283,7 @@ class AuthService {
       userId: user.id,
       deviceId,
       refreshTokenHash,
-      ipAddress: NETWORK_DEFAULTS.LOCALHOST_IP, // TODO: Get from request context
+      ipAddress: data.ipAddress || NETWORK_DEFAULTS.LOCALHOST_IP, // Use real IP from request
       expiresAt: new Date(Date.now() + TOKEN_EXPIRATION_MS.REFRESH_TOKEN),
       createdAt: new Date(),
       isActive: true,
@@ -474,7 +479,9 @@ class AuthService {
 
   private async generateMagicToken(userId: string, fingerprint?: string): Promise<{ token: string; code: string }> {
     const token = crypto.randomBytes(CRYPTO_DEFAULTS.MAGIC_TOKEN_BYTES).toString('base64url');
-    const code = Math.floor(MAGIC_CODE.MIN + Math.random() * MAGIC_CODE.RANGE).toString();
+    // SECURITY FIX: Use crypto.randomInt() instead of Math.random() for cryptographic strength
+    // Fixes CRITICAL vulnerability from 2025-10-04 security audit
+    const code = crypto.randomInt(MAGIC_CODE.MIN, MAGIC_CODE.MAX + 1).toString();
 
     // Hash both token and code before storing
     const tokenHash = await bcrypt.hash(token, 10);

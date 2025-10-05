@@ -15,10 +15,11 @@ export type DeliveryMethod = (typeof DELIVERY_METHOD)[keyof typeof DELIVERY_METH
 
 /**
  * Token expiration times (in seconds)
+ * NOTE: ACCESS_TOKEN reduced from 15m to 5m per 2025-10-04 security audit (CRITICAL #3 partial mitigation)
  */
 export const TOKEN_EXPIRATION = {
   MAGIC_TOKEN: 900, // 15 minutes
-  ACCESS_TOKEN: 900, // 15 minutes
+  ACCESS_TOKEN: 300, // 5 minutes (reduced from 15m for security)
   REFRESH_TOKEN: 2592000, // 30 days
 } as const;
 
@@ -35,9 +36,10 @@ export const TOKEN_EXPIRATION_MS = {
 /**
  * JWT expiration string formats
  * Note: Used with jsonwebtoken library's expiresIn option
+ * ACCESS_TOKEN reduced from 15m to 5m per 2025-10-04 security audit (CRITICAL #3 partial mitigation)
  */
 export const JWT_EXPIRATION = {
-  ACCESS_TOKEN: '15m',
+  ACCESS_TOKEN: '5m', // Reduced from 15m for security
   REFRESH_TOKEN: '30d',
 } as const;
 

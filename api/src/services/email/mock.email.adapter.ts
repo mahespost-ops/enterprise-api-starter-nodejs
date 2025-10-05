@@ -136,8 +136,8 @@ export class MockEmailAdapter implements IEmailAdapter {
     const tokenMatch = html.match(/token=([^"&\s]+)/);
     const token = tokenMatch ? tokenMatch[1] : '';
 
-    // Extract code from HTML: <strong>123456</strong>
-    const codeMatch = html.match(/<strong>(\d{6})<\/strong>/);
+    // Extract code from HTML: <strong>12345678</strong> (8 digits after security update)
+    const codeMatch = html.match(/<strong>(\d{8})<\/strong>/);
     const code = codeMatch ? codeMatch[1] : '';
 
     if (!token || !code) {
