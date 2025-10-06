@@ -15,12 +15,11 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "db:create": "psql -U mike -d postgres -c 'CREATE DATABASE enterprise;'",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all",
-    "db:migrate:reset": "npm run db:migrate:undo:all && npm run db:migrate",
-    "db:migrate:status": "sequelize-cli db:migrate:status"
+    "db:migrate:status": "sequelize-cli db:migrate:status",
+    "db:reset": "npm run db:migrate:undo:all && npm run db:migrate"
   },
   "keywords": [
     "express",
