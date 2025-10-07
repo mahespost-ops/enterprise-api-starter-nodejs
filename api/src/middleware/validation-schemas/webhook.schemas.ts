@@ -4,6 +4,7 @@
  */
 
 import Joi from 'joi';
+import { WEBHOOK_AUTH_METHOD, WEBHOOK_DELIVERY_STATUS } from '../../constants/webhook.constants';
 
 /**
  * Webhook environment path parameters (without webhookId)
@@ -81,11 +82,26 @@ export const listWebhooksQuerySchema = Joi.object({
 
   // Filters
   'filter[isActive]': Joi.string().valid('true', 'false').optional(),
-  'filter[authMethod]': Joi.string().valid('none', 'hmac', 'jwt', 'basic', 'digest').optional(),
+  'filter[authMethod]': Joi.string()
+    .valid(
+      WEBHOOK_AUTH_METHOD.NONE,
+      WEBHOOK_AUTH_METHOD.HMAC,
+      WEBHOOK_AUTH_METHOD.JWT,
+      WEBHOOK_AUTH_METHOD.BASIC,
+      WEBHOOK_AUTH_METHOD.DIGEST
+    )
+    .optional(),
   'filter[authMethod][in]': Joi.string()
     .custom((value) => {
       const methods = value.split(',').map((m: string) => m.trim());
-      const valid = methods.every((m: string) => ['none', 'hmac', 'jwt', 'basic', 'digest'].includes(m));
+      const validMethods = [
+        WEBHOOK_AUTH_METHOD.NONE,
+        WEBHOOK_AUTH_METHOD.HMAC,
+        WEBHOOK_AUTH_METHOD.JWT,
+        WEBHOOK_AUTH_METHOD.BASIC,
+        WEBHOOK_AUTH_METHOD.DIGEST,
+      ] as string[];
+      const valid = methods.every((m: string) => validMethods.includes(m));
       if (!valid) throw new Error('Invalid auth method in filter');
       return value;
     })
@@ -93,7 +109,14 @@ export const listWebhooksQuerySchema = Joi.object({
   'filter[authMethod][nin]': Joi.string()
     .custom((value) => {
       const methods = value.split(',').map((m: string) => m.trim());
-      const valid = methods.every((m: string) => ['none', 'hmac', 'jwt', 'basic', 'digest'].includes(m));
+      const validMethods = [
+        WEBHOOK_AUTH_METHOD.NONE,
+        WEBHOOK_AUTH_METHOD.HMAC,
+        WEBHOOK_AUTH_METHOD.JWT,
+        WEBHOOK_AUTH_METHOD.BASIC,
+        WEBHOOK_AUTH_METHOD.DIGEST,
+      ] as string[];
+      const valid = methods.every((m: string) => validMethods.includes(m));
       if (!valid) throw new Error('Invalid auth method in filter');
       return value;
     })
@@ -202,9 +225,19 @@ export const createWebhookSchema = Joi.object({
     'array.min': 'At least one event type is required',
     'any.required': 'Event types are required',
   }),
-  authMethod: Joi.string().valid('none', 'hmac', 'jwt', 'basic', 'digest').default('none').optional().messages({
-    'any.only': 'Auth method must be one of: none, hmac, jwt, basic, digest',
-  }),
+  authMethod: Joi.string()
+    .valid(
+      WEBHOOK_AUTH_METHOD.NONE,
+      WEBHOOK_AUTH_METHOD.HMAC,
+      WEBHOOK_AUTH_METHOD.JWT,
+      WEBHOOK_AUTH_METHOD.BASIC,
+      WEBHOOK_AUTH_METHOD.DIGEST
+    )
+    .default(WEBHOOK_AUTH_METHOD.NONE)
+    .optional()
+    .messages({
+      'any.only': 'Auth method must be one of: none, hmac, jwt, basic, digest',
+    }),
   authConfig: authConfigSchema.optional().messages({
     'object.base': 'Auth config must be an object',
   }),
@@ -246,9 +279,18 @@ export const updateWebhookSchema = Joi.object({
   eventTypes: Joi.array().items(Joi.string().max(100)).min(1).optional().messages({
     'array.min': 'At least one event type is required',
   }),
-  authMethod: Joi.string().valid('none', 'hmac', 'jwt', 'basic', 'digest').optional().messages({
-    'any.only': 'Auth method must be one of: none, hmac, jwt, basic, digest',
-  }),
+  authMethod: Joi.string()
+    .valid(
+      WEBHOOK_AUTH_METHOD.NONE,
+      WEBHOOK_AUTH_METHOD.HMAC,
+      WEBHOOK_AUTH_METHOD.JWT,
+      WEBHOOK_AUTH_METHOD.BASIC,
+      WEBHOOK_AUTH_METHOD.DIGEST
+    )
+    .optional()
+    .messages({
+      'any.only': 'Auth method must be one of: none, hmac, jwt, basic, digest',
+    }),
   authConfig: authConfigSchema.optional().messages({
     'object.base': 'Auth config must be an object',
   }),
@@ -283,11 +325,24 @@ export const listWebhookDeliveriesQuerySchema = Joi.object({
   sort: Joi.string().optional(),
 
   // Filters
-  'filter[status]': Joi.string().valid('pending', 'success', 'failed', 'retrying').optional(),
+  'filter[status]': Joi.string()
+    .valid(
+      WEBHOOK_DELIVERY_STATUS.PENDING,
+      WEBHOOK_DELIVERY_STATUS.SUCCESS,
+      WEBHOOK_DELIVERY_STATUS.FAILED,
+      WEBHOOK_DELIVERY_STATUS.RETRYING
+    )
+    .optional(),
   'filter[status][in]': Joi.string()
     .custom((value) => {
       const statuses = value.split(',').map((s: string) => s.trim());
-      const valid = statuses.every((s: string) => ['pending', 'success', 'failed', 'retrying'].includes(s));
+      const validStatuses = [
+        WEBHOOK_DELIVERY_STATUS.PENDING,
+        WEBHOOK_DELIVERY_STATUS.SUCCESS,
+        WEBHOOK_DELIVERY_STATUS.FAILED,
+        WEBHOOK_DELIVERY_STATUS.RETRYING,
+      ] as string[];
+      const valid = statuses.every((s: string) => validStatuses.includes(s));
       if (!valid) throw new Error('Invalid status in filter');
       return value;
     })

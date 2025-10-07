@@ -11,13 +11,19 @@ import { WebhookDelivery } from '../models/WebhookDelivery.model';
 import { OrganizationMember } from '../models/OrganizationMember.model';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
+import {
+  WEBHOOK_AUTH_METHOD,
+  WEBHOOK_DELIVERY_STATUS,
+  type WebhookAuthMethod,
+  type WebhookDeliveryStatus,
+} from '../constants/webhook.constants';
 import logger from '../config/logger';
 
 interface CreateWebhookDto {
   name: string;
   url: string;
   eventTypes: string[];
-  authMethod?: 'none' | 'hmac' | 'jwt' | 'basic' | 'digest';
+  authMethod?: WebhookAuthMethod;
   authConfig?: Record<string, unknown> | null;
   retryConfig?: {
     maxAttempts: number;
@@ -32,7 +38,7 @@ interface UpdateWebhookDto {
   name?: string;
   url?: string;
   eventTypes?: string[];
-  authMethod?: 'none' | 'hmac' | 'jwt' | 'basic' | 'digest';
+  authMethod?: WebhookAuthMethod;
   authConfig?: Record<string, unknown> | null;
   retryConfig?: {
     maxAttempts: number;
@@ -55,7 +61,7 @@ interface ListWebhooksOptions {
 interface ListDeliveriesOptions {
   limit?: number;
   offset?: number;
-  status?: 'pending' | 'success' | 'failed' | 'retrying';
+  status?: WebhookDeliveryStatus;
 }
 
 class WebhookService {
@@ -175,7 +181,7 @@ class WebhookService {
       name: dto.name,
       url: dto.url,
       eventTypes: dto.eventTypes,
-      authMethod: dto.authMethod || 'none',
+      authMethod: dto.authMethod || WEBHOOK_AUTH_METHOD.NONE,
       authConfig: dto.authConfig || null,
       retryConfig: dto.retryConfig || {
         maxAttempts: 5,
@@ -429,12 +435,12 @@ class WebhookService {
     }
 
     // Can only retry failed deliveries
-    if (delivery.status !== 'failed') {
+    if (delivery.status !== WEBHOOK_DELIVERY_STATUS.FAILED) {
       throw new BadRequestError(`Cannot retry delivery with status: ${delivery.status}. Only failed deliveries can be retried.`);
     }
 
     // Schedule immediate retry (in real implementation, this would use a queue)
-    delivery.status = 'retrying';
+    delivery.status = WEBHOOK_DELIVERY_STATUS.RETRYING;
     delivery.scheduledFor = new Date();
     delivery.nextRetryAt = new Date();
     await delivery.save();

@@ -5,6 +5,7 @@
 
 import { Model, DataTypes, Optional, UUIDV1, Op } from 'sequelize';
 import sequelize from '../config/database';
+import { WEBHOOK_AUTH_METHOD, type WebhookAuthMethod } from '../constants/webhook.constants';
 
 // Webhook attributes
 export interface WebhookAttributes {
@@ -13,7 +14,7 @@ export interface WebhookAttributes {
   name: string;
   url: string;
   eventTypes: string[];
-  authMethod: 'none' | 'hmac' | 'jwt' | 'basic' | 'digest';
+  authMethod: WebhookAuthMethod;
   authConfig: Record<string, unknown> | null;
   retryConfig: {
     maxAttempts: number;
@@ -57,7 +58,7 @@ export class Webhook extends Model<WebhookAttributes, WebhookCreationAttributes>
   declare name: string;
   declare url: string;
   declare eventTypes: string[];
-  declare authMethod: 'none' | 'hmac' | 'jwt' | 'basic' | 'digest';
+  declare authMethod: WebhookAuthMethod;
   declare authConfig: Record<string, unknown> | null;
   declare retryConfig: {
     maxAttempts: number;
@@ -169,9 +170,15 @@ Webhook.init(
       comment: 'Array of event verbs this webhook subscribes to',
     },
     authMethod: {
-      type: DataTypes.ENUM('none', 'hmac', 'jwt', 'basic', 'digest'),
+      type: DataTypes.ENUM(
+        WEBHOOK_AUTH_METHOD.NONE,
+        WEBHOOK_AUTH_METHOD.HMAC,
+        WEBHOOK_AUTH_METHOD.JWT,
+        WEBHOOK_AUTH_METHOD.BASIC,
+        WEBHOOK_AUTH_METHOD.DIGEST
+      ),
       allowNull: false,
-      defaultValue: 'none',
+      defaultValue: WEBHOOK_AUTH_METHOD.NONE,
       field: 'auth_method',
       comment: 'Authentication method for webhook requests',
     },

@@ -8,6 +8,7 @@ import { User } from '../models/User.model';
 import { Organization } from '../models/Organization.model';
 import { NotFoundError, ConflictError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
+import { MEMBER_STATUS, type MemberStatus } from '../constants/member.constants';
 import logger from '../config/logger';
 
 interface ListMembersFilters {
@@ -24,7 +25,7 @@ interface InviteMemberDto {
 }
 
 interface UpdateMemberDto {
-  status: 'invited' | 'active' | 'suspended';
+  status: MemberStatus;
 }
 
 class MemberService {
@@ -103,7 +104,7 @@ class MemberService {
     const member = await OrganizationMember.create({
       userId: user.id,
       organizationId,
-      status: 'invited',
+      status: MEMBER_STATUS.INVITED,
       invitedBy,
       // invitationToken and invitationExpiresAt should be generated here
       // TODO: Implement invitation token generation
@@ -130,7 +131,7 @@ class MemberService {
       member.status = updateData.status;
 
       // If activating, set joinedAt if not already set
-      if (updateData.status === 'active' && !member.joinedAt) {
+      if (updateData.status === MEMBER_STATUS.ACTIVE && !member.joinedAt) {
         member.joinedAt = new Date();
       }
     }

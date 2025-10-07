@@ -5,13 +5,14 @@
 
 import { Model, DataTypes, Optional, UUIDV1, Op } from 'sequelize';
 import sequelize from '../config/database';
+import { WEBHOOK_DELIVERY_STATUS, type WebhookDeliveryStatus } from '../constants/webhook.constants';
 
 // WebhookDelivery attributes
 export interface WebhookDeliveryAttributes {
   id: string;
   webhookId: string;
   eventId: string;
-  status: 'pending' | 'success' | 'failed' | 'retrying';
+  status: WebhookDeliveryStatus;
   attempt: number;
   httpStatusCode: number | null;
   requestPayload: Record<string, unknown>;
@@ -51,7 +52,7 @@ export class WebhookDelivery
   declare id: string;
   declare webhookId: string;
   declare eventId: string;
-  declare status: 'pending' | 'success' | 'failed' | 'retrying';
+  declare status: WebhookDeliveryStatus;
   declare attempt: number;
   declare httpStatusCode: number | null;
   declare requestPayload: Record<string, unknown>;
@@ -69,7 +70,7 @@ export class WebhookDelivery
   static async findPendingDeliveries(limit = 100): Promise<WebhookDelivery[]> {
     return this.findAll({
       where: {
-        status: { [Op.in]: ['pending', 'retrying'] },
+        status: { [Op.in]: [WEBHOOK_DELIVERY_STATUS.PENDING, WEBHOOK_DELIVERY_STATUS.RETRYING] },
         scheduledFor: { [Op.lte]: new Date() },
       },
       order: [['scheduledFor', 'ASC']],
@@ -102,7 +103,7 @@ export class WebhookDelivery
    * Mark delivery as successful
    */
   async markSuccess(httpStatusCode: number, responseBody?: string): Promise<void> {
-    this.status = 'success';
+    this.status = WEBHOOK_DELIVERY_STATUS.SUCCESS;
     this.httpStatusCode = httpStatusCode;
     this.responseBody = responseBody || null;
     this.completedAt = new Date();
@@ -114,7 +115,7 @@ export class WebhookDelivery
    * Mark delivery as failed and schedule retry
    */
   async markFailed(errorMessage: string, nextRetryAt?: Date, httpStatusCode?: number): Promise<void> {
-    this.status = nextRetryAt ? 'retrying' : 'failed';
+    this.status = nextRetryAt ? WEBHOOK_DELIVERY_STATUS.RETRYING : WEBHOOK_DELIVERY_STATUS.FAILED;
     this.errorMessage = errorMessage;
     this.httpStatusCode = httpStatusCode || null;
     this.nextRetryAt = nextRetryAt || null;
@@ -132,7 +133,7 @@ export class WebhookDelivery
    */
   async incrementAttempt(): Promise<void> {
     this.attempt += 1;
-    this.status = 'retrying';
+    this.status = WEBHOOK_DELIVERY_STATUS.RETRYING;
     await this.save();
   }
 }
@@ -156,9 +157,14 @@ WebhookDelivery.init(
       field: 'event_id',
     },
     status: {
-      type: DataTypes.ENUM('pending', 'success', 'failed', 'retrying'),
+      type: DataTypes.ENUM(
+        WEBHOOK_DELIVERY_STATUS.PENDING,
+        WEBHOOK_DELIVERY_STATUS.SUCCESS,
+        WEBHOOK_DELIVERY_STATUS.FAILED,
+        WEBHOOK_DELIVERY_STATUS.RETRYING
+      ),
       allowNull: false,
-      defaultValue: 'pending',
+      defaultValue: WEBHOOK_DELIVERY_STATUS.PENDING,
     },
     attempt: {
       type: DataTypes.INTEGER,
@@ -228,7 +234,10 @@ WebhookDelivery.init(
     indexes: [
       { fields: ['webhook_id', 'created_at'] },
       { fields: ['event_id'] },
-      { fields: ['status', 'scheduled_for'], where: { status: { [Op.in]: ['pending', 'retrying'] } } },
+      {
+        fields: ['status', 'scheduled_for'],
+        where: { status: { [Op.in]: [WEBHOOK_DELIVERY_STATUS.PENDING, WEBHOOK_DELIVERY_STATUS.RETRYING] } },
+      },
       { fields: ['next_retry_at'], where: { next_retry_at: { [Op.ne]: null } } },
       { fields: ['created_at'] },
     ],

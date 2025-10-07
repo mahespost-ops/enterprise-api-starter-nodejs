@@ -4,6 +4,7 @@
  */
 
 import Joi from 'joi';
+import { MEMBER_STATUS } from '../../constants/member.constants';
 
 /**
  * UUID path parameters for member endpoints
@@ -60,13 +61,18 @@ export const listMembersQuerySchema = Joi.object({
   fields: Joi.string().optional(),
 
   // Filters
-  'filter[status]': Joi.string().valid('invited', 'active', 'suspended').optional(),
+  'filter[status]': Joi.string()
+    .valid(MEMBER_STATUS.INVITED, MEMBER_STATUS.ACTIVE, MEMBER_STATUS.SUSPENDED)
+    .optional(),
   'filter[status][in]': Joi.string()
     .custom((value) => {
       const statuses = value.split(',');
-      const valid = statuses.every((s: string) =>
-        ['invited', 'active', 'suspended'].includes(s)
-      );
+      const validStatuses = [
+        MEMBER_STATUS.INVITED,
+        MEMBER_STATUS.ACTIVE,
+        MEMBER_STATUS.SUSPENDED,
+      ] as string[];
+      const valid = statuses.every((s: string) => validStatuses.includes(s));
       if (!valid) throw new Error('Invalid status in filter');
       return value;
     })
@@ -108,7 +114,7 @@ export const inviteMemberSchema = Joi.object({
  */
 export const updateMemberSchema = Joi.object({
   status: Joi.string()
-    .valid('invited', 'active', 'suspended')
+    .valid(MEMBER_STATUS.INVITED, MEMBER_STATUS.ACTIVE, MEMBER_STATUS.SUSPENDED)
     .required()
     .messages({
       'any.only': 'Status must be one of: invited, active, suspended',

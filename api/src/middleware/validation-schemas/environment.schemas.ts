@@ -4,6 +4,7 @@
  */
 
 import Joi from 'joi';
+import { ENVIRONMENT_STATUS } from '../../constants/environment.constants';
 
 /**
  * UUID path parameters
@@ -54,7 +55,7 @@ export const listEnvironmentsQuerySchema = Joi.object({
       return value;
     })
     .optional(),
-  'filter[status]': Joi.string().valid('active', 'inactive').optional(),
+  'filter[status]': Joi.string().valid(ENVIRONMENT_STATUS.ACTIVE, ENVIRONMENT_STATUS.INACTIVE).optional(),
   'filter[isDefault]': Joi.string().valid('true', 'false').optional(),
   'filter[createdAt][gte]': Joi.date().iso().optional(),
   'filter[createdAt][lte]': Joi.date().iso().optional(),

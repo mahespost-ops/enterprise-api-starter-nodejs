@@ -6,8 +6,7 @@
 import { Model, DataTypes, Optional, UUIDV1 } from 'sequelize';
 import sequelize from '../config/database';
 import type { User } from './User.model';
-
-export type MemberStatus = 'active' | 'invited' | 'suspended';
+import { MEMBER_STATUS, type MemberStatus } from '../constants/member.constants';
 
 export interface OrganizationMemberAttributes {
   id: string;
@@ -162,7 +161,7 @@ export class OrganizationMember
     return this.findAll({
       where: {
         userId,
-        status: 'active',
+        status: MEMBER_STATUS.ACTIVE,
       },
     });
   }
@@ -196,9 +195,13 @@ OrganizationMember.init(
       onDelete: 'CASCADE',
     },
     status: {
-      type: DataTypes.ENUM('active', 'invited', 'suspended'),
+      type: DataTypes.ENUM(
+        MEMBER_STATUS.ACTIVE,
+        MEMBER_STATUS.INVITED,
+        MEMBER_STATUS.SUSPENDED
+      ),
       allowNull: false,
-      defaultValue: 'active',
+      defaultValue: MEMBER_STATUS.ACTIVE,
     },
     invitedBy: {
       type: DataTypes.UUID,
@@ -253,7 +256,7 @@ OrganizationMember.init(
       { fields: ['organization_id'], where: { deleted_at: null } },
       { fields: ['user_id'], where: { deleted_at: null } },
       { fields: ['status'], where: { deleted_at: null } },
-      { fields: ['invitation_token'], where: { status: 'invited', deleted_at: null } },
+      { fields: ['invitation_token'], where: { status: MEMBER_STATUS.INVITED, deleted_at: null } },
       { fields: ['organization_id', 'user_id'], unique: true },
     ],
   },
