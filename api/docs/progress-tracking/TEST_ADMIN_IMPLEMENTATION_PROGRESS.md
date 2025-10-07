@@ -10,17 +10,18 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 12/55 (21.8%)
-**Tests Written:** 95/330 (28.8%)
-**Tests Passing:** 95/95 (100%) ✅
+**Endpoints Complete:** 19/55 (34.5%)
+**Tests Written:** 136/330 (41.2%)
+**Tests Passing:** 136/136 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
 - ✅ **6.2 - Admin Organizations:** 4 endpoints, 31 tests (100%)
 - ✅ **6.3 - Admin Environments:** 4 endpoints, 33 tests (100%)
+- ✅ **6.4 - Admin Members:** 7 endpoints, 41 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.4 - Admin Members:** 7 endpoints, ~42 tests
+- ⏭️ **6.5 - Admin Groups:** 4 endpoints, ~24 tests
 - ⏭️ **6.5 - Admin Groups:** 4 endpoints, ~24 tests
 - ⏭️ **6.6 - Admin Roles & Permissions:** 9 endpoints, ~54 tests
 - ⏭️ **6.7 - Admin Role Assignments:** 3 endpoints, ~18 tests
@@ -156,19 +157,64 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.4 Admin Members (7 endpoints)
+### 6.4 Admin Members (7 endpoints) ✅
 **File:** `admin/members.test.ts`
-**Estimated Tests:** ~42
+**Date Completed:** 2025-10-07
+**Tests:** 41/41 passing (100%)
 
-1. `GET /admin/organizations/{orgId}/members` - List org members
-2. `GET /admin/organizations/{orgId}/members/{memberId}` - Get member details
-3. `PUT /admin/organizations/{orgId}/members/{memberId}` - Update member
-4. `DELETE /admin/organizations/{orgId}/members/{memberId}` - Remove member
-5. `GET /admin/groups/{groupId}/members` - List group members
-6. `POST /admin/groups/{groupId}/members` - Add member to group
-7. `DELETE /admin/groups/{groupId}/members/{userId}` - Remove member from group
+#### Endpoints:
+1. ✅ `GET /admin/organizations/{orgId}/members` - List org members
+2. ✅ `GET /admin/organizations/{orgId}/members/{memberId}` - Get member details
+3. ✅ `PUT /admin/organizations/{orgId}/members/{memberId}` - Update member
+4. ✅ `DELETE /admin/organizations/{orgId}/members/{memberId}` - Remove member
+5. ✅ `GET /admin/groups/{groupId}/members` - List group members
+6. ✅ `POST /admin/groups/{groupId}/members` - Add member to group
+7. ✅ `DELETE /admin/groups/{groupId}/members/{userId}` - Remove member from group
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/members.test.ts`
+- [x] Constants: `member.constants.ts` (added filterable/sortable/searchable fields)
+- [x] Test constants: Added MEMBER_1, MEMBER_2, GROUP_1, USER_REGULAR_2, ORG_TEST_2, etc.
+- [x] Model: `OrganizationMember.findWithFilters()` for advanced filtering/search
+- [x] Model: `GroupMember.findByGroupWithUsers()` for group members with user data
+- [x] Validation: `admin-member.schemas.ts`
+- [x] Service: `admin-member.service.ts`
+- [x] Controller: `admin-member.controller.ts`
+- [x] Routes: `admin-member.routes.ts`
+- [x] Wired into main router (mounted at `/admin`)
+- [x] Error constant: `GROUP_MEMBER_EXISTS`
+
+#### Key Features:
+- **Organization Members:**
+  - Filtering: status, createdAt, joinedAt
+  - Sorting: Multiple fields with direction support
+  - Search: Full-text across user fields (email, givenName, familyName)
+  - Field selection: Optimized responses
+  - Status management: invited → active (sets joinedAt), suspended
+  - Soft delete support
+- **Group Members:**
+  - Simple pagination (limit/offset)
+  - Add/remove members from groups
+  - Duplicate detection (409 Conflict)
+  - Includes user details in response
+
+#### Test Coverage (41 tests):
+**Organization Members (27 tests):**
+- List (11 tests): pagination, filters (status, createdAt, joinedAt), sorting, search, field selection, auth, errors
+- Get (5 tests): success, auth, authorization, not found, database error
+- Update (7 tests): status change, invited→active (sets joinedAt), validation, auth, errors
+- Delete (4 tests): soft delete, auth, authorization, not found
+
+**Group Members (14 tests):**
+- List (4 tests): pagination, auth, authorization, not found
+- Add (6 tests): success (201), auth, authorization, not found group, duplicate (409), validation
+- Remove (4 tests): success (204), auth, authorization, not found group/member
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **Security:** Never expose invitationToken or internal fields
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
 
 ---
 

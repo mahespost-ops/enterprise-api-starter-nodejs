@@ -165,6 +165,125 @@ export class OrganizationMember
       },
     });
   }
+
+  /**
+   * Find members with advanced filtering, sorting, search, and pagination (for admin)
+   * Delegates ALL database operations to model layer (no Op imports in service)
+   */
+  static async findWithFilters(
+    organizationId: string,
+    filters: {
+      status?: string;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      joinedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    }
+  ): Promise<{ rows: OrganizationMember[]; count: number }> {
+    const { Op } = await import('sequelize');
+    const { User } = await import('./User.model');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = { organizationId };
+
+    // Apply status filter
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    // Apply createdAt filters
+    if (filters.createdAt) {
+      where.createdAt = {};
+      if (filters.createdAt.gte) where.createdAt[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) where.createdAt[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) where.createdAt[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) where.createdAt[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) where.createdAt[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) where.createdAt[Op.ne] = filters.createdAt.ne;
+    }
+
+    // Apply joinedAt filters
+    if (filters.joinedAt) {
+      where.joinedAt = {};
+      if (filters.joinedAt.gte) where.joinedAt[Op.gte] = filters.joinedAt.gte;
+      if (filters.joinedAt.lte) where.joinedAt[Op.lte] = filters.joinedAt.lte;
+      if (filters.joinedAt.gt) where.joinedAt[Op.gt] = filters.joinedAt.gt;
+      if (filters.joinedAt.lt) where.joinedAt[Op.lt] = filters.joinedAt.lt;
+      if (filters.joinedAt.eq) where.joinedAt[Op.eq] = filters.joinedAt.eq;
+      if (filters.joinedAt.ne) where.joinedAt[Op.ne] = filters.joinedAt.ne;
+    }
+
+    // Build include for User search
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userInclude: any = {
+      model: User,
+      as: 'user',
+      attributes: ['id', 'email', 'givenName', 'familyName'],
+      required: false, // LEFT JOIN
+    };
+
+    // Apply search on user fields if provided
+    if (options.search && options.searchFields && options.searchFields.length > 0) {
+      // Search on user fields (email, givenName, familyName)
+      userInclude.where = {
+        [Op.or]: options.searchFields.map((field) => ({
+          [field]: { [Op.iLike]: `%${options.search}%` },
+        })),
+      };
+      userInclude.required = true; // INNER JOIN when searching
+    }
+
+    // Build order clause
+    const order: [string, string][] = [];
+    if (options.sort) {
+      const sortFields = options.sort.split(',');
+      sortFields.forEach((sortField) => {
+        const direction = sortField.startsWith('-') ? 'DESC' : 'ASC';
+        const field = sortField.replace(/^-/, '');
+
+        // Only allow sorting on defined sortable fields
+        if (options.sortableFields && options.sortableFields.includes(field)) {
+          order.push([field, direction]);
+        }
+      });
+    }
+
+    // Default sort by createdAt DESC
+    if (order.length === 0) {
+      order.push(['createdAt', 'DESC']);
+    }
+
+    // Execute query
+    return this.findAndCountAll({
+      where,
+      include: [userInclude],
+      limit: options.limit || 20,
+      offset: options.offset || 0,
+      order,
+      distinct: true, // Ensure count is correct with JOIN
+    });
+  }
 }
 
 OrganizationMember.init(

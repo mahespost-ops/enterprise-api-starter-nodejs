@@ -49,6 +49,9 @@ export const TEST_UUIDS = {
   /** Regular user with standard permissions */
   USER_REGULAR: '11111111-1111-1111-1111-111111111111',
 
+  /** Secondary regular user for multi-user testing */
+  USER_REGULAR_2: '11111111-1111-1111-1111-111111111112',
+
   /** Primary test user */
   USER_TEST: '12345678-1234-1234-1234-123456789001',
 
@@ -67,6 +70,9 @@ export const TEST_UUIDS = {
 
   /** Primary test organization (legacy UUID maintained for compatibility) */
   ORG_TEST: '550e8400-e29b-41d4-a716-446655440002',
+
+  /** Secondary test organization */
+  ORG_TEST_2: '550e8400-e29b-41d4-a716-446655440003',
 
   /** Secondary organization for multi-tenant testing */
   ORG_SECONDARY: 'cccccccc-cccc-cccc-cccc-cccccccccc02',
@@ -120,6 +126,9 @@ export const TEST_UUIDS = {
   // Groups (ending in 6)
   // ============================================================================
 
+  /** Primary test group */
+  GROUP_1: '66666666-6666-6666-6666-666666666661',
+
   /** Engineering group */
   GROUP_ENGINEERING: '66666666-6666-6666-6666-666666666666',
 
@@ -128,6 +137,25 @@ export const TEST_UUIDS = {
 
   /** Secondary test group */
   GROUP_TEST: '88888888-8888-8888-8888-888888888886',
+
+  /** Non-existent group */
+  GROUP_NONEXISTENT: '99999999-9999-9999-9999-999999999996',
+
+  // ============================================================================
+  // Members (ending in 7)
+  // ============================================================================
+
+  /** Primary test member */
+  MEMBER_1: '77777777-7777-7777-7777-777777777771',
+
+  /** Secondary test member */
+  MEMBER_2: '77777777-7777-7777-7777-777777777772',
+
+  /** Non-existent member */
+  MEMBER_NONEXISTENT: '99999999-9999-9999-9999-999999999997',
+
+  /** Non-existent organization */
+  ORG_NONEXISTENT: '99999999-9999-9999-9999-999999999992',
 } as const;
 
 /**

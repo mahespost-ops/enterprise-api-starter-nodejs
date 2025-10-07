@@ -54,6 +54,31 @@ export class GroupMember
       },
     });
   }
+
+  /**
+   * Find members by group with user details (for admin)
+   */
+  static async findByGroupWithUsers(
+    groupId: string,
+    limit = 20,
+    offset = 0
+  ): Promise<{ rows: GroupMember[]; count: number }> {
+    const { User } = await import('./User.model');
+
+    return this.findAndCountAll({
+      where: { groupId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'givenName', 'familyName'],
+        },
+      ],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+  }
 }
 
 GroupMember.init(
