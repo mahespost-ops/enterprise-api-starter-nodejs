@@ -11,6 +11,8 @@ import organizationRoutes from './organization.routes';
 import environmentRoutes from './environment.routes';
 import memberRoutes from './member.routes';
 import groupRoutes from './group.routes';
+import eventRoutes from './event.routes';
+import webhookRoutes from './webhook.routes';
 
 const router = Router();
 
@@ -22,6 +24,8 @@ router.use('/orgs', organizationRoutes);
 router.use('/orgs', environmentRoutes);
 router.use('/orgs/:orgId/members', memberRoutes);
 router.use('/orgs/:orgId/groups', groupRoutes);
+router.use('/orgs/:orgId/envs/:envId/events', eventRoutes);
+router.use('/orgs/:orgId/envs/:envId/webhooks', webhookRoutes);
 
 // Future routes will be added here:
 // router.use('/devices', deviceRoutes);

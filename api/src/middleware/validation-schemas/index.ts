@@ -9,3 +9,5 @@ export * as organizationSchemas from './organization.schemas';
 export * as environmentSchemas from './environment.schemas';
 export * as memberSchemas from './member.schemas';
 export * as groupSchemas from './group.schemas';
+export * as eventSchemas from './event.schemas';
+export * as webhookSchemas from './webhook.schemas';

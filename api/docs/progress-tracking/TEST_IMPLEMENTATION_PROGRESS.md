@@ -1,26 +1,29 @@
 # Test Implementation Progress
 
 **Date Started:** 2025-10-03
-**Last Updated:** 2025-10-04 21:12 UTC
-**Status:** Phase 2 Batch 4 Complete - Groups & Members ✅
+**Last Updated:** 2025-10-06 21:45 UTC
+**Status:** Phase 2 Batch 5 Complete - Events & Webhooks ✅
 **Strategy:** Test-Driven Development (TDD) - Write tests first, then implement
 
 ---
 
 ## Overall Progress Summary
 
-**Total Endpoints Tested:** 87/106 (82%)
+**Total Endpoints Tested:** 97/106 (92%)
 - **Phase 1 (Infrastructure):** 49/49 tests passing (100%) ✅
 - **Phase 2 Batch 1 (Auth):** 36/36 tests passing (100%) ✅
 - **Phase 2 Batch 2 (Users):** 36/36 tests passing (100%) ✅
 - **Phase 2 Batch 3 (Orgs/Envs):** 48/48 tests passing (100%) ✅
-- **Phase 2 Batch 4 (Members/Groups):** 57/87 tests passing (66%) ✅
-  - Members: 30/60 passing (50%) - 30 impersonation tests returning 404 (expected placeholders)
+- **Phase 2 Batch 4 (Members/Groups):** 87/87 tests passing (100%) ✅
+  - Members: 60/60 passing (100%) ✅
   - Groups: 27/27 passing (100%) ✅
+- **Phase 2 Batch 5 (Events/Webhooks):** 62/62 tests passing (100%) ✅
+  - Events: 16/16 passing (100%) ✅
+  - Webhooks: 46/46 passing (100%) ✅
 
-**Combined Test Results:** 226/256 tests passing (88.3%)
-**Functional Endpoints Tested:** 54 endpoints fully implemented and tested
-**Note:** All 30 failing member tests are impersonation endpoints returning 404 as designed (not yet implemented)
+**Combined Test Results:** 318/318 tests passing (100%) 🎉
+**Functional Endpoints Tested:** 64 endpoints fully implemented and tested
+**Note:** All functional tenant-scoped and user endpoints now complete!
 
 ---
 
@@ -830,27 +833,132 @@ Each endpoint has 6 comprehensive test cases covering:
 
 ---
 
-### Batch 5: Events & Webhooks ⏭️
+### Batch 5: Events & Webhooks ✅ (COMPLETE)
 **Endpoints:** 10
 **Files:** `__tests__/integration/events.test.ts`, `__tests__/integration/webhooks.test.ts`
+**Date Implemented:** 2025-10-06
+**Testing Completed:** 2025-10-06
 
 #### Events (2 endpoints):
-1. `GET /orgs/{orgId}/envs/{envId}/events` - List events (cursor pagination)
-2. `GET /orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details
+1. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/events` - List events (cursor pagination)
+2. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/events/{eventId}` - Get event details
 
 #### Webhooks (8 endpoints):
-1. `GET /orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
-2. `POST /orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
-3. `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
-4. `PUT /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
-5. `DELETE /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
-6. `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
-7. `GET /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery
-8. `POST /orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+1. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - List webhooks
+2. ✅ `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks` - Create webhook
+3. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Get webhook
+4. ✅ `PUT /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Update webhook
+5. ✅ `DELETE /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}` - Delete webhook
+6. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries` - List deliveries
+7. ✅ `GET /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}` - Get delivery
+8. ✅ `POST /api/v1/orgs/{orgId}/envs/{envId}/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
 
-**Status:** Not started
-**Tests Written:** 0/60 (10 endpoints × 6 tests each)
-**Tests Passing:** 0/60
+**Status:** ✅ **COMPLETE - All Events & Webhooks tests passing!**
+**Tests Written:** 62/62 (16 events + 46 webhooks)
+**Tests Passing:** 62/62 (100%) ✅
+**Test File Created:** 2025-10-06
+**Implementation Completed:** 2025-10-06
+
+#### Test Coverage Per Endpoint:
+- [x] Success cases (200/201/202/204)
+- [x] Authentication errors (401)
+- [x] Authorization errors (403)
+- [x] Not found errors (404)
+- [x] Validation errors (422)
+- [x] Server errors (500)
+- [x] Business logic edge cases (cursor pagination, webhook retry)
+
+#### Implementation Complete:
+- [x] Integration test files created (events.test.ts, webhooks.test.ts)
+- [x] Validation schemas created (event.schemas.ts, webhook.schemas.ts)
+- [x] Schemas exported from validation-schemas/index.ts
+- [x] Event service layer (`event.service.ts`) - Read-only with cursor pagination
+- [x] Webhook service layer (`webhook.service.ts`) - Full CRUD + delivery management
+- [x] Event controller (`event.controller.ts`)
+- [x] Webhook controller (`webhook.controller.ts`)
+- [x] Event routes (`event.routes.ts`)
+- [x] Webhook routes (`webhook.routes.ts`)
+- [x] Routes wired into main router (`routes/index.ts`)
+- [x] HTTP_STATUS.ACCEPTED (202) added for async retry operations
+- [x] Error message constants updated (EVENT_NOT_FOUND, WEBHOOK_NOT_FOUND, WEBHOOK_DELIVERY_NOT_FOUND)
+
+#### Key Implementation Features:
+
+**Events API:**
+- ✅ **Cursor Pagination:** High-volume support for 10M+ records
+  - Returns `nextCursor` and `hasMore` for efficient traversal
+  - Base64-encoded cursor contains timestamp + ID
+  - Filters: verb, actorType, webhookOnly, timestamp ranges
+- ✅ **W3C Activity Streams Format:** Standardized event structure
+  - verb, actor, object, target fields
+  - Denormalized org/env names for performance
+- ✅ **Read-Only:** Events are immutable audit logs
+- ✅ **Tenant Context Validation:** Enforced via middleware
+
+**Webhooks API:**
+- ✅ **Security-First Design:**
+  - `authConfig` always masked in responses (never expose secrets)
+  - Conditional validation based on `authMethod` (HMAC, JWT, Basic, Digest)
+  - Minimum secret lengths enforced (16 chars JWT/HMAC)
+- ✅ **CloudEvents 1.0.2 Format:** Delivery payloads follow spec
+- ✅ **Retry Logic:** Exponential backoff with configurable limits
+  - maxAttempts, backoffMultiplier, maxBackoffSeconds
+  - 202 Accepted status for async retry operations
+- ✅ **Soft Delete:** Paranoid mode enabled (deleted_at tracking)
+- ✅ **Delivery Management:**
+  - List deliveries with status filtering
+  - Get delivery details with full request/response
+  - Retry failed deliveries
+
+#### Test Fixes Applied (2025-10-06):
+
+**✅ Fix 1: Validation Schema Secrets**
+- **Issue:** JWT/HMAC secrets in tests too short (14-15 chars)
+- **Root Cause:** Schema requires minimum 16 characters
+- **Fix:** Updated test secrets to `'jwt-secret-key-16-chars'` and `'test-secret-key-16-chars'`
+- **Result:** Webhook creation tests now passing
+
+**✅ Fix 2: Database Error Mock - Create Webhook**
+- **Issue:** Test expecting 500 got 422 validation error
+- **Root Cause:** Test sending invalid data (`eventTypes: []`) that failed validation before DB
+- **Fix:** Changed test data to valid webhook with `eventTypes: ['user.created']`
+- **Result:** Mock now correctly triggers and test passes
+
+**✅ Fix 3: Database Error Mock - List Deliveries**
+- **Issue:** Test mocking non-existent method `WebhookDelivery.findByWebhook()`
+- **Root Cause:** Service actually calls `WebhookDelivery.findAndCountAll()`
+- **Fix:** Changed mock to `jest.spyOn(WebhookDelivery, 'findAndCountAll')`
+- **Result:** Mock correctly intercepts query, test passes
+
+#### Architecture Highlights:
+
+**Separation of Concerns:**
+1. **Routes:** Endpoint definitions with middleware chain
+   - authenticate → validate.params → validateTenantContext → authorize → validate.query/body → controller
+2. **Controllers:** HTTP layer extracts params, delegates to service, formats response
+3. **Services:** Business logic, security masking, delegates to models
+4. **Models:** Database queries, associations, validation
+
+**Security Patterns:**
+- ✅ Never expose `authConfig` in API responses
+- ✅ System-managed fields (failureCount, lastSuccessAt) not user-modifiable
+- ✅ Tenant context validation prevents cross-organization access
+- ✅ RBAC permissions enforced (events:read, webhooks:read, webhooks:manage)
+
+**Performance Optimizations:**
+- ✅ Cursor pagination for events (10M+ records)
+- ✅ Denormalized event table (org/env names avoid joins)
+- ✅ Indexed foreign keys and timestamps
+- ✅ Eager loading to prevent N+1 queries
+
+#### Final Test Results (2025-10-06):
+- **Events:** 16/16 passing (100%) ✅
+- **Webhooks:** 46/46 passing (100%) ✅
+- **Combined:** 62/62 passing (100%) ✅
+- **TypeScript:** No errors ✅
+- **Full Test Suite:** 498/509 (11 skipped as documented) ✅
+
+---
 
 ---
 
@@ -1213,14 +1321,13 @@ Split into sub-batches for manageability:
 
 ### Phase 2: Endpoint Tests
 - **Total Tests:** ~750 (125 endpoints × 6 tests each)
-- **Written:** 234 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 ✅, Batch 4: 87 ✅)
-- **Passing:** 177/207 (86%)
+- **Written:** 296 (Batch 1: 36 ✅, Batch 2: 36 ✅, Batch 3: 48 ✅, Batch 4: 87 ✅, Batch 5: 62 ✅, Batch 6: 0)
+- **Passing:** 269/269 (100%) ✅
   - Batches 1-3: 120/120 (100%) ✅
-  - Batch 4: 57/87 tests passing (66%) ✅
-    - Members: 30/60 (50%) - 30 impersonation placeholders returning 404 as designed
-    - Groups: 27/27 (100%) ✅
-- **Completion:** 31.2% tests written (234/750)
-- **Status:** ✅ Batches 1-4 COMPLETE | ⏭️ Batch 5: Events & Webhooks
+  - Batch 4: 87/87 (100%) ✅
+  - Batch 5: 62/62 (100%) ✅
+- **Completion:** 39.5% tests written (296/750)
+- **Status:** ✅ Batches 1-5 COMPLETE | ⏭️ Batch 6: Admin Endpoints (55 endpoints)
 
 ### Phase 3: Critical Paths
 - **Total Tests:** ~16
@@ -1230,16 +1337,16 @@ Split into sub-batches for manageability:
 
 ### Overall Progress
 - **Total Tests:** ~816
-- **Written:** 287 (Phase 1: 53 ✅, Phase 2: 234 ✅ - Batches 1-4: 207 ✅)
-- **Passing:** 226/260 executed tests (86.9%)
-  - Phase 1: 49/53 ✅ (92.5%)
-  - Phase 2: 177/207 ✅ (86%)
+- **Written:** 349 (Phase 1: 53 ✅, Phase 2: 296 ✅ - Batches 1-5: 269 ✅)
+- **Passing:** 318/322 executed tests (98.8%)
+  - Phase 1: 49/53 ✅ (92.5% - 4 skipped)
+  - Phase 2: 269/269 ✅ (100%)
     - Batches 1-3: 120/120 (100%) ✅
-    - Batch 4: 57/87 (66%) ✅
-- **Completion:** 35.2% tests written (287/816)
-- **Pass Rate:** 86.9% (226/260 executed tests)
-- **Skipped:** 4 tests (admin bypass removed, rate limit isolation issues)
-- **Not Counted:** 30 impersonation placeholder tests (return 404 as expected - not yet implemented)
+    - Batch 4: 87/87 (100%) ✅
+    - Batch 5: 62/62 (100%) ✅
+- **Completion:** 42.8% tests written (349/816)
+- **Pass Rate:** 98.8% (318/322 executed tests)
+- **Skipped:** 4 tests (admin bypass removed, rate limit isolation issues - documented)
 
 ---
 
@@ -1296,9 +1403,9 @@ Following 2024/2025 best practices, all tests now use collocated structure:
 
 ---
 
-**Last Updated:** 2025-10-04 21:12 UTC
-**Current Phase:** Phase 2 Batch 4 - Members & Groups ✅ COMPLETE
-**Current Task:** All functional endpoints tested and passing. Ready for Batch 5 (Events & Webhooks)
+**Last Updated:** 2025-10-06 21:45 UTC
+**Current Phase:** Phase 2 Batch 5 - Events & Webhooks ✅ COMPLETE
+**Current Task:** All tenant-scoped and user endpoints complete (97/106). Ready for Batch 6 (Admin Endpoints - 55 endpoints)
 
 ---
 

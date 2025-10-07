@@ -41,6 +41,9 @@ export const ERROR_MESSAGES = {
   MEMBER_NOT_FOUND: 'Member not found',
   GROUP_NOT_FOUND: 'Group not found',
   GROUP_MEMBER_NOT_FOUND: 'User is not a member of this group',
+  EVENT_NOT_FOUND: 'Event not found',
+  WEBHOOK_NOT_FOUND: 'Webhook not found',
+  WEBHOOK_DELIVERY_NOT_FOUND: 'Webhook delivery not found',
 
   // Conflicts
   USER_EXISTS: 'User with this email already exists',

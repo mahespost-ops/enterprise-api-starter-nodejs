@@ -7,6 +7,7 @@ export const HTTP_STATUS = {
   // Success
   OK: 200,
   CREATED: 201,
+  ACCEPTED: 202,
   NO_CONTENT: 204,
 
   // Client Errors
@@ -26,6 +27,7 @@ export const HTTP_STATUS = {
 export const HTTP_STATUS_MESSAGE = {
   [HTTP_STATUS.OK]: 'OK',
   [HTTP_STATUS.CREATED]: 'Created',
+  [HTTP_STATUS.ACCEPTED]: 'Accepted',
   [HTTP_STATUS.NO_CONTENT]: 'No Content',
   [HTTP_STATUS.BAD_REQUEST]: 'Bad Request',
   [HTTP_STATUS.UNAUTHORIZED]: 'Unauthorized',
