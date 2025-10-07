@@ -9,7 +9,7 @@ listUsers:
       Get all users across all organizations (requires admin:users:read permission)
 
       **Filterable fields:**
-      - `status` (eq, ne, in, nin) - Values: active, inactive, suspended
+      - `isActive` (eq) - Values: true, false
       - `organizationId` (eq, ne, in, nin) - Filter users by organization membership
       - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
       - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
@@ -25,15 +25,15 @@ listUsers:
       - Full-text search across email, name, givenName, familyName (case-insensitive)
 
       **Selectable fields:**
-      - All fields: id, email, emailVerified, name, givenName, familyName, phoneNumber, picture, locale, status, lastLoginAt, createdAt, updatedAt
+      - All fields: id, email, emailVerified, name, givenName, familyName, phoneNumber, picture, locale, isActive, lastLoginAt, createdAt, updatedAt
 
       **Examples:**
       ```
       # Active users only, sorted by newest first
-      ?filter[status]=active&sort=-createdAt&limit=50
+      ?filter[isActive]=true&sort=-createdAt&limit=50
 
-      # Users created after Jan 1, 2025 with active or inactive status
-      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[status][in]=active,inactive
+      # Users created after Jan 1, 2025 who are active
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[isActive]=true
 
       # Search for users and return only id, email, name
       ?search=john&fields=id,email,name&limit=20
@@ -55,15 +55,15 @@ listUsers:
       # Field Selection
       - $ref: '../components/parameters.yaml#/fields'
       # Filters
-      - name: filter[status]
+      - name: filter[isActive]
         in: query
         required: false
         description: |
-          Filter by user status (supports: eq, ne, in, nin)
-          Values: active, inactive, suspended
+          Filter by user active status (supports: eq)
+          Values: true, false
         schema:
-          type: string
-        example: 'active'
+          type: boolean
+        example: true
       - name: filter[organizationId]
         in: query
         required: false
@@ -137,7 +137,7 @@ listUsers:
                       phoneNumber: '+12125551234'
                       picture: 'https://example.com/avatar.jpg'
                       locale: 'en-US'
-                      status: 'active'
+                      isActive: true
                       lastLoginAt: '2025-10-03T10:30:00Z'
                       createdAt: '2025-10-02T14:00:00Z'
                       updatedAt: '2025-10-03T10:30:00Z'
@@ -148,7 +148,7 @@ listUsers:
                       givenName: 'Jane'
                       familyName: 'Smith'
                       phoneNumber: '+12125555678'
-                      status: 'active'
+                      isActive: true
                       lastLoginAt: '2025-10-02T16:45:00Z'
                       createdAt: '2025-10-01T09:15:00Z'
                       updatedAt: '2025-10-02T16:45:00Z'
@@ -266,14 +266,10 @@ updateUser:
                 format: uri
                 description: Profile picture URL
                 example: 'https://example.com/avatar.jpg'
-              status:
-                type: string
-                enum:
-                  - active
-                  - inactive
-                  - suspended
-                description: User account status
-                example: 'active'
+              isActive:
+                type: boolean
+                description: Whether the user account is active
+                example: true
     responses:
       '200':
         description: User updated successfully
