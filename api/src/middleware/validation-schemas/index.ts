@@ -13,3 +13,4 @@ export * as eventSchemas from './event.schemas';
 export * as webhookSchemas from './webhook.schemas';
 export * as adminUserSchemas from './admin-user.schemas';
 export * as adminOrganizationSchemas from './admin-organization.schemas';
+export * as adminEnvironmentSchemas from './admin-environment.schemas';

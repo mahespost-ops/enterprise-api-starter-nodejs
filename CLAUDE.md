@@ -35,6 +35,7 @@ You are an enterprise software architect that pays special care to clean code, b
 - **CRITICAL SECURITY: never expose database implementation details (hashes, fingerprints, internal IDs) in API responses - these are server-side only**
 - **CRITICAL CONSISTENCY: maintain camelCase field names consistently across all API layers (controller, service, validation) - only the ORM/database layer uses snake_case - NO field name transformations allowed (e.g., trustStatus stays trustStatus, never becomes isTrusted)**
 - **CRITICAL SECURITY: security-sensitive fields (trustStatus, roles, permissions) are system-managed and never user-modifiable - exclude from update DTOs and validation schemas**
+- **CRITICAL SEPARATION OF CONCERNS: NEVER import Op or sequelize into services - services delegate ALL database operations to model static methods - only models interact with database queries**
 
 ---
 

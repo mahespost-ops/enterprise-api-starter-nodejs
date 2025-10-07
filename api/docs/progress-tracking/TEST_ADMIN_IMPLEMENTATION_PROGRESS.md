@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-07 16:30 UTC
-**Status:** In Progress - 8/55 endpoints complete (14.5%)
+**Last Updated:** 2025-10-07 17:40 UTC
+**Status:** In Progress - 12/55 endpoints complete (21.8%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,16 +10,16 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 8/55 (14.5%)
-**Tests Written:** 62/330 (18.8%)
-**Tests Passing:** 62/62 (100%) ✅
+**Endpoints Complete:** 12/55 (21.8%)
+**Tests Written:** 95/330 (28.8%)
+**Tests Passing:** 95/95 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
 - ✅ **6.2 - Admin Organizations:** 4 endpoints, 31 tests (100%)
+- ✅ **6.3 - Admin Environments:** 4 endpoints, 33 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.3 - Admin Environments:** 4 endpoints, ~24 tests
 - ⏭️ **6.4 - Admin Members:** 7 endpoints, ~42 tests
 - ⏭️ **6.5 - Admin Groups:** 4 endpoints, ~24 tests
 - ⏭️ **6.6 - Admin Roles & Permissions:** 9 endpoints, ~54 tests
@@ -116,18 +116,43 @@ All admin endpoints follow the pattern:
 
 ---
 
-## Remaining Sub-Batches ⏭️
-
-### 6.3 Admin Environments (4 endpoints)
+### 6.3 Admin Environments (4 endpoints) ✅
 **File:** `admin/environments.test.ts`
-**Estimated Tests:** ~24
+**Date Completed:** 2025-10-07
+**Tests:** 33/33 passing (100%)
 
-1. `GET /admin/environments` - List all environments
-2. `GET /admin/environments/{envId}` - Get environment details
-3. `PUT /admin/environments/{envId}` - Update environment
-4. `DELETE /admin/environments/{envId}` - Delete environment
+#### Endpoints:
+1. ✅ `GET /admin/environments` - List all environments
+2. ✅ `GET /admin/environments/{envId}` - Get environment details
+3. ✅ `PUT /admin/environments/{envId}` - Update environment
+4. ✅ `DELETE /admin/environments/{envId}` - Delete environment (soft)
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/environments.test.ts`
+- [x] Model: Added `findWithFilters` static method to `Environment.model.ts`
+- [x] Validation: `admin-environment.schemas.ts`
+- [x] Service: `admin-environment.service.ts`
+- [x] Controller: `admin-environment.controller.ts`
+- [x] Routes: `admin-environment.routes.ts`
+- [x] Wired into main router
+- [x] Updated CLAUDE.md with SOC rule (no Op/sequelize in services)
+
+#### Key Features:
+- **Filtering:** organizationId, type, isActive, isDefault, createdAt, updatedAt
+- **Sorting:** name, type, createdAt, updatedAt, isDefault, isActive
+- **Search:** Full-text across name
+- **Field Selection:** Optimized responses
+- **Separation of Concerns:** All DB logic in model layer (no Op imports in service)
+
+#### Test Coverage:
+- List (11 tests): pagination, filters (5 types), sorting, search, field selection, auth, errors
+- Get (5 tests): success, auth, authorization, not found, database error
+- Update (12 tests): name, description, isDefault, isActive, type, multiple fields, validation (3), auth, errors (2)
+- Delete (5 tests): soft delete, auth, authorization, not found, error
+
+---
+
+## Remaining Sub-Batches ⏭️
 
 ---
 
