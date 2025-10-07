@@ -118,32 +118,12 @@ class WebhookService {
 
     const { limit = 20, offset = 0, isActive, authMethod, search, fields } = options;
 
-    // Build where clause
-    const where: Record<string, unknown> = {
-      environmentId: envId,
-    };
-
-    if (isActive !== undefined) {
-      where.isActive = isActive;
-    }
-
-    if (authMethod) {
-      where.authMethod = authMethod;
-    }
-
-    if (search) {
-      where.name = { $iLike: `%${search}%` };
-    }
-
-    // Query with pagination
-    const { rows: webhooks, count: total } = await Webhook.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-      attributes: fields && fields.length > 0 ? ['id', ...fields] : undefined,
-      paranoid: true, // Exclude soft-deleted
-    });
+    // Delegate to model's static method - all DB logic in model layer
+    const { rows: webhooks, count: total } = await Webhook.findByEnvironment(
+      envId,
+      { isActive, authMethod, search },
+      { limit, offset, fields }
+    );
 
     logger.debug(`Retrieved ${webhooks.length} webhooks (total: ${total})`);
 

@@ -135,6 +135,145 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
 
     return null;
   }
+
+  /**
+   * Find users with filters, pagination, sorting, and search (admin)
+   * All database query logic isolated in model layer per SOC
+   */
+  static async findWithFilters(
+    filters: {
+      isActive?: boolean;
+      organizationId?: string;
+      emailVerified?: boolean;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      updatedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    } = {},
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    } = {}
+  ): Promise<{ rows: User[]; count: number }> {
+    const { Op } = await import('sequelize');
+    const { OrganizationMember } = await import('./OrganizationMember.model');
+
+    const {
+      limit = 20,
+      offset = 0,
+      sort = '-createdAt',
+      search,
+      searchFields = ['email', 'givenName', 'familyName'],
+      sortableFields = ['createdAt', 'updatedAt', 'email', 'name'],
+      fields,
+    } = options;
+
+    // Build where clause from filters
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    // Filter by isActive
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    // Filter by emailVerified
+    if (filters.emailVerified !== undefined) {
+      where.emailVerified = filters.emailVerified;
+    }
+
+    // Filter by createdAt
+    if (filters.createdAt) {
+      where.createdAt = {};
+      if (filters.createdAt.gte) where.createdAt[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) where.createdAt[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) where.createdAt[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) where.createdAt[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) where.createdAt[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) where.createdAt[Op.ne] = filters.createdAt.ne;
+    }
+
+    // Filter by updatedAt
+    if (filters.updatedAt) {
+      where.updatedAt = {};
+      if (filters.updatedAt.gte) where.updatedAt[Op.gte] = filters.updatedAt.gte;
+      if (filters.updatedAt.lte) where.updatedAt[Op.lte] = filters.updatedAt.lte;
+      if (filters.updatedAt.gt) where.updatedAt[Op.gt] = filters.updatedAt.gt;
+      if (filters.updatedAt.lt) where.updatedAt[Op.lt] = filters.updatedAt.lt;
+      if (filters.updatedAt.eq) where.updatedAt[Op.eq] = filters.updatedAt.eq;
+      if (filters.updatedAt.ne) where.updatedAt[Op.ne] = filters.updatedAt.ne;
+    }
+
+    // Filter by organizationId (users who are members of org)
+    if (filters.organizationId) {
+      const members = await OrganizationMember.findAll({
+        where: { organizationId: filters.organizationId },
+        attributes: ['userId'],
+      });
+      const userIds = members.map((m) => m.userId);
+      where.id = { [Op.in]: userIds };
+    }
+
+    // Search across multiple fields
+    if (search) {
+      const searchPattern = `%${search}%`;
+      where[Op.or] = searchFields.map((field) => ({
+        [field]: { [Op.iLike]: searchPattern },
+      }));
+    }
+
+    // Parse sort parameter
+    const order: [string, string][] = [];
+    if (sort) {
+      const sortFields = sort.split(',');
+      for (const field of sortFields) {
+        if (field.startsWith('-')) {
+          const fieldName = field.substring(1);
+          if (sortableFields.includes(fieldName)) {
+            order.push([fieldName, 'DESC']);
+          }
+        } else {
+          if (sortableFields.includes(field)) {
+            order.push([field, 'ASC']);
+          }
+        }
+      }
+    }
+
+    // Build query options
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const queryOptions: any = {
+      where,
+      limit,
+      offset,
+      order: order.length > 0 ? order : [['createdAt', 'DESC']],
+    };
+
+    // Field selection
+    if (fields && fields.length > 0) {
+      queryOptions.attributes = fields;
+    }
+
+    // Execute query
+    return this.findAndCountAll(queryOptions);
+  }
 }
 
 // Initialize User model

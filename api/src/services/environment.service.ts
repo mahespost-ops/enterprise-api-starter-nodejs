@@ -86,31 +86,12 @@ class EnvironmentService {
 
     const { limit = 20, offset = 0, type, isDefault, search, fields } = options;
 
-    // Build where clause
-    const where: Record<string, unknown> = {
-      organizationId: orgId,
-    };
-
-    if (type) {
-      where.type = type;
-    }
-
-    if (isDefault !== undefined) {
-      where.isDefault = isDefault;
-    }
-
-    if (search) {
-      where.name = { $iLike: `%${search}%` };
-    }
-
-    // Query with pagination
-    const { rows: environments, count: total } = await Environment.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']],
-      attributes: fields && fields.length > 0 ? ['id', ...fields] : undefined,
-    });
+    // Delegate to model's static method - all DB logic in model layer
+    const { rows: environments, count: total } = await Environment.findByOrganization(
+      orgId,
+      { type, isDefault, search },
+      { limit, offset, fields }
+    );
 
     logger.debug(`Retrieved ${environments.length} environments (total: ${total})`);
 

@@ -89,6 +89,51 @@ export class Webhook extends Model<WebhookAttributes, WebhookCreationAttributes>
   }
 
   /**
+   * Find webhooks by environment with filters
+   * All database query logic isolated in model layer per SOC
+   */
+  static async findByEnvironment(
+    environmentId: string,
+    filters: {
+      isActive?: boolean;
+      authMethod?: string;
+      search?: string;
+    } = {},
+    options: {
+      limit?: number;
+      offset?: number;
+      fields?: string[];
+    } = {}
+  ): Promise<{ rows: Webhook[]; count: number }> {
+    const { limit = 20, offset = 0, fields } = options;
+
+    // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = { environmentId };
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    if (filters.authMethod) {
+      where.authMethod = filters.authMethod;
+    }
+
+    if (filters.search) {
+      where.name = { [Op.iLike]: `%${filters.search}%` };
+    }
+
+    return this.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      attributes: fields && fields.length > 0 ? ['id', ...fields] : undefined,
+      paranoid: true,
+    });
+  }
+
+  /**
    * Find webhooks subscribed to a specific event type
    */
   static async findByEventType(environmentId: string, eventType: string): Promise<Webhook[]> {

@@ -3,7 +3,7 @@
  * Organizational spaces/environments (Live, Sandbox)
  */
 
-import { Model, DataTypes, Optional, UUIDV1 } from 'sequelize';
+import { Model, DataTypes, Optional, UUIDV1, Op } from 'sequelize';
 import sequelize from '../config/database';
 
 export type EnvironmentType = 'live' | 'sandbox';
@@ -43,6 +43,50 @@ export class Environment
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare deletedAt: Date | null;
+
+  /**
+   * Find environments by organization with filters
+   * All database query logic isolated in model layer per SOC
+   */
+  static async findByOrganization(
+    organizationId: string,
+    filters: {
+      type?: string;
+      isDefault?: boolean;
+      search?: string;
+    } = {},
+    options: {
+      limit?: number;
+      offset?: number;
+      fields?: string[];
+    } = {}
+  ): Promise<{ rows: Environment[]; count: number }> {
+    const { limit = 20, offset = 0, fields } = options;
+
+    // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = { organizationId };
+
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
+    if (filters.isDefault !== undefined) {
+      where.isDefault = filters.isDefault;
+    }
+
+    if (filters.search) {
+      where.name = { [Op.iLike]: `%${filters.search}%` };
+    }
+
+    return this.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      attributes: fields && fields.length > 0 ? ['id', ...fields] : undefined,
+    });
+  }
 }
 
 Environment.init(
