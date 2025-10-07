@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Enterprise API
   description: |
-    Enterprise-grade REST API with RBAC, JWT authentication, and comprehensive security features.
+    Enterprise-grade multi-tenant REST API with hierarchical RBAC, passwordless authentication, event logging, webhooks, and cloud-agnostic service adapters. Designed for <200ms response times with denormalized reads, cursor pagination for high-volume endpoints, and comprehensive security controls including user impersonation with full audit trails.
 
     ## Authentication
     Most endpoints require JWT authentication. Include the token in the Authorization header:
