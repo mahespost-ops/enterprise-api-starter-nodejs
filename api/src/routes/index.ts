@@ -14,6 +14,7 @@ import groupRoutes from './group.routes';
 import eventRoutes from './event.routes';
 import webhookRoutes from './webhook.routes';
 import adminUserRoutes from './admin-user.routes';
+import adminOrganizationRoutes from './admin-organization.routes';
 
 const router = Router();
 
@@ -30,11 +31,11 @@ router.use('/orgs/:orgId/envs/:envId/webhooks', webhookRoutes);
 
 // Admin routes
 router.use('/admin/users', adminUserRoutes);
+router.use('/admin/organizations', adminOrganizationRoutes);
 
 // Future routes will be added here:
 // router.use('/devices', deviceRoutes);
 // router.use('/sessions', sessionRoutes);
-// router.use('/admin/organizations', adminOrganizationRoutes);
 // router.use('/admin/environments', adminEnvironmentRoutes);
 // router.use('/admin/members', adminMemberRoutes);
 // router.use('/admin/groups', adminGroupRoutes);

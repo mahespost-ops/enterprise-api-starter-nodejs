@@ -12,3 +12,4 @@ export * as groupSchemas from './group.schemas';
 export * as eventSchemas from './event.schemas';
 export * as webhookSchemas from './webhook.schemas';
 export * as adminUserSchemas from './admin-user.schemas';
+export * as adminOrganizationSchemas from './admin-organization.schemas';

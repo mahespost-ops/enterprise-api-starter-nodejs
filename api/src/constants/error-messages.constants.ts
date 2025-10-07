@@ -48,6 +48,7 @@ export const ERROR_MESSAGES = {
   // Conflicts
   USER_EXISTS: 'User with this email already exists',
   PHONE_EXISTS: 'Phone number already registered',
+  ORGANIZATION_SLUG_EXISTS: 'Organization with this slug already exists',
 
   // Rate Limiting
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',
