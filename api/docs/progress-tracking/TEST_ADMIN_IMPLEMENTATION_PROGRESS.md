@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-07 17:40 UTC
-**Status:** In Progress - 12/55 endpoints complete (21.8%)
+**Last Updated:** 2025-10-07 18:15 UTC
+**Status:** In Progress - 23/55 endpoints complete (41.8%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,19 +10,18 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 19/55 (34.5%)
-**Tests Written:** 136/330 (41.2%)
-**Tests Passing:** 136/136 (100%) ✅
+**Endpoints Complete:** 23/55 (41.8%)
+**Tests Written:** 170/330 (51.5%)
+**Tests Passing:** 170/170 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
 - ✅ **6.2 - Admin Organizations:** 4 endpoints, 31 tests (100%)
 - ✅ **6.3 - Admin Environments:** 4 endpoints, 33 tests (100%)
 - ✅ **6.4 - Admin Members:** 7 endpoints, 41 tests (100%)
+- ✅ **6.5 - Admin Groups:** 4 endpoints, 34 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.5 - Admin Groups:** 4 endpoints, ~24 tests
-- ⏭️ **6.5 - Admin Groups:** 4 endpoints, ~24 tests
 - ⏭️ **6.6 - Admin Roles & Permissions:** 9 endpoints, ~54 tests
 - ⏭️ **6.7 - Admin Role Assignments:** 3 endpoints, ~18 tests
 - ⏭️ **6.8 - Admin Devices:** 4 endpoints, ~24 tests
@@ -218,16 +217,52 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.5 Admin Groups (4 endpoints)
+### 6.5 Admin Groups (4 endpoints) ✅
 **File:** `admin/groups.test.ts`
-**Estimated Tests:** ~24
+**Date Completed:** 2025-10-07
+**Tests:** 34/34 passing (100%)
 
-1. `GET /admin/groups` - List all groups
-2. `GET /admin/groups/{groupId}` - Get group details
-3. `PUT /admin/groups/{groupId}` - Update group
-4. `DELETE /admin/groups/{groupId}` - Delete group
+#### Endpoints:
+1. ✅ `GET /admin/groups` - List all groups
+2. ✅ `GET /admin/groups/{groupId}` - Get group details
+3. ✅ `PUT /admin/groups/{groupId}` - Update group
+4. ✅ `DELETE /admin/groups/{groupId}` - Delete group
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/groups.test.ts`
+- [x] Constants: `group.constants.ts` (added filterable/sortable/searchable fields)
+- [x] Model: `Group.findWithFilters()` for advanced filtering/search
+- [x] Validation: `admin-group.schemas.ts`
+- [x] Service: `admin-group.service.ts`
+- [x] Controller: `admin-group.controller.ts`
+- [x] Routes: `admin-group.routes.ts`
+- [x] Wired into main router (mounted at `/admin/groups`)
+
+#### Key Features:
+- **Filtering:** organizationId, parentId (supports "null" for root groups), hierarchyLevel, isActive, createdAt, updatedAt
+- **Sorting:** name, createdAt, updatedAt, hierarchyLevel, memberCount
+- **Search:** Full-text across name and description
+- **Field Selection:** Optimized responses
+- **Hierarchical Support:** Filter by hierarchy level and parent relationships
+
+#### Test Coverage (34 tests):
+**List (13 tests):**
+- Pagination, filters (5 types: organizationId, parentId null, hierarchyLevel, isActive), sorting (name ASC, memberCount DESC), search (name, description), field selection, auth, errors
+
+**Get (5 tests):**
+- Success, auth, authorization, not found, database error
+
+**Update (11 tests):**
+- Name, description, isActive, multiple fields, validation (3 tests), auth, authorization, not found, database error
+
+**Delete (5 tests):**
+- Soft delete, auth, authorization, not found, database error
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Hierarchical Groups:** Supports parentId filtering with "null" string for root groups
 
 ---
 

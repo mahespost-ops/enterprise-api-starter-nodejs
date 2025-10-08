@@ -131,6 +131,138 @@ export class Group extends Model<GroupAttributes, GroupCreationAttributes> imple
       order: [['hierarchyLevel', 'ASC'], ['name', 'ASC']],
     });
   }
+
+  /**
+   * Find groups with advanced filtering, sorting, search, and field selection
+   * Used by admin list endpoint
+   *
+   * All database operations in model layer per CLAUDE.md separation of concerns
+   *
+   * @param filters - Filter criteria
+   * @param options - Query options (pagination, sorting, search, fields)
+   * @returns Paginated groups with total count
+   */
+  static async findWithFilters(
+    filters: {
+      organizationId?: string;
+      parentId?: string | null;
+      hierarchyLevel?: number;
+      isActive?: boolean;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      updatedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    }
+  ): Promise<{ rows: Group[]; count: number }> {
+    const { limit = 20, offset = 0, sort, search, searchFields = [], sortableFields = [], fields } = options;
+
+    // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    // Apply filters
+    if (filters.organizationId !== undefined) {
+      where.organizationId = filters.organizationId;
+    }
+
+    if (filters.parentId !== undefined) {
+      where.parentId = filters.parentId;
+    }
+
+    if (filters.hierarchyLevel !== undefined) {
+      where.hierarchyLevel = filters.hierarchyLevel;
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    // Filter by createdAt
+    if (filters.createdAt) {
+      where.createdAt = {};
+      if (filters.createdAt.gte) where.createdAt[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) where.createdAt[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) where.createdAt[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) where.createdAt[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) where.createdAt[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) where.createdAt[Op.ne] = filters.createdAt.ne;
+    }
+
+    // Filter by updatedAt
+    if (filters.updatedAt) {
+      where.updatedAt = {};
+      if (filters.updatedAt.gte) where.updatedAt[Op.gte] = filters.updatedAt.gte;
+      if (filters.updatedAt.lte) where.updatedAt[Op.lte] = filters.updatedAt.lte;
+      if (filters.updatedAt.gt) where.updatedAt[Op.gt] = filters.updatedAt.gt;
+      if (filters.updatedAt.lt) where.updatedAt[Op.lt] = filters.updatedAt.lt;
+      if (filters.updatedAt.eq) where.updatedAt[Op.eq] = filters.updatedAt.eq;
+      if (filters.updatedAt.ne) where.updatedAt[Op.ne] = filters.updatedAt.ne;
+    }
+
+    // Search across multiple fields
+    if (search) {
+      const searchPattern = `%${search}%`;
+      where[Op.or] = searchFields.map((field) => ({
+        [field]: { [Op.iLike]: searchPattern },
+      }));
+    }
+
+    // Parse sort parameter
+    const order: [string, string][] = [];
+    if (sort) {
+      const sortFields = sort.split(',');
+      for (const field of sortFields) {
+        if (field.startsWith('-')) {
+          const fieldName = field.substring(1);
+          if (sortableFields.includes(fieldName)) {
+            order.push([fieldName, 'DESC']);
+          }
+        } else {
+          if (sortableFields.includes(field)) {
+            order.push([field, 'ASC']);
+          }
+        }
+      }
+    }
+
+    // Build query options
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const queryOptions: any = {
+      where,
+      limit,
+      offset,
+      order: order.length > 0 ? order : [['createdAt', 'DESC']],
+    };
+
+    // Field selection
+    if (fields && fields.length > 0) {
+      queryOptions.attributes = fields;
+    }
+
+    // Execute query
+    return this.findAndCountAll(queryOptions);
+  }
 }
 
 Group.init(

@@ -15,3 +15,4 @@ export * as adminUserSchemas from './admin-user.schemas';
 export * as adminOrganizationSchemas from './admin-organization.schemas';
 export * as adminEnvironmentSchemas from './admin-environment.schemas';
 export * as adminMemberSchemas from './admin-member.schemas';
+export * as adminGroupSchemas from './admin-group.schemas';
