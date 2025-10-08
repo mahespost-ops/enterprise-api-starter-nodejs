@@ -352,6 +352,18 @@ paths:
   /admin/events/{eventId}:
     get:
       $ref: './paths/admin-events.yaml#/getEvent/get'
+  /admin/event-types:
+    get:
+      $ref: './paths/admin-events.yaml#/listEventTypes/get'
+    post:
+      $ref: './paths/admin-events.yaml#/createEventType/post'
+  /admin/event-types/{eventTypeId}:
+    get:
+      $ref: './paths/admin-events.yaml#/getEventType/get'
+    put:
+      $ref: './paths/admin-events.yaml#/updateEventType/put'
+    delete:
+      $ref: './paths/admin-events.yaml#/deleteEventType/delete'
   /admin/webhooks:
     get:
       $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks/get'

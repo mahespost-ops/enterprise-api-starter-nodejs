@@ -81,6 +81,16 @@ eventId:
     format: uuid
   example: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
 
+eventTypeId:
+  name: eventTypeId
+  in: path
+  required: true
+  description: Event type UUID
+  schema:
+    type: string
+    format: uuid
+  example: 'k4ff178c-8fbd-3ccc-9902-kmh4o6543002'
+
 webhookId:
   name: webhookId
   in: path
