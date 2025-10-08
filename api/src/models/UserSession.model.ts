@@ -107,6 +107,145 @@ export class UserSession
     if (activityType) this.lastActivityType = activityType;
     await this.save();
   }
+
+  /**
+   * Find sessions with filters, pagination, sorting, and search
+   * Used by admin endpoints for advanced session querying
+   */
+  static async findWithFilters(
+    filters: {
+      userId?: string;
+      deviceId?: string;
+      isActive?: boolean;
+      isRevoked?: boolean;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      lastAccessedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      expiresAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    } = {},
+  ): Promise<{ rows: UserSession[]; count: number }> {
+    const { Op } = await import('sequelize');
+    const where: Record<string, unknown> = {};
+
+    // Apply filters
+    if (filters.userId) {
+      where.userId = filters.userId;
+    }
+
+    if (filters.deviceId) {
+      where.deviceId = filters.deviceId;
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    if (filters.isRevoked !== undefined) {
+      where.revokedAt = filters.isRevoked ? { [Op.ne]: null } : null;
+    }
+
+    // Date range filters
+    if (filters.createdAt) {
+      const dateFilter: Record<string, unknown> = {};
+      if (filters.createdAt.gte) dateFilter[Op.gte as unknown as string] = filters.createdAt.gte;
+      if (filters.createdAt.lte) dateFilter[Op.lte as unknown as string] = filters.createdAt.lte;
+      if (filters.createdAt.gt) dateFilter[Op.gt as unknown as string] = filters.createdAt.gt;
+      if (filters.createdAt.lt) dateFilter[Op.lt as unknown as string] = filters.createdAt.lt;
+      if (filters.createdAt.eq) dateFilter[Op.eq as unknown as string] = filters.createdAt.eq;
+      if (filters.createdAt.ne) dateFilter[Op.ne as unknown as string] = filters.createdAt.ne;
+      if (Object.keys(dateFilter).length > 0) {
+        where.createdAt = dateFilter;
+      }
+    }
+
+    if (filters.lastAccessedAt) {
+      const dateFilter: Record<string, unknown> = {};
+      if (filters.lastAccessedAt.gte) dateFilter[Op.gte as unknown as string] = filters.lastAccessedAt.gte;
+      if (filters.lastAccessedAt.lte) dateFilter[Op.lte as unknown as string] = filters.lastAccessedAt.lte;
+      if (filters.lastAccessedAt.gt) dateFilter[Op.gt as unknown as string] = filters.lastAccessedAt.gt;
+      if (filters.lastAccessedAt.lt) dateFilter[Op.lt as unknown as string] = filters.lastAccessedAt.lt;
+      if (filters.lastAccessedAt.eq) dateFilter[Op.eq as unknown as string] = filters.lastAccessedAt.eq;
+      if (filters.lastAccessedAt.ne) dateFilter[Op.ne as unknown as string] = filters.lastAccessedAt.ne;
+      if (Object.keys(dateFilter).length > 0) {
+        where.lastAccessedAt = dateFilter;
+      }
+    }
+
+    if (filters.expiresAt) {
+      const dateFilter: Record<string, unknown> = {};
+      if (filters.expiresAt.gte) dateFilter[Op.gte as unknown as string] = filters.expiresAt.gte;
+      if (filters.expiresAt.lte) dateFilter[Op.lte as unknown as string] = filters.expiresAt.lte;
+      if (filters.expiresAt.gt) dateFilter[Op.gt as unknown as string] = filters.expiresAt.gt;
+      if (filters.expiresAt.lt) dateFilter[Op.lt as unknown as string] = filters.expiresAt.lt;
+      if (filters.expiresAt.eq) dateFilter[Op.eq as unknown as string] = filters.expiresAt.eq;
+      if (filters.expiresAt.ne) dateFilter[Op.ne as unknown as string] = filters.expiresAt.ne;
+      if (Object.keys(dateFilter).length > 0) {
+        where.expiresAt = dateFilter;
+      }
+    }
+
+    // Search across specified fields
+    if (options.search && options.searchFields && options.searchFields.length > 0) {
+      const searchConditions = options.searchFields.map((field) => ({
+        [field]: { [Op.iLike as unknown as string]: `%${options.search}%` },
+      }));
+      where[Op.or as unknown as string] = searchConditions;
+    }
+
+    // Sorting
+    const order: [string, string][] = [];
+    if (options.sort && options.sortableFields) {
+      const sortField = options.sort.startsWith('-') ? options.sort.slice(1) : options.sort;
+      const sortDirection = options.sort.startsWith('-') ? 'DESC' : 'ASC';
+
+      if (options.sortableFields.includes(sortField)) {
+        order.push([sortField, sortDirection]);
+      }
+    } else {
+      // Default sort by createdAt DESC
+      order.push(['createdAt', 'DESC']);
+    }
+
+    // Field selection
+    const attributes = options.fields && options.fields.length > 0 ? options.fields : undefined;
+
+    return this.findAndCountAll({
+      where,
+      limit: options.limit,
+      offset: options.offset,
+      order,
+      attributes,
+    });
+  }
 }
 
 UserSession.init(
