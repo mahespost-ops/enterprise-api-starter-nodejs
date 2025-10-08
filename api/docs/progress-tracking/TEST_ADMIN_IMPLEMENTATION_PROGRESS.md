@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-07 20:15 UTC
-**Status:** In Progress - 35/55 endpoints complete (63.6%)
+**Last Updated:** 2025-10-08 09:30 UTC
+**Status:** In Progress - 39/55 endpoints complete (70.9%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 35/55 (63.6%)
-**Tests Written:** 272/330 (82.4%)
-**Tests Passing:** 272/272 (100%) ✅
+**Endpoints Complete:** 39/55 (70.9%)
+**Tests Written:** 303/330 (91.8%)
+**Tests Passing:** 303/303 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -22,9 +22,9 @@
 - ✅ **6.5 - Admin Groups:** 4 endpoints, 34 tests (100%)
 - ✅ **6.6 - Admin Roles & Permissions:** 9 endpoints, 69 tests (100%)
 - ✅ **6.7 - Admin Role Assignments:** 3 endpoints, 33 tests (100%)
+- ✅ **6.8 - Admin Devices:** 4 endpoints, 31 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.8 - Admin Devices:** 4 endpoints, ~24 tests
 - ⏭️ **6.9 - Admin Sessions:** 4 endpoints, ~24 tests
 - ⏭️ **6.10 - Admin Impersonation:** 5 endpoints, ~30 tests
 - ⏭️ **6.11 - Admin Events:** 2 endpoints, ~12 tests
@@ -395,16 +395,55 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.8 Admin Devices (4 endpoints)
+### 6.8 Admin Devices (4 endpoints) ✅
 **File:** `admin/devices.test.ts`
-**Estimated Tests:** ~24
+**Date Completed:** 2025-10-08
+**Tests:** 31/31 passing (100%)
 
-1. `GET /admin/devices` - List all devices
-2. `GET /admin/devices/{deviceId}` - Get device details
-3. `PUT /admin/devices/{deviceId}` - Update device
-4. `DELETE /admin/devices/{deviceId}` - Revoke device
+#### Endpoints:
+1. ✅ `GET /admin/devices` - List all devices
+2. ✅ `GET /admin/devices/{deviceId}` - Get device details
+3. ✅ `PUT /admin/devices/{deviceId}` - Update device
+4. ✅ `DELETE /admin/devices/{deviceId}` - Revoke device
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/devices.test.ts`
+- [x] Constants: `device.constants.ts` (added filterable/sortable/searchable fields)
+- [x] Model: `Device.findWithFilters()` for advanced filtering/search
+- [x] Validation: `admin-device.schemas.ts`
+- [x] Service: `admin-device.service.ts`
+- [x] Controller: `admin-device.controller.ts`
+- [x] Routes: `admin-device.routes.ts`
+- [x] Wired into main router (mounted at `/admin/devices`)
+- [x] Test constants: Added DEVICE_1, DEVICE_2, DEVICE_3
+
+#### Key Features:
+- **Filtering:** userId, trustStatus, deviceType, isRevoked, createdAt, lastUsedAt
+- **Sorting:** name (deviceName), deviceType, trustStatus, createdAt, lastUsedAt
+- **Search:** Full-text across deviceName, os, browser
+- **Field Selection:** Optimized responses with API-to-DB field mapping
+- **Security:** NEVER expose `fingerprintHash` (bcrypt hash - server-side only)
+- **Device Revocation:** Soft delete via `revokedAt` timestamp (not hard delete)
+
+#### Test Coverage (31 tests):
+**List (13 tests):**
+- Pagination, filters (5 types: userId, trustStatus, deviceType, isRevoked, createdAt range), sorting (name ASC, lastUsedAt DESC), search (deviceName), field selection, auth, authorization, errors
+
+**Get (5 tests):**
+- Success, auth, authorization, not found, database error
+
+**Update (9 tests):**
+- Update name, trustStatus, multiple fields, validation (2 tests: name too long, invalid trustStatus), auth, authorization, not found, database error
+
+**Delete (4 tests):**
+- Revoke (soft delete), auth, authorization, not found
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers (API `name` maps to DB `deviceName`)
+- **Security Critical:** Never expose `fingerprintHash` in any API response
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Field Mapping:** Controller maps API field names to DB field names for field selection
 
 ---
 
@@ -543,21 +582,23 @@ export const listResourcesQuerySchema = Joi.object({
 
 ## Next Steps
 
-**Current Focus:** Admin Environments (Batch 6.3)
+**Current Focus:** Admin Sessions (Batch 6.9)
 
-1. Create test file: `admin/environments.test.ts`
-2. Create validation schemas: `admin-environment.schemas.ts`
-3. Create service: `admin-environment.service.ts`
-4. Create controller: `admin-environment.controller.ts`
-5. Create routes: `admin-environment.routes.ts`
+1. Create test file: `admin/sessions.test.ts`
+2. Create validation schemas: `admin-session.schemas.ts`
+3. Create service: `admin-session.service.ts`
+4. Create controller: `admin-session.controller.ts`
+5. Create routes: `admin-session.routes.ts`
 6. Wire into main router
 7. Run tests and verify 100% passing
 
 **Estimated Remaining Effort:**
-- 23 endpoints remaining
-- ~91 tests to write
+- 16 endpoints remaining
+- ~102 tests to write
 - Average 1-2 hours per sub-batch
-- Total: 10-15 hours of implementation
+- Total: 6-8 hours of implementation
+
+**Progress:** 70.9% complete (39/55 endpoints)
 
 ---
 

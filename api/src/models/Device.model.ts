@@ -3,7 +3,7 @@
  * Device fingerprinting and trust management
  */
 
-import { Model, DataTypes, Optional, UUIDV1 } from 'sequelize';
+import { Model, DataTypes, Optional, UUIDV1, Op, WhereOptions, Order } from 'sequelize';
 import sequelize from '../config/database';
 
 export type DeviceType = 'desktop' | 'mobile' | 'tablet' | 'unknown';
@@ -71,6 +71,154 @@ export class Device extends Model<DeviceAttributes, DeviceCreationAttributes> im
   declare readonly createdAt: Date;
   declare lastUsedAt: Date;
   declare revokedAt: Date | null;
+
+  /**
+   * Static method to find devices with filters
+   * All database query logic stays in model layer (SOC)
+   */
+  static async findWithFilters(
+    filters: {
+      userId?: string;
+      trustStatus?: TrustStatus;
+      deviceType?: DeviceType;
+      isRevoked?: boolean;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      lastUsedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    },
+  ): Promise<{ rows: Device[]; count: number }> {
+    const where: WhereOptions = {};
+
+    // Apply filters
+    if (filters.userId !== undefined) {
+      where.userId = filters.userId;
+    }
+
+    if (filters.trustStatus !== undefined) {
+      where.trustStatus = filters.trustStatus;
+    }
+
+    if (filters.deviceType !== undefined) {
+      where.deviceType = filters.deviceType;
+    }
+
+    if (filters.isRevoked !== undefined) {
+      if (filters.isRevoked) {
+        where.revokedAt = { [Op.ne]: null };
+      } else {
+        where.revokedAt = null;
+      }
+    }
+
+    // Date filters for createdAt
+    if (filters.createdAt) {
+      const createdAtConditions: Record<symbol, Date> = {};
+      if (filters.createdAt.gte) createdAtConditions[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) createdAtConditions[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) createdAtConditions[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) createdAtConditions[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) createdAtConditions[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) createdAtConditions[Op.ne] = filters.createdAt.ne;
+      if (Object.keys(createdAtConditions).length > 0) {
+        where.createdAt = createdAtConditions;
+      }
+    }
+
+    // Date filters for lastUsedAt
+    if (filters.lastUsedAt) {
+      const lastUsedAtConditions: Record<symbol, Date> = {};
+      if (filters.lastUsedAt.gte) lastUsedAtConditions[Op.gte] = filters.lastUsedAt.gte;
+      if (filters.lastUsedAt.lte) lastUsedAtConditions[Op.lte] = filters.lastUsedAt.lte;
+      if (filters.lastUsedAt.gt) lastUsedAtConditions[Op.gt] = filters.lastUsedAt.gt;
+      if (filters.lastUsedAt.lt) lastUsedAtConditions[Op.lt] = filters.lastUsedAt.lt;
+      if (filters.lastUsedAt.eq) lastUsedAtConditions[Op.eq] = filters.lastUsedAt.eq;
+      if (filters.lastUsedAt.ne) lastUsedAtConditions[Op.ne] = filters.lastUsedAt.ne;
+      if (Object.keys(lastUsedAtConditions).length > 0) {
+        where.lastUsedAt = lastUsedAtConditions;
+      }
+    }
+
+    // Search across specified fields
+    if (options.search && options.searchFields) {
+      const searchConditions = options.searchFields.map((field) => ({
+        [field]: { [Op.iLike]: `%${options.search}%` },
+      }));
+      // Type assertion needed for Sequelize Op.or symbol indexing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (where as any)[Op.or] = searchConditions;
+    }
+
+    // Parse sort parameter
+    let order: Order = [['createdAt', 'DESC']]; // Default sort
+    if (options.sort && options.sortableFields) {
+      const sortFields = options.sort.split(',');
+      order = sortFields
+        .map((field) => {
+          const direction = field.startsWith('-') ? 'DESC' : 'ASC';
+          const fieldName = field.startsWith('-') ? field.slice(1) : field;
+
+          // Map API field names to database field names
+          const fieldMap: Record<string, string> = {
+            name: 'deviceName',
+            deviceType: 'deviceType',
+            trustStatus: 'trustStatus',
+            createdAt: 'createdAt',
+            lastUsedAt: 'lastUsedAt',
+          };
+
+          const dbFieldName = fieldMap[fieldName] || fieldName;
+
+          if (options.sortableFields?.includes(dbFieldName)) {
+            return [dbFieldName, direction] as [string, string];
+          }
+          return null;
+        })
+        .filter((item): item is [string, string] => item !== null);
+    }
+
+    // Build query options
+    const queryOptions: {
+      where: WhereOptions;
+      limit?: number;
+      offset?: number;
+      order: Order;
+      attributes?: string[];
+    } = {
+      where,
+      limit: options.limit,
+      offset: options.offset,
+      order,
+    };
+
+    // Apply field selection
+    if (options.fields && options.fields.length > 0) {
+      queryOptions.attributes = options.fields;
+    }
+
+    return Device.findAndCountAll(queryOptions);
+  }
 }
 
 Device.init(

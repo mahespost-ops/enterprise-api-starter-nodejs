@@ -100,6 +100,15 @@ export const TEST_UUIDS = {
   // Devices (ending in 4)
   // ============================================================================
 
+  /** Primary test device */
+  DEVICE_1: '44444444-4444-4444-4444-444444444441',
+
+  /** Secondary test device */
+  DEVICE_2: '44444444-4444-4444-4444-444444444442',
+
+  /** Third test device */
+  DEVICE_3: '44444444-4444-4444-4444-444444444443',
+
   /** Trusted device */
   DEVICE_TRUSTED: '44444444-4444-4444-4444-444444444444',
 
