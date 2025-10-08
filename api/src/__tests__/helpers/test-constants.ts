@@ -257,6 +257,29 @@ export const TEST_UUIDS = {
 
   /** Non-existent event type */
   EVENT_TYPE_NONEXISTENT: '99999999-9999-9999-9999-99999999999e',
+
+  // ============================================================================
+  // Webhooks (ending in W)
+  // ============================================================================
+
+  /** Primary test webhook */
+  WEBHOOK_1: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww1',
+
+  /** Secondary test webhook */
+  WEBHOOK_2: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww2',
+
+  /** Third test webhook */
+  WEBHOOK_3: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww3',
+
+  /** Non-existent webhook */
+  WEBHOOK_NONEXISTENT: '99999999-9999-9999-9999-99999999999w',
+
+  // ============================================================================
+  // Environments (additional)
+  // ============================================================================
+
+  /** Production environment */
+  ENV_PROD: '33333333-3333-3333-3333-333333333331',
 } as const;
 
 /**

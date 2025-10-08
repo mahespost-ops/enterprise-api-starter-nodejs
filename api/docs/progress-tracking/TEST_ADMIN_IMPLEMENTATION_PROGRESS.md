@@ -11,8 +11,8 @@
 
 **Total Admin Endpoints:** 62
 **Endpoints Complete:** 55/62 (88.7%)
-**Tests Written:** 423/465 (91.0%)
-**Tests Passing:** 423/423 (100%) ✅
+**Tests Written:** 491/533 (92.1%)
+**Tests Passing:** 423/491 (86.1%) - 68 tests in RED phase (webhooks batch 6.13)
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -30,7 +30,7 @@
 - 🔧 **6.12.1 - Event Type Subscription Helper:** Schema/spec only (implementation in 6.13)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.13 - Admin Webhooks (Part 1):** 6 endpoints (5 webhook CRUD + 1 subscription GET), ~24 tests
+- 🔧 **6.13 - Admin Webhooks (Part 1):** 6 endpoints, 68 tests (RED phase complete, implementing GREEN phase)
 - ⏭️ **6.14 - Admin Webhooks (Part 2):** 3 endpoints (delivery management), ~18 tests
 
 ---
@@ -834,43 +834,79 @@ WHERE event_type_verb = 'user.created'
 
 ---
 
-### 6.13 Admin Webhooks - Part 1 (5 endpoints)
-**File:** `admin/webhooks-part1.test.ts` or `admin/webhooks.test.ts`
-**Estimated Tests:** ~18
+### 6.13 Admin Webhooks - Part 1 (6 endpoints) 🔧
+**File:** `admin/webhooks.test.ts`
+**Date Started:** 2025-10-08
+**Tests:** 68 tests written (RED phase complete)
+**Status:** In Progress - RED phase complete, implementing GREEN phase
 
-#### Endpoints (CRUD operations):
-1. `GET /admin/webhooks` - List all webhooks system-wide
-2. `POST /admin/webhooks` - Create webhook (admin-level)
-3. `GET /admin/webhooks/{webhookId}` - Get webhook details
-4. `PUT /admin/webhooks/{webhookId}` - Update webhook
-5. `DELETE /admin/webhooks/{webhookId}` - Delete webhook
-
-**Status:** Not started
+#### Endpoints (CRUD operations + Subscriptions):
+1. ✅ `GET /admin/webhooks` - List all webhooks system-wide (13 tests)
+2. ✅ `POST /admin/webhooks` - Create webhook (admin-level) (12 tests)
+3. ✅ `GET /admin/webhooks/{webhookId}` - Get webhook details (5 tests)
+4. ✅ `PUT /admin/webhooks/{webhookId}` - Update webhook (11 tests)
+5. ✅ `DELETE /admin/webhooks/{webhookId}` - Delete webhook (4 tests)
+6. ✅ `GET /admin/event-type-subscriptions` - List subscriptions (11 tests)
 
 #### Implementation Checklist:
-- [ ] Test file: `admin/webhooks-part1.test.ts`
-- [ ] Constants: Review/update `webhook.constants.ts`
-- [ ] Model: `Webhook.findWithFilters()` static method
-- [ ] Model: `EventTypeSubscription.model.ts` (new model for subscription table)
+- [x] Test file: `admin/webhooks.test.ts` (68 tests - RED phase complete)
+- [x] Test constants: Added WEBHOOK_1, WEBHOOK_2, WEBHOOK_3, WEBHOOK_NONEXISTENT, ENV_PROD
+- [x] Constants: Updated `webhook.constants.ts` with filterable/sortable/searchable fields
+- [x] Constants: Added SUBSCRIPTION_* constants for event type subscriptions
+- [x] Model: Added `Webhook.findWithFilters()` static method
+- [x] Model: Created `EventTypeSubscription.model.ts` with full CRUD methods
+  - `findWithFilters()` for admin queries
+  - `createForWebhook()` - bulk create subscriptions from event_types array
+  - `deleteForWebhookEventTypes()` - cleanup on event_types removal
+  - `updateWebhookFields()` - sync denormalized fields
+  - `findActiveByEventTypeVerb()` - webhook delivery query
 - [ ] Validation: `admin-webhook.schemas.ts`
+- [ ] Validation: `admin-event-type-subscription.schemas.ts`
 - [ ] Service: `admin-webhook.service.ts`
   - **CRITICAL:** Service must manage event_type_subscription lifecycle
-  - On CREATE: Split event_types[] → create N subscription records
+  - On CREATE: Call `EventTypeSubscription.createForWebhook()`
   - On UPDATE: Sync event_types changes (add/remove subscriptions)
   - On DELETE: Cascade handled by FK, but may need explicit cleanup
+- [ ] Service: `admin-event-type-subscription.service.ts`
 - [ ] Controller: `admin-webhook.controller.ts`
-- [ ] Controller: `admin-event-type-subscription.controller.ts` (for GET endpoint)
+- [ ] Controller: `admin-event-type-subscription.controller.ts`
 - [ ] Routes: `admin-webhook.routes.ts`
-- [ ] Routes: `admin-event-type-subscription.routes.ts` (for GET endpoint)
+- [ ] Routes: `admin-event-type-subscription.routes.ts`
 - [ ] Wire into main router
 
-#### Key Features (Expected):
-- **Filtering:** organizationId, environmentId, eventTypeId, isActive, createdAt, updatedAt
-- **Sorting:** url, createdAt, updatedAt, isActive
-- **Search:** Full-text across url, description
+#### Key Features Implemented:
+- **Filtering:** environmentId, isActive, authMethod, createdAt, updatedAt, lastSuccessAt, lastFailureAt
+- **Sorting:** createdAt (default DESC), updatedAt, lastSuccessAt, lastFailureAt, failureCount, url, name
+- **Search:** Full-text across url, name, eventTypes
 - **Field Selection:** Optimized responses
-- **Security:** Validate webhook URLs (HTTPS required for production)
-- **Webhook Secret:** Auto-generate secure secret on creation
+- **Subscription Management:** Denormalized reverse-lookup table for fast event → webhook queries
+- **Model Layer:** All DB operations isolated per SOC (no Op imports in service)
+
+#### Test Coverage (68 tests):
+**GET /admin/webhooks (13 tests):**
+- Pagination, filters (5 types: environmentId, isActive, authMethod, createdAt range), sorting (2 tests), search, field selection, auth (401), authorization (403), database error (422)
+
+**POST /admin/webhooks (12 tests):**
+- Success (201), defaults, validation (6 tests: name missing, url missing, url not HTTPS, eventTypes empty, authMethod invalid, retryConfig.maxAttempts exceeds limit), environment not found (404), auth (401), authorization (403)
+
+**GET /admin/webhooks/{webhookId} (5 tests):**
+- Success, auth (401), authorization (403), not found (404), database error (422)
+
+**PUT /admin/webhooks/{webhookId} (11 tests):**
+- Update name, url, eventTypes, isActive, multiple fields, validation (2 tests: url not HTTPS, eventTypes empty), auth (401), authorization (403), not found (404), database error (422)
+
+**DELETE /admin/webhooks/{webhookId} (4 tests):**
+- Soft delete (204), auth (401), authorization (403), not found (404)
+
+**GET /admin/event-type-subscriptions (11 tests):**
+- Pagination, filters (3 types: eventTypeVerb, webhookId, isActive), sorting, search, field selection, auth (401), authorization (403), database error (422)
+
+#### Architectural Patterns:
+- **TDD Workflow:** RED phase complete (tests written and failing) → GREEN phase next (implementation)
+- **Separation of Concerns:** All DB operations in model layer (no Op/sequelize imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **Denormalization:** EventTypeSubscription table for <200ms SLO (avoid joins)
+- **Subscription Lifecycle:** Model provides static methods for webhook service to manage subscriptions
 
 ---
 

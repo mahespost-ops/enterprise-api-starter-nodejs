@@ -179,6 +179,175 @@ export class Webhook extends Model<WebhookAttributes, WebhookCreationAttributes>
     }
     await this.save();
   }
+
+  /**
+   * Find webhooks with filters, pagination, sorting, and search (admin)
+   * All database query logic isolated in model layer per SOC
+   */
+  static async findWithFilters(
+    filters: {
+      environmentId?: string;
+      isActive?: boolean;
+      authMethod?: string;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      updatedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      lastSuccessAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      lastFailureAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    } = {},
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    } = {}
+  ): Promise<{ rows: Webhook[]; count: number }> {
+    const {
+      limit = 20,
+      offset = 0,
+      sort = '-createdAt',
+      search,
+      searchFields = ['url', 'name'],
+      sortableFields = [
+        'createdAt',
+        'updatedAt',
+        'lastSuccessAt',
+        'lastFailureAt',
+        'failureCount',
+        'url',
+        'name',
+      ],
+      fields,
+    } = options;
+
+    // Build where clause from filters
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    // Filter by environmentId
+    if (filters.environmentId) {
+      where.environmentId = filters.environmentId;
+    }
+
+    // Filter by isActive
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    // Filter by authMethod
+    if (filters.authMethod) {
+      where.authMethod = filters.authMethod;
+    }
+
+    // Filter by createdAt
+    if (filters.createdAt) {
+      where.createdAt = {};
+      if (filters.createdAt.gte) where.createdAt[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) where.createdAt[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) where.createdAt[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) where.createdAt[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) where.createdAt[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) where.createdAt[Op.ne] = filters.createdAt.ne;
+    }
+
+    // Filter by updatedAt
+    if (filters.updatedAt) {
+      where.updatedAt = {};
+      if (filters.updatedAt.gte) where.updatedAt[Op.gte] = filters.updatedAt.gte;
+      if (filters.updatedAt.lte) where.updatedAt[Op.lte] = filters.updatedAt.lte;
+      if (filters.updatedAt.gt) where.updatedAt[Op.gt] = filters.updatedAt.gt;
+      if (filters.updatedAt.lt) where.updatedAt[Op.lt] = filters.updatedAt.lt;
+      if (filters.updatedAt.eq) where.updatedAt[Op.eq] = filters.updatedAt.eq;
+      if (filters.updatedAt.ne) where.updatedAt[Op.ne] = filters.updatedAt.ne;
+    }
+
+    // Filter by lastSuccessAt
+    if (filters.lastSuccessAt) {
+      where.lastSuccessAt = {};
+      if (filters.lastSuccessAt.gte) where.lastSuccessAt[Op.gte] = filters.lastSuccessAt.gte;
+      if (filters.lastSuccessAt.lte) where.lastSuccessAt[Op.lte] = filters.lastSuccessAt.lte;
+      if (filters.lastSuccessAt.gt) where.lastSuccessAt[Op.gt] = filters.lastSuccessAt.gt;
+      if (filters.lastSuccessAt.lt) where.lastSuccessAt[Op.lt] = filters.lastSuccessAt.lt;
+      if (filters.lastSuccessAt.eq) where.lastSuccessAt[Op.eq] = filters.lastSuccessAt.eq;
+      if (filters.lastSuccessAt.ne) where.lastSuccessAt[Op.ne] = filters.lastSuccessAt.ne;
+    }
+
+    // Filter by lastFailureAt
+    if (filters.lastFailureAt) {
+      where.lastFailureAt = {};
+      if (filters.lastFailureAt.gte) where.lastFailureAt[Op.gte] = filters.lastFailureAt.gte;
+      if (filters.lastFailureAt.lte) where.lastFailureAt[Op.lte] = filters.lastFailureAt.lte;
+      if (filters.lastFailureAt.gt) where.lastFailureAt[Op.gt] = filters.lastFailureAt.gt;
+      if (filters.lastFailureAt.lt) where.lastFailureAt[Op.lt] = filters.lastFailureAt.lt;
+      if (filters.lastFailureAt.eq) where.lastFailureAt[Op.eq] = filters.lastFailureAt.eq;
+      if (filters.lastFailureAt.ne) where.lastFailureAt[Op.ne] = filters.lastFailureAt.ne;
+    }
+
+    // Search across multiple fields
+    if (search) {
+      const searchPattern = `%${search}%`;
+      where[Op.or] = searchFields.map((field) => ({
+        [field]: { [Op.iLike]: searchPattern },
+      }));
+    }
+
+    // Parse sort parameter
+    const order: [string, string][] = [];
+    if (sort) {
+      const sortFields = sort.split(',');
+      for (const field of sortFields) {
+        if (field.startsWith('-')) {
+          const fieldName = field.substring(1);
+          if (sortableFields.includes(fieldName)) {
+            order.push([fieldName, 'DESC']);
+          }
+        } else {
+          if (sortableFields.includes(field)) {
+            order.push([field, 'ASC']);
+          }
+        }
+      }
+    }
+
+    return this.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: order.length > 0 ? order : [['createdAt', 'DESC']],
+      attributes: fields && fields.length > 0 ? (fields.includes('id') ? fields : ['id', ...fields]) : undefined,
+      paranoid: true,
+    });
+  }
 }
 
 // Initialize Webhook model
