@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-08 10:05 UTC
-**Status:** In Progress - 43/55 endpoints complete (78.2%)
+**Last Updated:** 2025-10-08 11:00 UTC
+**Status:** In Progress - 48/55 endpoints complete (87.3%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 43/55 (78.2%)
-**Tests Written:** 329/357 (92.2%)
-**Tests Passing:** 329/329 (100%) ✅
+**Endpoints Complete:** 48/55 (87.3%)
+**Tests Written:** 361/389 (92.8%)
+**Tests Passing:** 361/361 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -24,9 +24,9 @@
 - ✅ **6.7 - Admin Role Assignments:** 3 endpoints, 33 tests (100%)
 - ✅ **6.8 - Admin Devices:** 4 endpoints, 31 tests (100%)
 - ✅ **6.9 - Admin Sessions:** 4 endpoints, 26 tests (100%)
+- ✅ **6.10 - Admin Impersonation:** 5 endpoints, 32 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.10 - Admin Impersonation:** 5 endpoints, ~30 tests
 - ⏭️ **6.11 - Admin Events:** 2 endpoints, ~12 tests
 - ⏭️ **6.12 - Admin Webhooks:** 6 endpoints, ~36 tests
 
@@ -499,17 +499,66 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.10 Admin Impersonation (5 endpoints)
+### 6.10 Admin Impersonation (5 endpoints) ✅
 **File:** `admin/impersonation.test.ts`
-**Estimated Tests:** ~30
+**Date Completed:** 2025-10-08
+**Tests:** 32/32 passing (100%)
 
-1. `POST /admin/users/{userId}/impersonate` - Start system-wide impersonation
-2. `DELETE /admin/impersonation/end` - End impersonation (pop or terminate)
-3. `GET /admin/impersonation/active` - Get active impersonation sessions
-4. `GET /admin/impersonation-sessions` - List all impersonation sessions (history)
-5. `DELETE /admin/impersonation-sessions/{sessionId}` - Force-end session
+#### Endpoints:
+1. ✅ `POST /admin/users/{userId}/impersonate` - Start system-wide impersonation
+2. ✅ `DELETE /admin/impersonation/end` - End impersonation (pop or terminate)
+3. ✅ `GET /admin/impersonation/active` - Get active impersonation sessions
+4. ✅ `GET /admin/impersonation-sessions` - List all impersonation sessions (history)
+5. ✅ `DELETE /admin/impersonation-sessions/{sessionId}` - Force-end session
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/impersonation.test.ts`
+- [x] Constants: `impersonation.constants.ts` (duration limits, filterable/sortable/searchable fields)
+- [x] Model: Added `findWithFilters` static method to `UserImpersonationSession.model.ts`
+- [x] Validation: `admin-impersonation.schemas.ts`
+- [x] Service: `admin-impersonation.service.ts`
+- [x] Controller: `admin-impersonation.controller.ts`
+- [x] Routes: `admin-impersonation.routes.ts`
+- [x] Wired into main router (mounted at `/admin`)
+- [x] Test helper: Added `clearUserPermissions()` to `auth.helpers.ts`
+
+#### Key Features:
+- **Filtering:** originalUserId, impersonatedUserId, environmentId, impersonationType, isActive, date ranges (startedAt, expiresAt, endedAt)
+- **Sorting:** startedAt (default DESC), expiresAt, endedAt, impersonationType
+- **Search:** Full-text across reason field
+- **Field Selection:** API-to-DB field mapping (sessionId → id)
+- **Duration Limits:** MIN (5 minutes), DEFAULT (60 minutes), MAX (480 minutes/8 hours)
+- **Impersonation Types:** system (admin-initiated), organization (org-scoped)
+- **Security:** Full audit trail with reason, IP address, user agent
+
+#### Test Coverage (32 tests):
+**POST /admin/users/{userId}/impersonate (9 tests):**
+- Success (201), default duration, missing reason (422), invalid duration (422), duration too short (422), self-impersonation (400), non-existent user (404), unauthenticated (401), unauthorized (403)
+
+**DELETE /admin/impersonation/end (3 tests):**
+- Success with session end (200), not impersonating (400), unauthenticated (401)
+
+**GET /admin/impersonation/active (4 tests):**
+- Active sessions (200), empty array when none active (200), unauthenticated (401), unauthorized (403)
+
+**GET /admin/impersonation-sessions (11 tests):**
+- Pagination (200), filter by type (200), filter by isActive (200), filter by originalUserId (200), filter by impersonatedUserId (200), filter by date range (200), sort by startedAt DESC (200), search in reason (200), field selection (200), unauthenticated (401), unauthorized (403), database error (500)
+
+**DELETE /admin/impersonation-sessions/{sessionId} (4 tests):**
+- Force-end success (204), unauthenticated (401), unauthorized (403), non-existent session (404)
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Date Range Filtering:** Fixed Symbol key detection bug in Object.keys() - used Object.getOwnPropertySymbols()
+- **Field Selection:** Proper API-to-DB field mapping for Sequelize attributes
+
+#### Bug Fixes During Implementation:
+1. **Date Range Filters Not Working:** Fixed `Object.keys()` not detecting Sequelize Op symbols - added `Object.getOwnPropertySymbols()` check
+2. **Authorization Tests Failing:** Fixed `clearAllPermissions()` preserving admin user permissions - used `clearUserPermissions(userId)` instead
+3. **Field Selection 500 Error:** Added API-to-DB field mapping (sessionId → id) before passing to Sequelize
+4. **Transform Function Crash:** Made `transformSessionResponse()` handle partial field selection gracefully
 
 ---
 

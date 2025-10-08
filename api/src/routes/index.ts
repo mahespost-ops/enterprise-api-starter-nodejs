@@ -23,6 +23,7 @@ import adminPermissionRoutes from './admin-permission.routes';
 import adminRoleAssignmentRoutes from './admin-role-assignment.routes';
 import adminDeviceRoutes from './admin-device.routes';
 import adminSessionRoutes from './admin-session.routes';
+import adminImpersonationRoutes from './admin-impersonation.routes';
 
 const router = Router();
 
@@ -48,10 +49,10 @@ router.use('/admin/permissions', adminPermissionRoutes);
 router.use('/admin/role-assignments', adminRoleAssignmentRoutes);
 router.use('/admin/devices', adminDeviceRoutes);
 router.use('/admin/sessions', adminSessionRoutes);
+router.use('/admin', adminImpersonationRoutes); // Handles /admin/users/:userId/impersonate, /admin/impersonation/*, /admin/impersonation-sessions
 
 // Future routes will be added here:
 
-// router.use('/admin/impersonation', adminImpersonationRoutes);
 // router.use('/admin/events', adminEventRoutes);
 // router.use('/admin/webhooks', adminWebhookRoutes);
 

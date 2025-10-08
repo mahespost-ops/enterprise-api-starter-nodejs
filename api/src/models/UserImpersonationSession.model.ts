@@ -115,6 +115,163 @@ export class UserImpersonationSession
       throw new Error('Cannot impersonate self');
     }
   }
+
+  /**
+   * Find impersonation sessions with advanced filtering, pagination, sorting, and search
+   * Delegates all database logic to model layer (no Op imports in service)
+   */
+  static async findWithFilters(
+    filters: {
+      originalUserId?: string;
+      impersonatedUserId?: string;
+      environmentId?: string;
+      impersonationType?: 'system' | 'organization';
+      isActive?: boolean;
+      startedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      expiresAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+      endedAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    }
+  ): Promise<{ rows: UserImpersonationSession[]; count: number }> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    // Apply filters
+    if (filters.originalUserId) {
+      where.originalUserId = filters.originalUserId;
+    }
+    if (filters.impersonatedUserId) {
+      where.impersonatedUserId = filters.impersonatedUserId;
+    }
+    if (filters.environmentId) {
+      where.environmentId = filters.environmentId;
+    }
+    if (filters.impersonationType) {
+      where.impersonationType = filters.impersonationType;
+    }
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    // Date range filters for startedAt
+    if (filters.startedAt) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const startedAtConditions: any = {};
+      if (filters.startedAt.gte) startedAtConditions[Op.gte] = filters.startedAt.gte;
+      if (filters.startedAt.lte) startedAtConditions[Op.lte] = filters.startedAt.lte;
+      if (filters.startedAt.gt) startedAtConditions[Op.gt] = filters.startedAt.gt;
+      if (filters.startedAt.lt) startedAtConditions[Op.lt] = filters.startedAt.lt;
+      if (filters.startedAt.eq) startedAtConditions[Op.eq] = filters.startedAt.eq;
+      if (filters.startedAt.ne) startedAtConditions[Op.ne] = filters.startedAt.ne;
+      // Check for Symbol keys using Object.getOwnPropertySymbols
+      if (Object.keys(startedAtConditions).length > 0 || Object.getOwnPropertySymbols(startedAtConditions).length > 0) {
+        where.startedAt = startedAtConditions;
+      }
+    }
+
+    // Date range filters for expiresAt
+    if (filters.expiresAt) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const expiresAtConditions: any = {};
+      if (filters.expiresAt.gte) expiresAtConditions[Op.gte] = filters.expiresAt.gte;
+      if (filters.expiresAt.lte) expiresAtConditions[Op.lte] = filters.expiresAt.lte;
+      if (filters.expiresAt.gt) expiresAtConditions[Op.gt] = filters.expiresAt.gt;
+      if (filters.expiresAt.lt) expiresAtConditions[Op.lt] = filters.expiresAt.lt;
+      if (filters.expiresAt.eq) expiresAtConditions[Op.eq] = filters.expiresAt.eq;
+      if (filters.expiresAt.ne) expiresAtConditions[Op.ne] = filters.expiresAt.ne;
+      // Check for Symbol keys using Object.getOwnPropertySymbols
+      if (Object.keys(expiresAtConditions).length > 0 || Object.getOwnPropertySymbols(expiresAtConditions).length > 0) {
+        where.expiresAt = expiresAtConditions;
+      }
+    }
+
+    // Date range filters for endedAt
+    if (filters.endedAt) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const endedAtConditions: any = {};
+      if (filters.endedAt.gte) endedAtConditions[Op.gte] = filters.endedAt.gte;
+      if (filters.endedAt.lte) endedAtConditions[Op.lte] = filters.endedAt.lte;
+      if (filters.endedAt.gt) endedAtConditions[Op.gt] = filters.endedAt.gt;
+      if (filters.endedAt.lt) endedAtConditions[Op.lt] = filters.endedAt.lt;
+      if (filters.endedAt.eq) endedAtConditions[Op.eq] = filters.endedAt.eq;
+      if (filters.endedAt.ne) endedAtConditions[Op.ne] = filters.endedAt.ne;
+      // Check for Symbol keys using Object.getOwnPropertySymbols
+      if (Object.keys(endedAtConditions).length > 0 || Object.getOwnPropertySymbols(endedAtConditions).length > 0) {
+        where.endedAt = endedAtConditions;
+      }
+    }
+
+    // Search across reason field
+    if (options.search && options.searchFields && options.searchFields.length > 0) {
+      const searchConditions = options.searchFields.map((field) => ({
+        [field]: { [Op.iLike]: `%${options.search}%` },
+      }));
+      where[Op.or] = searchConditions;
+    }
+
+    // Build order clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const order: any[] = [];
+    if (options.sort) {
+      const sortFields = options.sort.split(',');
+      for (const field of sortFields) {
+        const direction = field.startsWith('-') ? 'DESC' : 'ASC';
+        const fieldName = field.replace(/^-/, '');
+
+        // Validate against sortable fields if provided
+        if (options.sortableFields && !options.sortableFields.includes(fieldName)) {
+          continue; // Skip invalid sort fields
+        }
+
+        order.push([fieldName, direction]);
+      }
+    }
+
+    // Default sort if none provided
+    if (order.length === 0) {
+      order.push(['startedAt', 'DESC']);
+    }
+
+    // Field selection (attributes)
+    const attributes = options.fields && options.fields.length > 0 ? options.fields : undefined;
+
+    return this.findAndCountAll({
+      where,
+      limit: options.limit || 20,
+      offset: options.offset || 0,
+      order,
+      attributes,
+    });
+  }
 }
 
 // Initialize UserImpersonationSession model
