@@ -156,6 +156,38 @@ export const TEST_UUIDS = {
 
   /** Non-existent organization */
   ORG_NONEXISTENT: '99999999-9999-9999-9999-999999999992',
+
+  // ============================================================================
+  // Roles (ending in 8)
+  // ============================================================================
+
+  /** Admin role */
+  ROLE_ADMIN: '88888888-8888-8888-8888-888888888881',
+
+  /** Custom role */
+  ROLE_CUSTOM: '88888888-8888-8888-8888-888888888882',
+
+  /** System role */
+  ROLE_SYSTEM: '88888888-8888-8888-8888-888888888883',
+
+  /** Non-existent role */
+  ROLE_NONEXISTENT: '99999999-9999-9999-9999-999999999998',
+
+  // ============================================================================
+  // Permissions (ending in 9)
+  // ============================================================================
+
+  /** Devices read permission */
+  PERMISSION_DEVICES_READ: '99999999-9999-9999-9999-999999999991',
+
+  /** Devices manage permission */
+  PERMISSION_DEVICES_MANAGE: '99999999-9999-9999-9999-999999999992',
+
+  /** Sessions manage permission */
+  PERMISSION_SESSIONS_MANAGE: '99999999-9999-9999-9999-999999999993',
+
+  /** Non-existent permission */
+  PERMISSION_NONEXISTENT: '99999999-9999-9999-9999-999999999999',
 } as const;
 
 /**

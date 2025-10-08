@@ -44,12 +44,19 @@ export const ERROR_MESSAGES = {
   EVENT_NOT_FOUND: 'Event not found',
   WEBHOOK_NOT_FOUND: 'Webhook not found',
   WEBHOOK_DELIVERY_NOT_FOUND: 'Webhook delivery not found',
+  ROLE_NOT_FOUND: 'Role not found',
+  PERMISSION_NOT_FOUND: 'Permission not found',
+  ROLE_PERMISSION_NOT_FOUND: 'Permission is not assigned to this role',
 
   // Conflicts
   USER_EXISTS: 'User with this email already exists',
   PHONE_EXISTS: 'Phone number already registered',
   ORGANIZATION_SLUG_EXISTS: 'Organization with this slug already exists',
   GROUP_MEMBER_EXISTS: 'User is already a member of this group',
+  ROLE_NAME_EXISTS: 'Role with this name already exists',
+  ROLE_PERMISSION_EXISTS: 'Permission is already assigned to this role',
+  CANNOT_MODIFY_SYSTEM_ROLE: 'System-defined roles cannot be modified',
+  CANNOT_DELETE_SYSTEM_ROLE: 'System-defined roles cannot be deleted',
 
   // Rate Limiting
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',

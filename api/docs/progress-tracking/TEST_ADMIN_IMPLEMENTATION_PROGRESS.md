@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-07 18:15 UTC
-**Status:** In Progress - 23/55 endpoints complete (41.8%)
+**Last Updated:** 2025-10-07 19:30 UTC
+**Status:** In Progress - 32/55 endpoints complete (58.2%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 23/55 (41.8%)
-**Tests Written:** 170/330 (51.5%)
-**Tests Passing:** 170/170 (100%) ✅
+**Endpoints Complete:** 32/55 (58.2%)
+**Tests Written:** 239/330 (72.4%)
+**Tests Passing:** 239/239 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -20,9 +20,9 @@
 - ✅ **6.3 - Admin Environments:** 4 endpoints, 33 tests (100%)
 - ✅ **6.4 - Admin Members:** 7 endpoints, 41 tests (100%)
 - ✅ **6.5 - Admin Groups:** 4 endpoints, 34 tests (100%)
+- ✅ **6.6 - Admin Roles & Permissions:** 9 endpoints, 69 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.6 - Admin Roles & Permissions:** 9 endpoints, ~54 tests
 - ⏭️ **6.7 - Admin Role Assignments:** 3 endpoints, ~18 tests
 - ⏭️ **6.8 - Admin Devices:** 4 endpoints, ~24 tests
 - ⏭️ **6.9 - Admin Sessions:** 4 endpoints, ~24 tests
@@ -266,21 +266,82 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.6 Admin Roles & Permissions (9 endpoints)
+### 6.6 Admin Roles & Permissions (9 endpoints) ✅
 **File:** `admin/roles.test.ts`
-**Estimated Tests:** ~54
+**Date Completed:** 2025-10-07
+**Tests:** 69/69 passing (100%)
 
-1. `GET /admin/roles` - List all roles
-2. `POST /admin/roles` - Create role
-3. `GET /admin/roles/{roleId}` - Get role details
-4. `PUT /admin/roles/{roleId}` - Update role
-5. `DELETE /admin/roles/{roleId}` - Delete role
-6. `GET /admin/roles/{roleId}/permissions` - List role permissions
-7. `POST /admin/roles/{roleId}/permissions` - Add permission to role
-8. `DELETE /admin/roles/{roleId}/permissions/{permissionId}` - Remove permission
-9. `GET /admin/permissions` - List all permissions
+#### Endpoints:
+1. ✅ `GET /admin/roles` - List all roles
+2. ✅ `POST /admin/roles` - Create role
+3. ✅ `GET /admin/roles/{roleId}` - Get role details
+4. ✅ `PUT /admin/roles/{roleId}` - Update role
+5. ✅ `DELETE /admin/roles/{roleId}` - Delete role
+6. ✅ `GET /admin/roles/{roleId}/permissions` - List role permissions
+7. ✅ `POST /admin/roles/{roleId}/permissions` - Add permission to role
+8. ✅ `DELETE /admin/roles/{roleId}/permissions/{permissionId}` - Remove permission
+9. ✅ `GET /admin/permissions` - List all permissions
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/roles.test.ts`
+- [x] Constants: `role.constants.ts` (filterable/sortable/searchable fields)
+- [x] Error constants: `ROLE_NAME_EXISTS`, `ROLE_PERMISSION_EXISTS`, `CANNOT_MODIFY_SYSTEM_ROLE`, `CANNOT_DELETE_SYSTEM_ROLE`
+- [x] Model: `Role.findWithFilters()` for advanced filtering/search
+- [x] Model: `RolePermission.addPermissionToRole()` with transaction handling
+- [x] Model: `RolePermission.removePermissionFromRole()` with transaction handling
+- [x] Validation: `admin-role.schemas.ts`
+- [x] Service: `admin-role.service.ts`
+- [x] Controller: `admin-role.controller.ts`
+- [x] Routes: `admin-role.routes.ts` and `admin-permission.routes.ts`
+- [x] Wired into main router (mounted at `/admin`)
+- [x] Standards audit: Fixed magic strings → ERROR_MESSAGES constants
+- [x] Standards audit: Fixed service error handling (errors bubble up from model)
+
+#### Key Features:
+- **Filtering:** isSystem, createdAt, updatedAt
+- **Sorting:** name, createdAt, updatedAt, permissionCount
+- **Search:** Full-text across name and description
+- **Field Selection:** Optimized responses
+- **System Role Protection:** Cannot modify/delete system-defined roles (409 Conflict)
+- **Permission Count:** Denormalized field automatically maintained via transactions
+- **Transaction Safety:** Model layer owns transaction logic with automatic rollback
+
+#### Test Coverage (69 tests):
+**Roles - List (13 tests):**
+- Pagination, filters (isSystem, createdAt range), sorting (name ASC, permissionCount DESC), search (name, description), field selection, auth, errors
+
+**Roles - Create (7 tests):**
+- Success (201), duplicate name (409), validation (name required, max length, description max length), auth, errors
+
+**Roles - Get (5 tests):**
+- Success, auth, authorization, not found, database error
+
+**Roles - Update (8 tests):**
+- Name, description, multiple fields, system role protection (409), duplicate name (409), validation (2), auth, errors
+
+**Roles - Delete (6 tests):**
+- Soft delete, system role protection (409), auth, authorization, not found, database error
+
+**Role Permissions - List (6 tests):**
+- Success with permissions, empty array, auth, authorization, not found, database error
+
+**Role Permissions - Add (7 tests):**
+- Success (201), system role protection (409), duplicate permission (409), validation, auth, not found (2), errors
+
+**Role Permissions - Remove (7 tests):**
+- Success (204), system role protection (409), permission not assigned (404), auth, authorization, not found role, database error
+
+**Permissions - List (7 tests):**
+- All permissions, filter by resource, filter by action, filter by both, auth, authorization, database error
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Transaction Handling:** Model methods own transaction logic (create, commit, rollback)
+- **Error Propagation:** Services let errors bubble up naturally (no try/catch re-throw)
+- **DRY Principle:** All error messages use ERROR_MESSAGES constants (no magic strings)
+- **Field Naming:** Consistent camelCase across all layers
+- **System Protection:** Business rules prevent modification of system-defined roles
+- **Denormalization:** permissionCount maintained automatically for <200ms SLO
 
 ---
 
@@ -455,10 +516,10 @@ export const listResourcesQuerySchema = Joi.object({
 7. Run tests and verify 100% passing
 
 **Estimated Remaining Effort:**
-- 47 endpoints remaining
-- ~282 tests to write
+- 23 endpoints remaining
+- ~91 tests to write
 - Average 1-2 hours per sub-batch
-- Total: 20-40 hours of implementation
+- Total: 10-15 hours of implementation
 
 ---
 
