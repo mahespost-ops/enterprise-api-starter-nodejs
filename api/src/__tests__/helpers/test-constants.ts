@@ -129,6 +129,12 @@ export const TEST_UUIDS = {
   /** Primary test group */
   GROUP_1: '66666666-6666-6666-6666-666666666661',
 
+  /** Second test group */
+  GROUP_2: '66666666-6666-6666-6666-666666666662',
+
+  /** Third test group */
+  GROUP_3: '66666666-6666-6666-6666-666666666663',
+
   /** Engineering group */
   GROUP_ENGINEERING: '66666666-6666-6666-6666-666666666666',
 
@@ -188,6 +194,19 @@ export const TEST_UUIDS = {
 
   /** Non-existent permission */
   PERMISSION_NONEXISTENT: '99999999-9999-9999-9999-999999999999',
+
+  // ============================================================================
+  // Role Assignments (ending in A)
+  // ============================================================================
+
+  /** First test assignment (member) */
+  ASSIGNMENT_1: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+
+  /** Second test assignment (group) */
+  ASSIGNMENT_2: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+
+  /** Third test assignment */
+  ASSIGNMENT_3: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
 } as const;
 
 /**

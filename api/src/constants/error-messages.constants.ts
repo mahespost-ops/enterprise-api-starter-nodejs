@@ -47,6 +47,7 @@ export const ERROR_MESSAGES = {
   ROLE_NOT_FOUND: 'Role not found',
   PERMISSION_NOT_FOUND: 'Permission not found',
   ROLE_PERMISSION_NOT_FOUND: 'Permission is not assigned to this role',
+  ROLE_ASSIGNMENT_NOT_FOUND: 'Role assignment not found',
 
   // Conflicts
   USER_EXISTS: 'User with this email already exists',
@@ -55,6 +56,7 @@ export const ERROR_MESSAGES = {
   GROUP_MEMBER_EXISTS: 'User is already a member of this group',
   ROLE_NAME_EXISTS: 'Role with this name already exists',
   ROLE_PERMISSION_EXISTS: 'Permission is already assigned to this role',
+  ROLE_ASSIGNMENT_EXISTS: 'Role is already assigned to this member/group',
   CANNOT_MODIFY_SYSTEM_ROLE: 'System-defined roles cannot be modified',
   CANNOT_DELETE_SYSTEM_ROLE: 'System-defined roles cannot be deleted',
 

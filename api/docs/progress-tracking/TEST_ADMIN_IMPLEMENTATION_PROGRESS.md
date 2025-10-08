@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-07 19:30 UTC
-**Status:** In Progress - 32/55 endpoints complete (58.2%)
+**Last Updated:** 2025-10-07 20:15 UTC
+**Status:** In Progress - 35/55 endpoints complete (63.6%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 32/55 (58.2%)
-**Tests Written:** 239/330 (72.4%)
-**Tests Passing:** 239/239 (100%) ✅
+**Endpoints Complete:** 35/55 (63.6%)
+**Tests Written:** 272/330 (82.4%)
+**Tests Passing:** 272/272 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -21,9 +21,9 @@
 - ✅ **6.4 - Admin Members:** 7 endpoints, 41 tests (100%)
 - ✅ **6.5 - Admin Groups:** 4 endpoints, 34 tests (100%)
 - ✅ **6.6 - Admin Roles & Permissions:** 9 endpoints, 69 tests (100%)
+- ✅ **6.7 - Admin Role Assignments:** 3 endpoints, 33 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.7 - Admin Role Assignments:** 3 endpoints, ~18 tests
 - ⏭️ **6.8 - Admin Devices:** 4 endpoints, ~24 tests
 - ⏭️ **6.9 - Admin Sessions:** 4 endpoints, ~24 tests
 - ⏭️ **6.10 - Admin Impersonation:** 5 endpoints, ~30 tests
@@ -345,15 +345,53 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.7 Admin Role Assignments (3 endpoints)
+### 6.7 Admin Role Assignments (3 endpoints) ✅
 **File:** `admin/role-assignments.test.ts`
-**Estimated Tests:** ~18
+**Date Completed:** 2025-10-07
+**Tests:** 33/33 passing (100%)
 
-1. `GET /admin/role-assignments` - List all role assignments
-2. `POST /admin/role-assignments` - Create role assignment
-3. `DELETE /admin/role-assignments/{assignmentId}` - Delete role assignment
+#### Endpoints:
+1. ✅ `GET /admin/role-assignments` - List all role assignments
+2. ✅ `POST /admin/role-assignments` - Create role assignment
+3. ✅ `DELETE /admin/role-assignments/{assignmentId}` - Delete role assignment
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/role-assignments.test.ts`
+- [x] Constants: `role-assignment.constants.ts`
+- [x] Validation: `admin-role-assignment.schemas.ts`
+- [x] Model: Added `findWithFilters` static method to `EnvironmentRoleAssignment.model.ts`
+- [x] Service: `admin-role-assignment.service.ts`
+- [x] Controller: `admin-role-assignment.controller.ts`
+- [x] Routes: `admin-role-assignment.routes.ts`
+- [x] Error constants: `ROLE_ASSIGNMENT_EXISTS`, `ROLE_ASSIGNMENT_NOT_FOUND`
+- [x] Wired into main router (mounted at `/admin/role-assignments`)
+- [x] Test constants: Added ASSIGNMENT_1, ASSIGNMENT_2, ASSIGNMENT_3, GROUP_2, GROUP_3
+
+#### Key Features:
+- **Filtering:** organizationId, environmentId, membershipId, groupId, roleId, assigneeType, createdAt, updatedAt
+- **Sorting:** createdAt (default DESC), updatedAt, organizationId, environmentId, assigneeType
+- **Search:** Full-text across role.name, organization.name, environment.name (via associations)
+- **Field Selection:** Supported (all fields returned for complex associations)
+- **Polymorphic Assignments:** Assigns roles to either members OR groups (mutually exclusive)
+- **Duplicate Detection:** Prevents duplicate role assignments (409 Conflict)
+- **Virtual Field:** `assigneeType` calculated from membershipId/groupId (member or group)
+
+#### Test Coverage (33 tests):
+**List (14 tests):**
+- Pagination, filters (6 types: organizationId, environmentId, assigneeType=member, assigneeType=group, roleId, createdAt range), sorting (2 tests), search, field selection, auth, authorization, errors
+
+**Create (15 tests):**
+- Member assignment (201), group assignment (201), duplicate member (409), duplicate group (409), role not found (404), environment not found (404), member not found (404), group not found (404), validation (4 tests: roleId missing, environmentId missing, both provided, neither provided), auth, authorization
+
+**Delete (4 tests):**
+- Soft delete (204), auth (401), authorization (403), not found (404), database error (422)
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op/sequelize imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **Association Mapping:** Maps `membership` to `member` in response for API consistency
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Polymorphic Relations:** Validates exactly one of membershipId or groupId via Joi .xor()
 
 ---
 
