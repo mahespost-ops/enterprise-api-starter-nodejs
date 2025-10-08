@@ -42,6 +42,7 @@ export const ERROR_MESSAGES = {
   GROUP_NOT_FOUND: 'Group not found',
   GROUP_MEMBER_NOT_FOUND: 'User is not a member of this group',
   EVENT_NOT_FOUND: 'Event not found',
+  EVENT_TYPE_NOT_FOUND: 'Event type not found',
   WEBHOOK_NOT_FOUND: 'Webhook not found',
   WEBHOOK_DELIVERY_NOT_FOUND: 'Webhook delivery not found',
   ROLE_NOT_FOUND: 'Role not found',
@@ -57,6 +58,7 @@ export const ERROR_MESSAGES = {
   ROLE_NAME_EXISTS: 'Role with this name already exists',
   ROLE_PERMISSION_EXISTS: 'Permission is already assigned to this role',
   ROLE_ASSIGNMENT_EXISTS: 'Role is already assigned to this member/group',
+  EVENT_TYPE_VERB_EXISTS: 'Event type with this verb already exists',
   CANNOT_MODIFY_SYSTEM_ROLE: 'System-defined roles cannot be modified',
   CANNOT_DELETE_SYSTEM_ROLE: 'System-defined roles cannot be deleted',
 

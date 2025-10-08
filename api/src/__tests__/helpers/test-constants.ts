@@ -241,6 +241,22 @@ export const TEST_UUIDS = {
 
   /** Non-existent event */
   EVENT_NONEXISTENT: '99999999-9999-9999-9999-99999999999b',
+
+  // ============================================================================
+  // Event Types (ending in E)
+  // ============================================================================
+
+  /** Primary test event type */
+  EVENT_TYPE_1: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1',
+
+  /** Secondary test event type */
+  EVENT_TYPE_2: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2',
+
+  /** Third test event type */
+  EVENT_TYPE_3: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3',
+
+  /** Non-existent event type */
+  EVENT_TYPE_NONEXISTENT: '99999999-9999-9999-9999-99999999999e',
 } as const;
 
 /**

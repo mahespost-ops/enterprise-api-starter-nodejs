@@ -389,17 +389,6 @@ export function initializeAssociations(): void {
     as: 'sessions',
   });
 
-  // UserSession tracks last organization and environment
-  UserSession.belongsTo(Organization, {
-    foreignKey: 'lastOrgId',
-    as: 'lastOrganization',
-  });
-
-  UserSession.belongsTo(Environment, {
-    foreignKey: 'lastEnvId',
-    as: 'lastEnvironment',
-  });
-
   // ===========================
   // Impersonation Session Chain
   // ===========================

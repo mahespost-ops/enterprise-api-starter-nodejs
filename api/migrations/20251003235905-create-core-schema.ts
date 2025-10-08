@@ -350,11 +350,14 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       resource VARCHAR(50) NOT NULL,
       action VARCHAR(20) NOT NULL CHECK (action IN ('read', 'manage', 'assign')),
       is_system BOOLEAN DEFAULT TRUE NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL
     );
 
     CREATE INDEX idx_permission_key ON permission(key);
     CREATE INDEX idx_permission_resource ON permission(resource, action);
+
+    CREATE TRIGGER update_permission_updated_at BEFORE UPDATE ON permission FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
     -- ========================================
     -- Table 13: role_permission (M:N association)
@@ -437,11 +440,14 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       http_path VARCHAR(500) NOT NULL,
       description VARCHAR(500),
       is_webhook_event BOOLEAN DEFAULT FALSE NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL
     );
 
     CREATE INDEX idx_event_type_verb ON event_type(verb);
     CREATE INDEX idx_event_type_webhook ON event_type(is_webhook_event) WHERE is_webhook_event = TRUE;
+
+    CREATE TRIGGER update_event_type_updated_at BEFORE UPDATE ON event_type FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
     -- ========================================
     -- Table 17: event (W3C Activity Streams - heavily denormalized for 100M+ scale)
@@ -481,21 +487,20 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     CREATE TABLE webhook (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v1(),
       environment_id UUID NOT NULL REFERENCES environment(id) ON DELETE CASCADE,
-      url VARCHAR(500) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      url VARCHAR(2048) NOT NULL,
       event_types TEXT[] NOT NULL,
-      description VARCHAR(500),
-      auth_method VARCHAR(20) NOT NULL CHECK (auth_method IN ('none', 'hmac', 'jwt', 'basic', 'digest')),
+      auth_method VARCHAR(20) DEFAULT 'none' NOT NULL CHECK (auth_method IN ('none', 'hmac', 'jwt', 'basic', 'digest')),
       auth_config JSONB,
-      is_active BOOLEAN DEFAULT TRUE NOT NULL,
       retry_config JSONB NOT NULL,
-      headers JSONB,
-      timeout INTEGER DEFAULT 10000 NOT NULL,
+      is_active BOOLEAN DEFAULT TRUE NOT NULL,
+      failure_count INTEGER DEFAULT 0 NOT NULL,
+      last_success_at TIMESTAMP WITH TIME ZONE,
+      last_failure_at TIMESTAMP WITH TIME ZONE,
+      metadata JSONB,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
-      last_delivery_at TIMESTAMP WITH TIME ZONE,
-      last_failure_at TIMESTAMP WITH TIME ZONE,
-      success_count INTEGER DEFAULT 0 NOT NULL,
-      failure_count INTEGER DEFAULT 0 NOT NULL
+      deleted_at TIMESTAMP WITH TIME ZONE
     );
 
     CREATE INDEX idx_webhook_env_id ON webhook(environment_id) WHERE is_active = TRUE;
@@ -512,22 +517,23 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       id UUID PRIMARY KEY DEFAULT uuid_generate_v1(),
       webhook_id UUID NOT NULL REFERENCES webhook(id) ON DELETE CASCADE,
       event_id UUID NOT NULL REFERENCES event(id) ON DELETE CASCADE,
-      status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'success', 'failed', 'retrying')),
+      status VARCHAR(20) DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'success', 'failed', 'retrying')),
       attempt INTEGER DEFAULT 1 NOT NULL,
       http_status_code INTEGER,
       request_payload JSONB NOT NULL,
       response_body TEXT,
-      response_headers JSONB,
-      error_message VARCHAR(1000),
-      duration INTEGER,
+      error_message TEXT,
+      scheduled_for TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
+      sent_at TIMESTAMP WITH TIME ZONE,
+      completed_at TIMESTAMP WITH TIME ZONE,
       next_retry_at TIMESTAMP WITH TIME ZONE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
-      completed_at TIMESTAMP WITH TIME ZONE
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL
     );
 
     CREATE INDEX idx_webhook_del_webhook_id ON webhook_delivery(webhook_id, created_at DESC);
     CREATE INDEX idx_webhook_del_event_id ON webhook_delivery(event_id);
-    CREATE INDEX idx_webhook_del_status ON webhook_delivery(status, next_retry_at) WHERE status IN ('pending', 'retrying');
+    CREATE INDEX idx_webhook_del_status ON webhook_delivery(status, scheduled_for) WHERE status IN ('pending', 'retrying');
+    CREATE INDEX idx_webhook_del_next_retry ON webhook_delivery(next_retry_at) WHERE next_retry_at IS NOT NULL;
     CREATE INDEX idx_webhook_del_created ON webhook_delivery(created_at DESC);
   `);
 }

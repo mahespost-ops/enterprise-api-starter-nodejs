@@ -17,10 +17,11 @@ export interface PermissionAttributes {
   action: PermissionAction;
   isSystem: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export type PermissionCreationAttributes =
-  Optional<PermissionAttributes, 'id' | 'description' | 'isSystem' | 'createdAt'>;
+  Optional<PermissionAttributes, 'id' | 'description' | 'isSystem' | 'createdAt' | 'updatedAt'>;
 
 export class Permission
   extends Model<PermissionAttributes, PermissionCreationAttributes>
@@ -34,6 +35,7 @@ export class Permission
   declare action: PermissionAction;
   declare isSystem: boolean;
   declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Permission.init(
@@ -76,11 +78,17 @@ Permission.init(
       defaultValue: DataTypes.NOW,
       field: 'created_at',
     },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'updated_at',
+    },
   },
   {
     sequelize,
     tableName: 'permission',
-    timestamps: false, // Only createdAt, no updatedAt
+    timestamps: true,
     underscored: true,
     indexes: [
       { fields: ['key'] },

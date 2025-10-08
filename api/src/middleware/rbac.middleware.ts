@@ -60,6 +60,7 @@ export type PermissionKey =
   | 'admin:impersonation:read'
   | 'admin:impersonation:manage'
   | 'admin:events:read'
+  | 'admin:events:manage'
   | 'admin:webhooks:read'
   | 'admin:webhooks:manage';
 

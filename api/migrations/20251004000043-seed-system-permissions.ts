@@ -66,6 +66,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       (uuid_generate_v1(), 'admin:impersonation:manage', 'Admin - Manage Impersonation', 'admin', 'manage', 'Force-end impersonation sessions', true),
       -- Events
       (uuid_generate_v1(), 'admin:events:read', 'Admin - Read Events', 'admin', 'read', 'View all events system-wide', true),
+      (uuid_generate_v1(), 'admin:events:manage', 'Admin - Manage Events', 'admin', 'manage', 'Manage event types system-wide', true),
       -- Webhooks
       (uuid_generate_v1(), 'admin:webhooks:read', 'Admin - Read Webhooks', 'admin', 'read', 'View all webhooks system-wide', true),
       (uuid_generate_v1(), 'admin:webhooks:manage', 'Admin - Manage Webhooks', 'admin', 'manage', 'Manage all webhooks system-wide', true);

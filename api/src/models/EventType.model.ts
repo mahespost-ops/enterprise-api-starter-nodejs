@@ -3,7 +3,7 @@
  * Maps HTTP endpoints (method + path) to event verbs for activity logging
  */
 
-import { Model, DataTypes, Optional, UUIDV1 } from 'sequelize';
+import { Model, DataTypes, Optional, UUIDV1, WhereOptions, Op, Order } from 'sequelize';
 import sequelize from '../config/database';
 
 // EventType attributes
@@ -57,6 +57,128 @@ export class EventType extends Model<EventTypeAttributes, EventTypeCreationAttri
       where: { isWebhookEvent: true },
       order: [['verb', 'ASC']],
     });
+  }
+
+  /**
+   * Find event types with filters, pagination, sorting, and search
+   * Used by admin event-type endpoints for advanced queries
+   */
+  static async findWithFilters(
+    filters: {
+      verb?: string | string[];
+      httpMethod?: string | string[];
+      isWebhookEvent?: boolean;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+        gt?: Date;
+        lt?: Date;
+        eq?: Date;
+        ne?: Date;
+      };
+    },
+    options: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      search?: string;
+      searchFields?: string[];
+      sortableFields?: string[];
+      fields?: string[];
+    },
+  ): Promise<{ rows: EventType[]; count: number }> {
+    const where: WhereOptions = {};
+
+    // Apply filters - verb (eq, in)
+    if (filters.verb !== undefined) {
+      if (Array.isArray(filters.verb)) {
+        where.verb = { [Op.in]: filters.verb };
+      } else {
+        where.verb = filters.verb;
+      }
+    }
+
+    // Apply filters - httpMethod (eq, in)
+    if (filters.httpMethod !== undefined) {
+      if (Array.isArray(filters.httpMethod)) {
+        where.httpMethod = { [Op.in]: filters.httpMethod };
+      } else {
+        where.httpMethod = filters.httpMethod;
+      }
+    }
+
+    // Apply filters - isWebhookEvent
+    if (filters.isWebhookEvent !== undefined) {
+      where.isWebhookEvent = filters.isWebhookEvent;
+    }
+
+    // Date filters for createdAt
+    if (filters.createdAt) {
+      const createdAtConditions: Record<symbol, Date> = {};
+      if (filters.createdAt.gte) createdAtConditions[Op.gte] = filters.createdAt.gte;
+      if (filters.createdAt.lte) createdAtConditions[Op.lte] = filters.createdAt.lte;
+      if (filters.createdAt.gt) createdAtConditions[Op.gt] = filters.createdAt.gt;
+      if (filters.createdAt.lt) createdAtConditions[Op.lt] = filters.createdAt.lt;
+      if (filters.createdAt.eq) createdAtConditions[Op.eq] = filters.createdAt.eq;
+      if (filters.createdAt.ne) createdAtConditions[Op.ne] = filters.createdAt.ne;
+      if (Object.getOwnPropertySymbols(createdAtConditions).length > 0) {
+        where.createdAt = createdAtConditions;
+      }
+    }
+
+    // Search across specified fields
+    if (options.search && options.searchFields) {
+      const searchConditions = options.searchFields.map((field) => ({
+        [field]: { [Op.iLike]: `%${options.search}%` },
+      }));
+      // Type assertion needed for Sequelize Op.or symbol indexing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (where as any)[Op.or] = searchConditions;
+    }
+
+    // Parse sort parameter
+    let order: Order = [['verb', 'ASC']]; // Default sort
+    if (options.sort && options.sortableFields) {
+      const sortFields = options.sort.split(',');
+      order = sortFields
+        .map((field) => {
+          const direction = field.startsWith('-') ? 'DESC' : 'ASC';
+          const fieldName = field.startsWith('-') ? field.slice(1) : field;
+
+          if (options.sortableFields?.includes(fieldName)) {
+            return [fieldName, direction] as [string, string];
+          }
+          return null;
+        })
+        .filter((item): item is [string, string] => item !== null);
+    }
+
+    // Build query with pagination, sorting, and field selection
+    const findOptions: {
+      where: WhereOptions;
+      limit?: number;
+      offset?: number;
+      order: Order;
+      attributes?: string[];
+    } = {
+      where,
+      order,
+    };
+
+    if (options.limit !== undefined) {
+      findOptions.limit = options.limit;
+    }
+
+    if (options.offset !== undefined) {
+      findOptions.offset = options.offset;
+    }
+
+    if (options.fields && options.fields.length > 0) {
+      findOptions.attributes = options.fields;
+    }
+
+    // Execute query
+    return this.findAndCountAll(findOptions);
   }
 }
 
