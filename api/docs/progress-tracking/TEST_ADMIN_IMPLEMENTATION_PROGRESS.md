@@ -1,18 +1,18 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-08 17:15 UTC
-**Status:** In Progress - 50/55 endpoints complete (90.9%)
+**Last Updated:** 2025-10-08 19:00 UTC
+**Status:** In Progress - 55/62 endpoints complete (88.7%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
 
 ## Overall Progress Summary
 
-**Total Admin Endpoints:** 55
-**Endpoints Complete:** 50/55 (90.9%)
-**Tests Written:** 380/389 (97.7%)
-**Tests Passing:** 380/380 (100%) ✅
+**Total Admin Endpoints:** 62
+**Endpoints Complete:** 55/62 (88.7%)
+**Tests Written:** 423/465 (91.0%)
+**Tests Passing:** 423/423 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -26,9 +26,12 @@
 - ✅ **6.9 - Admin Sessions:** 4 endpoints, 26 tests (100%)
 - ✅ **6.10 - Admin Impersonation:** 5 endpoints, 32 tests (100%)
 - ✅ **6.11 - Admin Events:** 2 endpoints, 19 tests (100%)
+- ✅ **6.12 - Admin Event Types:** 5 endpoints, 43 tests (100%)
+- 🔧 **6.12.1 - Event Type Subscription Helper:** Schema/spec only (implementation in 6.13)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.12 - Admin Webhooks:** 5 endpoints, ~9 tests
+- ⏭️ **6.13 - Admin Webhooks (Part 1):** 6 endpoints (5 webhook CRUD + 1 subscription GET), ~24 tests
+- ⏭️ **6.14 - Admin Webhooks (Part 2):** 3 endpoints (delivery management), ~18 tests
 
 ---
 
@@ -625,18 +628,60 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.12 Admin Webhooks (5 endpoints)
-**File:** `admin/webhooks.test.ts`
-**Estimated Tests:** ~36
+### 6.12 Admin Event Types (5 endpoints) ✅
+**File:** `admin/event-types.test.ts`
+**Date Completed:** 2025-10-08
+**Tests:** 43/43 passing (100%)
 
-1. `GET /admin/webhooks` - List all webhooks system-wide
-2. `GET /admin/webhooks/{webhookId}` - Get webhook
-3. `PUT /admin/webhooks/{webhookId}` - Update webhook
-4. `DELETE /admin/webhooks/{webhookId}` - Delete webhook
-5. `GET /admin/webhooks/{webhookId}/deliveries` - List deliveries
-6. `POST /admin/webhooks/{webhookId}/deliveries/{deliveryId}/retry` - Retry delivery
+#### Endpoints:
+1. ✅ `GET /admin/event-types` - List all event types
+2. ✅ `POST /admin/event-types` - Create event type
+3. ✅ `GET /admin/event-types/{eventTypeId}` - Get event type details
+4. ✅ `PUT /admin/event-types/{eventTypeId}` - Update event type
+5. ✅ `DELETE /admin/event-types/{eventTypeId}` - Delete event type
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/event-types.test.ts`
+- [x] Constants: `event-type.constants.ts` (filterable/sortable/searchable fields)
+- [x] Model: `EventType.findWithFilters()` for advanced filtering/search
+- [x] Validation: `admin-event-type.schemas.ts`
+- [x] Service: `admin-event-type.service.ts`
+- [x] Controller: `admin-event-type.controller.ts`
+- [x] Routes: `admin-event-type.routes.ts`
+- [x] Error constant: `EVENT_TYPE_EXISTS`
+- [x] Wired into main router (mounted at `/admin/event-types`)
+- [x] Migration: Updated webhook and webhook_delivery schema (verb → event_type_id FK)
+
+#### Key Features:
+- **Filtering:** organizationId, verb, isActive, isWebhookEvent, createdAt, updatedAt
+- **Sorting:** name, verb, createdAt, updatedAt, isActive
+- **Search:** Full-text across name, description, verb
+- **Field Selection:** Optimized responses
+- **Duplicate Detection:** Prevents duplicate org+verb combinations (409 Conflict)
+- **Schema Migration:** Updated webhook tables to reference event_type_id instead of verb string
+
+#### Test Coverage (43 tests):
+**List (13 tests):**
+- Pagination, filters (5 types: organizationId, verb, isActive, isWebhookEvent, createdAt range), sorting (name ASC, createdAt DESC), search (name, description), field selection, auth, authorization, database errors
+
+**Create (10 tests):**
+- Success (201), duplicate org+verb (409), validation (5 tests: name required, verb required, name max length, description max length, invalid verb format), auth, authorization, database error
+
+**Get (5 tests):**
+- Success, auth, authorization, not found, database error
+
+**Update (10 tests):**
+- Update name, description, isActive, isWebhookEvent, multiple fields, duplicate verb (409), validation (2 tests), auth, authorization, not found, database error
+
+**Delete (5 tests):**
+- Soft delete, auth, authorization, not found, database error
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Composite Unique Constraint:** organizationId + verb (enforced at DB level)
+- **Schema Evolution:** Migration updated webhook tables to use event_type_id FK for data integrity
 
 ---
 
@@ -720,25 +765,172 @@ export const listResourcesQuerySchema = Joi.object({
 
 ---
 
+## Remaining Sub-Batches ⏭️
+
+---
+
+### 6.12.1 Event Type Subscription Helper Table ✅
+**Date Completed:** 2025-10-08
+**Status:** Schema and OpenAPI spec complete (no implementation yet)
+
+#### Purpose:
+Reverse-lookup table to facilitate fast **event → webhook** lookups without expensive joins.
+This is a **denormalized helper table** automatically populated by webhook model triggers.
+
+#### How It Works:
+When a webhook is created/updated with `event_types = ['user.created', 'user.updated']`:
+1. Webhook model creates **2 subscription records** (one per event type)
+2. Each record denormalizes webhook fields (name, url, auth config, retry config)
+3. When an event occurs, system queries subscriptions by `event_type_verb` to find matching webhooks
+4. Avoids N+1 queries and joins for webhook delivery at scale
+
+#### Database Schema:
+**Table:** `event_type_subscription`
+- **Columns:** id, event_type_id, event_type_verb (denormalized), webhook_id, webhook_name, webhook_url, webhook_auth_method, webhook_auth_config, webhook_retry_config, webhook_metadata, is_active, created_at, updated_at
+- **Indexes:** Partial indexes on event_type_id, event_type_verb (WHERE is_active = TRUE), plus indexes on webhook_id, webhook_name, webhook_url
+- **Unique Constraint:** (event_type_id, webhook_id) - prevents duplicate subscriptions
+- **Foreign Keys:** event_type_id → event_type.id, webhook_id → webhook.id (CASCADE DELETE)
+
+#### OpenAPI Spec:
+**Endpoint:** `GET /admin/event-type-subscriptions`
+- **Permission:** `admin:event-types:read`
+- **Filters:** eventTypeId, eventTypeVerb, webhookId, webhookName, webhookUrl, isActive, createdAt, updatedAt
+- **Sorting:** eventTypeVerb, webhookName, webhookUrl, createdAt, updatedAt, isActive
+- **Search:** Full-text across eventTypeVerb, webhookName, webhookUrl
+- **Pagination:** Offset-based (limit/offset)
+- **Purpose:** Monitoring/debugging webhook subscriptions (read-only)
+
+#### Implementation Files:
+- [x] Migration: `migrations/20251003235905-create-core-schema.ts` (Table 19)
+- [x] OpenAPI Path: `api-docs/paths/admin-event-type-subscriptions.yaml`
+- [x] OpenAPI Schema: `api-docs/components/schemas/event-type-subscription.yaml`
+- [x] Index.yaml updated with tag and path reference
+- [ ] Model: `EventTypeSubscription.model.ts` (to be created in batch 6.13)
+- [ ] Service: Auto-managed by Webhook service (no dedicated service needed)
+- [ ] Controller: `admin-event-type-subscription.controller.ts` (to be created)
+- [ ] Routes: `admin-event-type-subscription.routes.ts` (to be created)
+- [ ] Tests: To be added as part of webhook implementation
+
+#### Relationship to Webhooks:
+This table is **tightly coupled** with the webhook lifecycle:
+- **CREATE webhook:** Webhook service splits `event_types[]` array → creates N subscription records
+- **UPDATE webhook:**
+  - If `event_types` added: Create new subscriptions
+  - If `event_types` removed: Delete subscriptions
+  - If webhook fields change: Update all related subscriptions (denormalized fields)
+  - If `is_active` changes: Update all subscription.is_active flags
+- **DELETE webhook:** CASCADE DELETE removes all subscriptions automatically (FK constraint)
+
+#### Query Pattern (Event Delivery):
+```sql
+-- When event occurs with verb = 'user.created':
+SELECT webhook_id, webhook_url, webhook_auth_method, webhook_auth_config, webhook_retry_config
+FROM event_type_subscription
+WHERE event_type_verb = 'user.created'
+  AND is_active = TRUE;
+
+-- Returns all webhooks subscribed to this event type (denormalized, no joins needed)
+```
+
+---
+
+### 6.13 Admin Webhooks - Part 1 (5 endpoints)
+**File:** `admin/webhooks-part1.test.ts` or `admin/webhooks.test.ts`
+**Estimated Tests:** ~18
+
+#### Endpoints (CRUD operations):
+1. `GET /admin/webhooks` - List all webhooks system-wide
+2. `POST /admin/webhooks` - Create webhook (admin-level)
+3. `GET /admin/webhooks/{webhookId}` - Get webhook details
+4. `PUT /admin/webhooks/{webhookId}` - Update webhook
+5. `DELETE /admin/webhooks/{webhookId}` - Delete webhook
+
+**Status:** Not started
+
+#### Implementation Checklist:
+- [ ] Test file: `admin/webhooks-part1.test.ts`
+- [ ] Constants: Review/update `webhook.constants.ts`
+- [ ] Model: `Webhook.findWithFilters()` static method
+- [ ] Model: `EventTypeSubscription.model.ts` (new model for subscription table)
+- [ ] Validation: `admin-webhook.schemas.ts`
+- [ ] Service: `admin-webhook.service.ts`
+  - **CRITICAL:** Service must manage event_type_subscription lifecycle
+  - On CREATE: Split event_types[] → create N subscription records
+  - On UPDATE: Sync event_types changes (add/remove subscriptions)
+  - On DELETE: Cascade handled by FK, but may need explicit cleanup
+- [ ] Controller: `admin-webhook.controller.ts`
+- [ ] Controller: `admin-event-type-subscription.controller.ts` (for GET endpoint)
+- [ ] Routes: `admin-webhook.routes.ts`
+- [ ] Routes: `admin-event-type-subscription.routes.ts` (for GET endpoint)
+- [ ] Wire into main router
+
+#### Key Features (Expected):
+- **Filtering:** organizationId, environmentId, eventTypeId, isActive, createdAt, updatedAt
+- **Sorting:** url, createdAt, updatedAt, isActive
+- **Search:** Full-text across url, description
+- **Field Selection:** Optimized responses
+- **Security:** Validate webhook URLs (HTTPS required for production)
+- **Webhook Secret:** Auto-generate secure secret on creation
+
+---
+
+### 6.14 Admin Webhooks - Part 2 (3 endpoints)
+**File:** `admin/webhook-deliveries.test.ts` or combined with Part 1
+**Estimated Tests:** ~18
+
+#### Endpoints (Delivery management):
+1. `GET /admin/webhooks/{webhookId}/deliveries` - List webhook deliveries
+2. `GET /admin/webhook-deliveries/{deliveryId}` - Get delivery details
+3. `POST /admin/webhook-deliveries/{deliveryId}/retry` - Retry failed delivery
+
+**Status:** Not started
+
+#### Implementation Checklist:
+- [ ] Test file: `admin/webhook-deliveries.test.ts`
+- [ ] Constants: `webhook-delivery.constants.ts` (if not exists)
+- [ ] Model: Add `WebhookDelivery.findWithFilters()` if needed
+- [ ] Validation: `admin-webhook-delivery.schemas.ts`
+- [ ] Service: Update `admin-webhook.service.ts` or create separate service
+- [ ] Controller: Update `admin-webhook.controller.ts` or create separate controller
+- [ ] Routes: Add delivery routes to `admin-webhook.routes.ts`
+- [ ] Wire into main router
+
+#### Key Features (Expected):
+- **Filtering:** webhookId, eventId, status, httpStatusCode, createdAt, deliveredAt
+- **Sorting:** createdAt (default DESC), deliveredAt, responseTimeMs, httpStatusCode
+- **Search:** Full-text across requestUrl
+- **Field Selection:** Optimized responses
+- **Retry Logic:** Re-queue failed deliveries with exponential backoff
+- **Delivery Status:** pending, success, failed, retrying
+
+---
+
 ## Next Steps
 
-**Current Focus:** Admin Webhooks (Batch 6.12) - FINAL BATCH
+**Current Focus:** Admin Webhooks (Batches 6.13 & 6.14) - FINAL BATCHES
 
-1. Create test file: `admin/webhooks.test.ts`
-2. Create webhook constants (if needed)
-3. Create validation schemas: `admin-webhook.schemas.ts`
-4. Create service: `admin-webhook.service.ts`
-5. Create controller: `admin-webhook.controller.ts`
-6. Create routes: `admin-webhook.routes.ts`
-7. Wire into main router
-8. Run tests and verify 100% passing
+**Planning Notes:**
+- ✅ **Helper table added:** event_type_subscription (reverse-lookup for event → webhook)
+- Webhooks split into 2 batches for easier code review
+- Part 1: Core webhook CRUD operations + event_type_subscription GET endpoint + subscription lifecycle management
+- Part 2: Delivery tracking and retry functionality
 
 **Estimated Remaining Effort:**
-- 5 endpoints remaining
-- ~9 tests to write
-- Estimated: 1-2 hours of implementation
+- 7 endpoints remaining:
+  - 5 webhook CRUD endpoints
+  - 1 event_type_subscription GET endpoint
+  - 3 delivery management endpoints (Part 2)
+- ~42 tests to write
+- Estimated: 2-3 hours of implementation
 
-**Progress:** 90.9% complete (50/55 endpoints)
+**Progress:** 88.7% complete (55/62 endpoints)
+
+**IMPORTANT for Webhook Implementation:**
+The webhook service must manage the event_type_subscription table lifecycle:
+1. **On webhook CREATE:** Parse `event_types[]` array, create one subscription record per event type
+2. **On webhook UPDATE:** Compare old vs new `event_types[]`, add/remove subscriptions as needed, sync denormalized fields
+3. **On webhook DELETE:** CASCADE DELETE handles subscriptions via FK constraint
+4. **Query optimization:** Use subscriptions table for fast event → webhook lookups (no joins)
 
 ---
 

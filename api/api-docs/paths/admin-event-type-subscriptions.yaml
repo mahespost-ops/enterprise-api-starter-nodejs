@@ -1,0 +1,256 @@
+# Admin - Event Type Subscriptions Endpoints
+
+listEventTypeSubscriptions:
+  get:
+    tags:
+      - Admin - Events
+    summary: List all event type subscriptions
+    description: |
+      Get all event type subscriptions (reverse-lookup table for webhook → event_type mappings).
+      Requires `admin:event-types:read` permission.
+
+      This is a READ-ONLY denormalized table automatically populated by webhook triggers.
+      When a webhook subscribes to event_types = ['user.created', 'user.updated'],
+      two subscription records are created for fast event → webhook lookups.
+
+      **Filterable fields:**
+      - `eventTypeId` (eq, in) - Event type UUID reference
+      - `eventTypeVerb` (eq, in) - Event verb/action (e.g., "user.created", "device.updated")
+      - `webhookId` (eq, in) - Webhook UUID reference
+      - `webhookName` (partial match) - Webhook name
+      - `webhookUrl` (partial match) - Webhook target URL
+      - `isActive` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `eventTypeVerb` (indexed) - Event verb
+      - `webhookName` (indexed) - Webhook name
+      - `webhookUrl` (indexed) - Webhook URL
+      - `createdAt` (default: -createdAt) - Creation timestamp
+      - `updatedAt` - Last update timestamp
+      - `isActive` (indexed) - Active status
+
+      **Searchable fields:**
+      - Full-text search across eventTypeVerb, webhookName, webhookUrl (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, eventTypeId, eventTypeVerb, webhookId, webhookName, webhookUrl, webhookAuthMethod, webhookAuthConfig, webhookRetryConfig, webhookMetadata, isActive, createdAt, updatedAt
+
+      **Examples:**
+      ```
+      # Example 1: Find all webhooks subscribed to a specific event type
+      ?filter[eventTypeVerb]=user.created&limit=50
+
+      # Example 2: Find all subscriptions for a specific webhook
+      ?filter[webhookId]=550e8400-e29b-41d4-a716-446655440000
+
+      # Example 3: Search for webhook by URL pattern
+      ?search=api.example.com&filter[isActive]=true
+
+      # Example 4: Active subscriptions sorted by webhook name
+      ?filter[isActive]=true&sort=webhookName&limit=100
+      ```
+    operationId: adminListEventTypeSubscriptions
+    security:
+      - bearerAuth: ["admin:event-types:read"]
+    parameters:
+      # Pagination (Offset-Based)
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+
+      # Filters
+      - name: filter[eventTypeId]
+        in: query
+        required: false
+        description: Filter by event type UUID
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+
+      - name: filter[eventTypeId][in]
+        in: query
+        required: false
+        description: Filter by multiple event type UUIDs (comma-separated)
+        schema:
+          type: string
+        example: '550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440001'
+
+      - name: filter[eventTypeVerb]
+        in: query
+        required: false
+        description: |
+          Filter by event verb/type
+          Examples: "user.created", "device.updated", "session.started"
+        schema:
+          type: string
+        example: 'user.created'
+
+      - name: filter[eventTypeVerb][in]
+        in: query
+        required: false
+        description: Filter by multiple event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'user.created,user.updated,user.deleted'
+
+      - name: filter[webhookId]
+        in: query
+        required: false
+        description: Filter by webhook UUID
+        schema:
+          type: string
+          format: uuid
+        example: '770e8400-e29b-41d4-a716-446655440000'
+
+      - name: filter[webhookId][in]
+        in: query
+        required: false
+        description: Filter by multiple webhook UUIDs (comma-separated)
+        schema:
+          type: string
+        example: '770e8400-e29b-41d4-a716-446655440000,880e8400-e29b-41d4-a716-446655440001'
+
+      - name: filter[webhookName]
+        in: query
+        required: false
+        description: Partial match filter for webhook name (case-insensitive)
+        schema:
+          type: string
+        example: 'Production Alert'
+
+      - name: filter[webhookUrl]
+        in: query
+        required: false
+        description: Partial match filter for webhook URL (case-insensitive)
+        schema:
+          type: string
+        example: 'api.example.com'
+
+      - name: filter[isActive]
+        in: query
+        required: false
+        description: Filter by active status
+        schema:
+          type: boolean
+        example: true
+
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter by creation date greater than or equal to (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter by creation date less than or equal to (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
+      - name: filter[updatedAt][gte]
+        in: query
+        required: false
+        description: Filter by update date greater than or equal to (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[updatedAt][lte]
+        in: query
+        required: false
+        description: Filter by update date less than or equal to (ISO 8601)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
+    responses:
+      '200':
+        description: Successful response with event type subscriptions
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/event-type-subscription.yaml#/EventTypeSubscription'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Example response
+                value:
+                  data:
+                    - id: '990e8400-e29b-41d4-a716-446655440000'
+                      eventTypeId: '550e8400-e29b-41d4-a716-446655440000'
+                      eventTypeVerb: 'user.created'
+                      webhookId: '770e8400-e29b-41d4-a716-446655440000'
+                      webhookName: 'Production User Alerts'
+                      webhookUrl: 'https://api.example.com/webhooks/users'
+                      webhookAuthMethod: 'hmac'
+                      webhookAuthConfig:
+                        secret: '***REDACTED***'
+                        header: 'X-Webhook-Signature'
+                      webhookRetryConfig:
+                        maxAttempts: 5
+                        backoffMultiplier: 2
+                        initialDelayMs: 1000
+                      webhookMetadata:
+                        team: 'engineering'
+                        priority: 'high'
+                      isActive: true
+                      createdAt: '2025-01-15T10:30:00Z'
+                      updatedAt: '2025-01-15T10:30:00Z'
+                    - id: '991e8400-e29b-41d4-a716-446655440001'
+                      eventTypeId: '551e8400-e29b-41d4-a716-446655440001'
+                      eventTypeVerb: 'user.updated'
+                      webhookId: '770e8400-e29b-41d4-a716-446655440000'
+                      webhookName: 'Production User Alerts'
+                      webhookUrl: 'https://api.example.com/webhooks/users'
+                      webhookAuthMethod: 'hmac'
+                      webhookAuthConfig:
+                        secret: '***REDACTED***'
+                        header: 'X-Webhook-Signature'
+                      webhookRetryConfig:
+                        maxAttempts: 5
+                        backoffMultiplier: 2
+                        initialDelayMs: 1000
+                      webhookMetadata:
+                        team: 'engineering'
+                        priority: 'high'
+                      isActive: true
+                      createdAt: '2025-01-15T10:30:00Z'
+                      updatedAt: '2025-01-15T10:30:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 42
+                    hasMore: true
+
+      '401':
+        $ref: '../components/responses.yaml#/UnauthorizedError'
+      '403':
+        $ref: '../components/responses.yaml#/ForbiddenError'
+      '422':
+        $ref: '../components/responses.yaml#/ValidationError'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

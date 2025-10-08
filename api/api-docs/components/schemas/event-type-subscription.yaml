@@ -1,0 +1,109 @@
+# Event Type Subscription Schema
+
+EventTypeSubscription:
+  type: object
+  required:
+    - id
+    - eventTypeId
+    - eventTypeVerb
+    - webhookId
+    - webhookName
+    - webhookUrl
+    - webhookAuthMethod
+    - webhookRetryConfig
+    - isActive
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Subscription ID
+      example: '990e8400-e29b-41d4-a716-446655440000'
+    eventTypeId:
+      type: string
+      format: uuid
+      description: Event type UUID reference
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    eventTypeVerb:
+      type: string
+      maxLength: 100
+      description: Event verb (e.g., "user.created", "device.updated")
+      example: 'user.created'
+    webhookId:
+      type: string
+      format: uuid
+      description: Webhook UUID reference
+      example: '770e8400-e29b-41d4-a716-446655440000'
+    webhookName:
+      type: string
+      maxLength: 255
+      description: Denormalized webhook name for fast lookups
+      example: 'Production User Alerts'
+    webhookUrl:
+      type: string
+      maxLength: 2048
+      description: Denormalized webhook target URL
+      example: 'https://api.example.com/webhooks/users'
+    webhookAuthMethod:
+      type: string
+      enum:
+        - none
+        - hmac
+        - jwt
+        - basic
+        - digest
+      description: Denormalized authentication method
+      example: 'hmac'
+    webhookAuthConfig:
+      type: object
+      nullable: true
+      description: Denormalized authentication configuration (secrets redacted)
+      example:
+        secret: '***REDACTED***'
+        header: 'X-Webhook-Signature'
+    webhookRetryConfig:
+      type: object
+      description: Denormalized retry configuration
+      properties:
+        maxAttempts:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Maximum number of retry attempts
+          example: 5
+        backoffMultiplier:
+          type: number
+          minimum: 1
+          description: Exponential backoff multiplier
+          example: 2
+        initialDelayMs:
+          type: integer
+          minimum: 100
+          description: Initial retry delay in milliseconds
+          example: 1000
+      example:
+        maxAttempts: 5
+        backoffMultiplier: 2
+        initialDelayMs: 1000
+    webhookMetadata:
+      type: object
+      nullable: true
+      description: Denormalized custom metadata
+      example:
+        team: 'engineering'
+        priority: 'high'
+    isActive:
+      type: boolean
+      description: Whether the subscription is active (reflects webhook.isActive)
+      example: true
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the subscription was created (ISO 8601, UTC)
+      example: '2025-01-15T10:30:00Z'
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the subscription was last updated (ISO 8601, UTC)
+      example: '2025-01-15T10:30:00Z'

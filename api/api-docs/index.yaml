@@ -364,6 +364,9 @@ paths:
       $ref: './paths/admin-events.yaml#/updateEventType/put'
     delete:
       $ref: './paths/admin-events.yaml#/deleteEventType/delete'
+  /admin/event-type-subscriptions:
+    get:
+      $ref: './paths/admin-event-type-subscriptions.yaml#/listEventTypeSubscriptions/get'
   /admin/webhooks:
     get:
       $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks/get'

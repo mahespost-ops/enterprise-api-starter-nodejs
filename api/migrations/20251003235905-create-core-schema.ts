@@ -21,7 +21,8 @@
  * 16. event_type - Maps endpoints to event verbs
  * 17. event - W3C Activity Streams (heavily denormalized)
  * 18. webhook - CloudEvents 1.0.2 webhooks
- * 19. webhook_delivery - Webhook delivery tracking
+ * 19. event_type_subscription - Reverse-lookup for webhook subscriptions
+ * 20. webhook_delivery - Webhook delivery tracking
  */
 
 import { QueryInterface } from 'sequelize';
@@ -510,7 +511,40 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     CREATE TRIGGER update_webhook_updated_at BEFORE UPDATE ON webhook FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
     -- ========================================
-    -- Table 19: webhook_delivery (Webhook delivery tracking)
+    -- Table 19: event_type_subscription (Reverse-lookup for webhook subscriptions)
+    -- ========================================
+    -- Denormalized table populated by webhook triggers for fast event → webhook lookups
+    -- When webhook.event_types = ['user.created', 'user.updated'], creates 2 subscription records
+
+    CREATE TABLE event_type_subscription (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v1(),
+      event_type_id UUID NOT NULL REFERENCES event_type(id) ON DELETE CASCADE,
+      event_type_verb VARCHAR(100) NOT NULL,
+      webhook_id UUID NOT NULL REFERENCES webhook(id) ON DELETE CASCADE,
+      webhook_name VARCHAR(255) NOT NULL,
+      webhook_url VARCHAR(2048) NOT NULL,
+      webhook_auth_method VARCHAR(20) NOT NULL,
+      webhook_auth_config JSONB,
+      webhook_retry_config JSONB NOT NULL,
+      webhook_metadata JSONB,
+      is_active BOOLEAN DEFAULT TRUE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
+      UNIQUE(event_type_id, webhook_id)
+    );
+
+    -- Indexes for fast reverse lookups (event → webhooks)
+    CREATE INDEX idx_event_type_sub_event_type_id ON event_type_subscription(event_type_id) WHERE is_active = TRUE;
+    CREATE INDEX idx_event_type_sub_event_type_verb ON event_type_subscription(event_type_verb) WHERE is_active = TRUE;
+    CREATE INDEX idx_event_type_sub_webhook_id ON event_type_subscription(webhook_id);
+    CREATE INDEX idx_event_type_sub_is_active ON event_type_subscription(is_active);
+    CREATE INDEX idx_event_type_sub_webhook_name ON event_type_subscription(webhook_name);
+    CREATE INDEX idx_event_type_sub_webhook_url ON event_type_subscription(webhook_url);
+
+    CREATE TRIGGER update_event_type_subscription_updated_at BEFORE UPDATE ON event_type_subscription FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+    -- ========================================
+    -- Table 20: webhook_delivery (Webhook delivery tracking)
     -- ========================================
 
     CREATE TABLE webhook_delivery (
@@ -542,6 +576,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
   // Drop all tables in reverse order
   await queryInterface.sequelize.query(`
     DROP TABLE IF EXISTS webhook_delivery CASCADE;
+    DROP TABLE IF EXISTS event_type_subscription CASCADE;
     DROP TABLE IF EXISTS webhook CASCADE;
     DROP TABLE IF EXISTS event CASCADE;
     DROP TABLE IF EXISTS event_type CASCADE;
