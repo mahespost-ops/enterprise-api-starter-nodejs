@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-08 11:00 UTC
-**Status:** In Progress - 48/55 endpoints complete (87.3%)
+**Last Updated:** 2025-10-08 17:15 UTC
+**Status:** In Progress - 50/55 endpoints complete (90.9%)
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 55
-**Endpoints Complete:** 48/55 (87.3%)
-**Tests Written:** 361/389 (92.8%)
-**Tests Passing:** 361/361 (100%) ✅
+**Endpoints Complete:** 50/55 (90.9%)
+**Tests Written:** 380/389 (97.7%)
+**Tests Passing:** 380/380 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -25,10 +25,10 @@
 - ✅ **6.8 - Admin Devices:** 4 endpoints, 31 tests (100%)
 - ✅ **6.9 - Admin Sessions:** 4 endpoints, 26 tests (100%)
 - ✅ **6.10 - Admin Impersonation:** 5 endpoints, 32 tests (100%)
+- ✅ **6.11 - Admin Events:** 2 endpoints, 19 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.11 - Admin Events:** 2 endpoints, ~12 tests
-- ⏭️ **6.12 - Admin Webhooks:** 6 endpoints, ~36 tests
+- ⏭️ **6.12 - Admin Webhooks:** 5 endpoints, ~9 tests
 
 ---
 
@@ -562,18 +562,70 @@ All admin endpoints follow the pattern:
 
 ---
 
-### 6.11 Admin Events (2 endpoints)
+### 6.11 Admin Events (2 endpoints) ✅
 **File:** `admin/events.test.ts`
-**Estimated Tests:** ~12
+**Date Completed:** 2025-10-08
+**Tests:** 19/19 passing (100%)
 
-1. `GET /admin/events` - List all events system-wide
-2. `GET /admin/events/{eventId}` - Get event details
+#### Endpoints:
+1. ✅ `GET /admin/events` - List all events system-wide (cursor pagination)
+2. ✅ `GET /admin/events/{eventId}` - Get event details
 
-**Status:** Not started
+#### Implementation:
+- [x] Test file: `admin/events.test.ts`
+- [x] Constants: `event.constants.ts` (filterable/sortable/searchable fields)
+- [x] Model: Added `findWithFilters` static method to `Event.model.ts`
+- [x] Validation: `admin-event.schemas.ts`
+- [x] Service: `admin-event.service.ts`
+- [x] Controller: `admin-event.controller.ts`
+- [x] Routes: `admin-event.routes.ts`
+- [x] Wired into main router (mounted at `/admin/events`)
+- [x] Test constants: Added EVENT_1, EVENT_2, EVENT_3, EVENT_NONEXISTENT
+
+#### Key Features:
+- **Cursor Pagination:** Designed for high-volume scenarios (10M+ records)
+- **Filtering:** verb (eq, in), actorType, actorId, organizationId (eq, in), environmentId (eq, in), isWebhookEvent, timestamp range (gte, lte, gt, lt, eq, ne)
+- **Sorting:** timestamp (default DESC), verb, actorType
+- **Search:** Full-text across description and verb fields
+- **Field Selection:** Optimized responses
+- **Security:** Read-only endpoint (no modification of events)
+- **Denormalized Fields:** organizationName, environmentName always included for context
+
+#### Test Coverage (19 tests):
+**List (14 tests):**
+- Pagination with cursor (limit, nextCursor, hasMore)
+- Filters (7 types: verb, verbIn, actorType, organizationId, environmentId, isWebhookEvent, timestamp range)
+- Sorting (timestamp DESC)
+- Search (description)
+- Field selection
+- Auth (401)
+- Authorization (403)
+- Database errors
+
+**Get (5 tests):**
+- Success with full event details (actor, object, target, audit, denormalized fields)
+- Auth (401)
+- Authorization (403)
+- Not found (404)
+- Database errors
+
+#### Architectural Patterns:
+- **Separation of Concerns:** All DB operations in model layer (no Op imports in service)
+- **Field Naming:** Consistent camelCase across all layers
+- **Cursor Pagination:** Uses timestamp + id for deterministic ordering
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing
+- **Cleanup:** Explicit model destroy instead of sequelize.truncate for test isolation
+
+#### Notes:
+- Events are **read-only** - no create, update, or delete endpoints (system-generated only)
+- Uses UUIDV1 for event IDs (time-based for chronological ordering)
+- Audit trail includes HTTP metadata (IP, user agent, method, path, status, response time)
+- Actor field includes impersonation context when applicable
+- Tests run with `--runInBand` for isolation (parallel execution causes PK conflicts)
 
 ---
 
-### 6.12 Admin Webhooks (6 endpoints)
+### 6.12 Admin Webhooks (5 endpoints)
 **File:** `admin/webhooks.test.ts`
 **Estimated Tests:** ~36
 
@@ -670,23 +722,23 @@ export const listResourcesQuerySchema = Joi.object({
 
 ## Next Steps
 
-**Current Focus:** Admin Sessions (Batch 6.9)
+**Current Focus:** Admin Webhooks (Batch 6.12) - FINAL BATCH
 
-1. Create test file: `admin/sessions.test.ts`
-2. Create validation schemas: `admin-session.schemas.ts`
-3. Create service: `admin-session.service.ts`
-4. Create controller: `admin-session.controller.ts`
-5. Create routes: `admin-session.routes.ts`
-6. Wire into main router
-7. Run tests and verify 100% passing
+1. Create test file: `admin/webhooks.test.ts`
+2. Create webhook constants (if needed)
+3. Create validation schemas: `admin-webhook.schemas.ts`
+4. Create service: `admin-webhook.service.ts`
+5. Create controller: `admin-webhook.controller.ts`
+6. Create routes: `admin-webhook.routes.ts`
+7. Wire into main router
+8. Run tests and verify 100% passing
 
 **Estimated Remaining Effort:**
-- 16 endpoints remaining
-- ~102 tests to write
-- Average 1-2 hours per sub-batch
-- Total: 6-8 hours of implementation
+- 5 endpoints remaining
+- ~9 tests to write
+- Estimated: 1-2 hours of implementation
 
-**Progress:** 70.9% complete (39/55 endpoints)
+**Progress:** 90.9% complete (50/55 endpoints)
 
 ---
 

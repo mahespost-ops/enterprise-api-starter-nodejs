@@ -225,6 +225,22 @@ export const TEST_UUIDS = {
 
   /** Third test assignment */
   ASSIGNMENT_3: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+
+  // ============================================================================
+  // Events (ending in B)
+  // ============================================================================
+
+  /** Primary test event */
+  EVENT_1: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+
+  /** Secondary test event */
+  EVENT_2: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+
+  /** Third test event */
+  EVENT_3: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+
+  /** Non-existent event */
+  EVENT_NONEXISTENT: '99999999-9999-9999-9999-99999999999b',
 } as const;
 
 /**
