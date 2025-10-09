@@ -132,7 +132,7 @@ Originally conceived as a configuration drift reduction demonstration, this proj
 
 - **Passwordless Authentication**
   - Magic link delivery via email/SMS
-  - 6-digit verification codes
+  - 8-digit verification codes
   - Client-generated device fingerprinting (FingerprintJS/ThumbmarkJS)
   - Automatic new device notifications with "This wasn't me" revocation
   - Environment-specific token TTLs (15min production, 1 day dev/staging)
@@ -237,8 +237,9 @@ Originally conceived as a configuration drift reduction demonstration, this proj
 ### 🧪 Test-Driven Development (TDD)
 
 - **Comprehensive Test Coverage**
-  - 31 test files covering 106+ API endpoints
-  - 97.7% passing (169/173 tests) - 4 intentionally skipped with documentation
+  - 36 test suites covering 106+ API endpoints
+  - 1066 passing tests, 11 skipped (1077 total)
+  - 1 test suite intentionally skipped (rate limiting - disabled for test performance)
   - AAA pattern (Arrange, Act, Assert)
   - Test helpers for JWT generation, magic token extraction, permission checks
 
@@ -454,8 +455,8 @@ enterprise-api-starter-nodejs/
 |--------|-------|
 | **Total Endpoints** | 106 (across 14 resource groups) |
 | **Source Files** | 196 TypeScript files |
-| **Test Files** | 36 test suites |
-| **Test Coverage** | 97.7% (1066 passing) |
+| **Test Suites** | 36 passing, 1 skipped (37 total) |
+| **Tests** | 1066 passing, 11 skipped (1077 total) |
 | **Documentation Files** | 23+ markdown files |
 | **Database Entities** | 14 core models |
 | **Supported Cloud Providers** | Local, GCP, AWS, Agnostic (via adapters) |
