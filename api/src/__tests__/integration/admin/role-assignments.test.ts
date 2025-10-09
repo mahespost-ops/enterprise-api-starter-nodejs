@@ -13,6 +13,7 @@ jest.mock('uuid', () => ({
 }));
 import request from 'supertest';
 import { Application } from 'express';
+import { Op } from 'sequelize';
 import appPromise from '../../../app';
 import { User } from '../../../models/User.model';
 import { Organization } from '../../../models/Organization.model';
@@ -159,10 +160,10 @@ describe('Admin Role Assignments Endpoints', () => {
     await OrganizationMember.destroy({ where: {}, force: true });
     // Clean up test environments only (exclude system env)
     const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
-    await Environment.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ENV_ID } }, force: true });
+    await Environment.destroy({ where: { id: { [Op.ne]: SYSTEM_ENV_ID } }, force: true });
     // Clean up test organizations only (exclude system org)
     const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
-    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
+    await Organization.destroy({ where: { id: { [Op.ne]: SYSTEM_ORG_ID } }, force: true });
     await UserSession.destroy({ where: {}, force: true });
     await Device.destroy({ where: {}, force: true });
     await User.destroy({ where: {}, force: true });

@@ -19,6 +19,7 @@ jest.mock('uuid', () => ({
 }));
 
 import request from 'supertest';
+import { Op } from 'sequelize';
 import { type Application } from 'express';
 import appPromise from '../../app';
 import { getLatestMagicTokenForUser, clearAllSentEmails, clearAllPermissions } from '../helpers/auth.helpers';
@@ -57,10 +58,10 @@ describe('Authentication Flow', () => {
     await OrganizationMember.destroy({ where: {}, force: true });
     // Clean up test environments only (exclude system env)
     const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
-    await Environment.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ENV_ID } }, force: true });
+    await Environment.destroy({ where: { id: { [Op.ne]: SYSTEM_ENV_ID } }, force: true });
     // Clean up test organizations only (exclude system org)
     const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
-    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
+    await Organization.destroy({ where: { id: { [Op.ne]: SYSTEM_ORG_ID } }, force: true });
     await User.destroy({ where: {}, force: true });
     clearAllSentEmails();
   });

@@ -229,15 +229,12 @@ describe('EventProcessorService', () => {
     });
 
     it('should log warning when event received during shutdown', () => {
-      // Arrange - Create a new processor instance to test shutdown
-      const EventProcessorService = require('../../../services/event-processor.service').default.constructor;
-      const testProcessor = new EventProcessorService();
-
-      // Simulate shutdown
-      (testProcessor as any).isShuttingDown = true;
+      // Arrange - Simulate shutdown on existing processor
+      const originalShutdownState = (eventProcessorService as any).isShuttingDown;
+      (eventProcessorService as any).isShuttingDown = true;
 
       // Act
-      testProcessor.emit('api-request', mockEventData);
+      eventProcessorService.emit('api-request', mockEventData);
 
       // Assert
       expect(logger.warn).toHaveBeenCalledWith(
@@ -247,6 +244,9 @@ describe('EventProcessorService', () => {
         })
       );
       expect(eventBatchWriterService.enqueue).not.toHaveBeenCalled();
+
+      // Cleanup - Restore state
+      (eventProcessorService as any).isShuttingDown = originalShutdownState;
     });
   });
 

@@ -55,6 +55,7 @@ import * as fs from 'fs/promises';
 import type { EventData } from '../../../types/event.types';
 
 import { EventType } from '../../../models/EventType.model';
+import { eventConfig } from '../../../config/event.config';
 
 describe('EventBatchWriterService', () => {
   const mockEventData: EventData = {
@@ -305,8 +306,8 @@ describe('EventBatchWriterService', () => {
 
     it('should not write to WAL if disabled in config', async () => {
       // Arrange
-      const originalEnableWAL = require('../../../config/event.config').eventConfig.enableWAL;
-      require('../../../config/event.config').eventConfig.enableWAL = false;
+      const originalEnableWAL = eventConfig.enableWAL;
+      (eventConfig as any).enableWAL = false;
 
       (eventBatchWriterService as any).isShuttingDown = true;
 
@@ -318,7 +319,7 @@ describe('EventBatchWriterService', () => {
       expect(fs.appendFile).not.toHaveBeenCalled();
 
       // Cleanup
-      require('../../../config/event.config').eventConfig.enableWAL = originalEnableWAL;
+      (eventConfig as any).enableWAL = originalEnableWAL;
     });
   });
 

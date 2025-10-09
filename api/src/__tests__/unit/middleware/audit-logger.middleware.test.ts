@@ -49,6 +49,7 @@ import { auditLogger } from '../../../middleware/audit-logger.middleware';
 import { eventTypeCacheService } from '../../../services/event-type-cache.service';
 import { eventProcessorService } from '../../../services/event-processor.service';
 import logger from '../../../config/logger';
+import { redactRequestSnapshot } from '../../../utils/event.helpers';
 
 describe('auditLogger middleware', () => {
   let mockRequest: Partial<Request>;
@@ -70,7 +71,6 @@ describe('auditLogger middleware', () => {
     jest.clearAllMocks();
 
     // Setup redactRequestSnapshot to pass through
-    const { redactRequestSnapshot } = require('../../../utils/event.helpers');
     (redactRequestSnapshot as jest.Mock).mockImplementation((snapshot) => snapshot);
 
     // Setup mock request

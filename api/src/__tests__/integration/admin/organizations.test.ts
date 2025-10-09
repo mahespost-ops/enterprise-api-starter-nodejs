@@ -14,6 +14,7 @@ jest.mock('uuid', () => ({
 }));
 import request from 'supertest';
 import { Application } from 'express';
+import { Op } from 'sequelize';
 import appPromise from '../../../app';
 import { User } from '../../../models/User.model';
 import { Organization } from '../../../models/Organization.model';
@@ -104,11 +105,11 @@ describe('Admin Organizations Endpoints', () => {
     await clearAllPermissions();
     // Clean up test environments only (exclude system env)
     const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
-    await Environment.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ENV_ID } }, force: true });
+    await Environment.destroy({ where: { id: { [Op.ne]: SYSTEM_ENV_ID } }, force: true });
     await OrganizationMember.destroy({ where: {}, force: true });
     // Clean up test organizations only (exclude system org)
     const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
-    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
+    await Organization.destroy({ where: { id: { [Op.ne]: SYSTEM_ORG_ID } }, force: true });
     await UserSession.destroy({ where: {}, force: true });
     await Device.destroy({ where: {}, force: true });
     await User.destroy({ where: {}, force: true });
@@ -153,7 +154,7 @@ describe('Admin Organizations Endpoints', () => {
       expect(res.body.data).toHaveLength(1);
       expect(res.body.pagination.limit).toBe(1);
       expect(res.body.pagination.offset).toBe(0);
-      expect(res.body.pagination.total).toBe(2);
+      expect(res.body.pagination.total).toBe(3); // 2 test orgs + 1 System org
       expect(res.body.pagination.hasMore).toBe(true);
     });
 
@@ -173,7 +174,7 @@ describe('Admin Organizations Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(res.body.data).toHaveLength(2);
+      expect(res.body.data).toHaveLength(3); // 2 test orgs + 1 System org
       const firstDate = new Date(res.body.data[0].createdAt);
       const secondDate = new Date(res.body.data[1].createdAt);
       expect(firstDate.getTime()).toBeGreaterThanOrEqual(secondDate.getTime());
