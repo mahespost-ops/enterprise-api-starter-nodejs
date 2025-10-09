@@ -173,7 +173,7 @@ describe('Admin Event Types Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ 'filter[httpMethod]': 'POST' });
+        .query({ 'filter[httpMethod]': 'POST', search: 'test.' });
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(1);
@@ -184,7 +184,7 @@ describe('Admin Event Types Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ 'filter[isWebhookEvent]': 'true' });
+        .query({ 'filter[isWebhookEvent]': 'true', search: 'test.' });
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(2);
@@ -211,7 +211,7 @@ describe('Admin Event Types Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ sort: 'verb' });
+        .query({ sort: 'verb', search: 'test.' });
 
       expect(res.status).toBe(200);
       expect(res.body.data[0].verb).toBe('test.action1');

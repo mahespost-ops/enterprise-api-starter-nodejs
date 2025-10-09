@@ -146,11 +146,11 @@ describe('Admin Environments Endpoints', () => {
 
       expect(response.body).toHaveProperty('data');
       expect(response.body).toHaveProperty('pagination');
-      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data).toHaveLength(4);
       expect(response.body.pagination).toMatchObject({
         limit: 20,
         offset: 0,
-        total: 3,
+        total: 4,
         hasMore: false,
       });
 
@@ -172,7 +172,7 @@ describe('Admin Environments Endpoints', () => {
       expect(response.body.pagination).toMatchObject({
         limit: 2,
         offset: 1,
-        total: 3,
+        total: 4,
         hasMore: false,
       });
     });
@@ -219,7 +219,7 @@ describe('Admin Environments Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data).toHaveLength(3); // Test orgs + System env
       expect(response.body.data.every((env: { isDefault: boolean }) => env.isDefault === true)).toBe(true);
     });
 
@@ -230,7 +230,7 @@ describe('Admin Environments Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data).toHaveLength(4);
       expect(response.body.data[0].name).toBe('Live');
       expect(response.body.data[2].name).toBe('Sandbox');
     });
@@ -253,7 +253,7 @@ describe('Admin Environments Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data).toHaveLength(4);
       expect(response.body.data[0]).toHaveProperty('id');
       expect(response.body.data[0]).toHaveProperty('name');
       expect(response.body.data[0]).toHaveProperty('type');

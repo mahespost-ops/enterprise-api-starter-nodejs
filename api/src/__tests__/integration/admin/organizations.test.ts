@@ -140,8 +140,8 @@ describe('Admin Organizations Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(res.body.data).toHaveLength(1);
-      expect(res.body.data[0].isActive).toBe(true);
+      expect(res.body.data).toHaveLength(2); // Test org + System org
+      expect(res.body.data.every((org: { isActive: boolean }) => org.isActive === true)).toBe(true);
     });
 
     it('should paginate organizations (200)', async () => {

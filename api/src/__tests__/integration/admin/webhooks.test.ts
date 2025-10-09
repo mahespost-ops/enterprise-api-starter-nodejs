@@ -451,11 +451,11 @@ describe('Admin Webhooks Endpoints', () => {
       });
 
       expect(subscriptions).toHaveLength(2);
-      expect(subscriptions[0].eventTypeVerb).toBe('test.webhook2');
+      expect(subscriptions[0].eventTypeVerb).toBe('test.webhook1');
       expect(subscriptions[0].webhookUrl).toBe(webhookWithMultipleEvents.url);
       expect(subscriptions[0].isActive).toBe(true);
 
-      expect(subscriptions[1].eventTypeVerb).toBe('test.webhook1');
+      expect(subscriptions[1].eventTypeVerb).toBe('test.webhook2');
 
       // All subscriptions should have denormalized webhook data
       subscriptions.forEach((sub) => {

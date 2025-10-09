@@ -66,6 +66,7 @@ secrets/
 
 # Backup files
 *.bak
+*.bak*
 *.backup
 
 # Event Logging WAL
