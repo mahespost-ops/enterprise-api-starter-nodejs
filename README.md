@@ -386,6 +386,11 @@ npm run format
 - **I want HMAC-signed webhook payloads** so that I can verify event authenticity
 - **I want rate limiting with exponential backoff** so that brute-force attacks are automatically mitigated
 
+### Aa a Business Owner or FinOps Lead
+
+- **I want to save money** by enabling local development and remaining host agnostic
+- **I want efficient cloud operations** by patching vulnerabilities that could run up my bill
+
 ---
 
 ## 🗂️ Project Structure
@@ -449,11 +454,11 @@ enterprise-api-starter-nodejs/
 |--------|-------|
 | **Total Endpoints** | 106 (across 14 resource groups) |
 | **Source Files** | 196 TypeScript files |
-| **Test Files** | 31 test suites |
-| **Test Coverage** | 97.7% (169/173 passing) |
+| **Test Files** | 36 test suites |
+| **Test Coverage** | 97.7% (1066 passing) |
 | **Documentation Files** | 23+ markdown files |
 | **Database Entities** | 14 core models |
-| **Supported Cloud Providers** | GCP, AWS, Agnostic (via adapters) |
+| **Supported Cloud Providers** | Local, GCP, AWS, Agnostic (via adapters) |
 | **API Response SLO** | <200ms (achieved via denormalization) |
 
 ---
