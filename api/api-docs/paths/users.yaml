@@ -1,0 +1,445 @@
+# User Endpoints (Tenant-Scoped)
+
+getCurrentUser:
+  get:
+    tags:
+      - Core - Users
+    summary: Get current user profile
+    description: Retrieve the authenticated user's profile information
+    operationId: getCurrentUser
+    security:
+      - bearerAuth: ["users:read"]
+    responses:
+      '200':
+        description: User profile retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateCurrentUser:
+  put:
+    tags:
+      - Core - Users
+    summary: Update current user profile
+    description: Update the authenticated user's profile information
+    operationId: updateCurrentUser
+    security:
+      - bearerAuth: ["users:manage"]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user.yaml#/UserUpdate'
+    responses:
+      '200':
+        description: User profile updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/user.yaml#/User'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserOrganizations:
+  get:
+    tags:
+      - Core - Users
+    summary: Get user's organizations
+    description: Retrieve all organizations the authenticated user is a member of
+    operationId: getCurrentUserOrganizations
+    security:
+      - bearerAuth: ["organizations:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - $ref: '../components/parameters.yaml#/includeInactive'
+    responses:
+      '200':
+        description: User organizations retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/OrganizationList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserPermissions:
+  get:
+    tags:
+      - Core - Users
+    summary: Get user's effective permissions
+    description: |
+      Retrieve the authenticated user's effective permissions for the current organization/environment context.
+      Permissions are calculated by merging Role permissions and future CustomRole permissions
+      based on member and group assignments.
+    operationId: getCurrentUserPermissions
+    security:
+      - bearerAuth: ["users:read"]
+    parameters:
+      - name: orgId
+        in: query
+        required: false
+        description: Filter permissions for specific organization (defaults to JWT orgId)
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: envId
+        in: query
+        required: false
+        description: Filter permissions for specific environment (defaults to JWT envId)
+        schema:
+          type: string
+          format: uuid
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    responses:
+      '200':
+        description: User permissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - context
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/role.yaml#/Permission'
+                context:
+                  type: object
+                  description: Context for which permissions were calculated
+                  properties:
+                    organization_id:
+                      type: string
+                      format: uuid
+                    organization_name:
+                      type: string
+                    environment_id:
+                      type: string
+                      format: uuid
+                    environment_name:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserDevices:
+  get:
+    tags:
+      - Core - Users
+    summary: Get current user's devices
+    description: Retrieve all devices for the authenticated user
+    operationId: getCurrentUserDevices
+    security:
+      - bearerAuth: ["devices:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: isTrusted
+        in: query
+        required: false
+        description: Filter by trusted status
+        schema:
+          type: boolean
+        example: true
+    responses:
+      '200':
+        description: User devices retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - fingerprint
+                      - is_trusted
+                      - created_at
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      fingerprint:
+                        type: string
+                      name:
+                        type: string
+                        nullable: true
+                      device_type:
+                        type: string
+                        nullable: true
+                      browser:
+                        type: string
+                        nullable: true
+                      os:
+                        type: string
+                        nullable: true
+                      is_trusted:
+                        type: boolean
+                      is_revoked:
+                        type: boolean
+                      last_used_at:
+                        type: string
+                        format: date-time
+                      created_at:
+                        type: string
+                        format: date-time
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateCurrentUserDevice:
+  put:
+    tags:
+      - Core - Users
+    summary: Update current user's device
+    description: Update a device owned by the authenticated user
+    operationId: updateCurrentUserDevice
+    security:
+      - bearerAuth: ["devices:manage"]
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Device name
+                example: 'My MacBook Pro'
+              is_trusted:
+                type: boolean
+                description: Whether device is trusted
+                example: true
+    responses:
+      '200':
+        description: Device updated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - fingerprint
+                - is_trusted
+                - created_at
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                fingerprint:
+                  type: string
+                name:
+                  type: string
+                  nullable: true
+                is_trusted:
+                  type: boolean
+                is_revoked:
+                  type: boolean
+                last_used_at:
+                  type: string
+                  format: date-time
+                created_at:
+                  type: string
+                  format: date-time
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeCurrentUserDevice:
+  delete:
+    tags:
+      - Core - Users
+    summary: Revoke current user's device
+    description: |
+      Revoke a device owned by the authenticated user.
+      This will also revoke all active sessions for this device.
+    operationId: revokeCurrentUserDevice
+    security:
+      - bearerAuth: ["devices:manage"]
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: Device ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Device revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getCurrentUserSessions:
+  get:
+    tags:
+      - Core - Users
+    summary: Get current user's sessions
+    description: Retrieve all sessions for the authenticated user
+    operationId: getCurrentUserSessions
+    security:
+      - bearerAuth: ["sessions:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: isActive
+        in: query
+        required: false
+        description: Filter by active status
+        schema:
+          type: boolean
+        example: true
+    responses:
+      '200':
+        description: User sessions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - device_id
+                      - is_active
+                      - created_at
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      device_id:
+                        type: string
+                        format: uuid
+                      device_name:
+                        type: string
+                        nullable: true
+                      ip_address:
+                        type: string
+                      user_agent:
+                        type: string
+                      is_active:
+                        type: boolean
+                      is_current:
+                        type: boolean
+                        description: Whether this is the current session
+                      last_activity_at:
+                        type: string
+                        format: date-time
+                      expires_at:
+                        type: string
+                        format: date-time
+                      created_at:
+                        type: string
+                        format: date-time
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeCurrentUserSession:
+  delete:
+    tags:
+      - Core - Users
+    summary: Revoke current user's session
+    description: Revoke a specific session owned by the authenticated user
+    operationId: revokeCurrentUserSession
+    security:
+      - bearerAuth: ["sessions:manage"]
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Session revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeAllCurrentUserSessions:
+  delete:
+    tags:
+      - Core - Users
+    summary: Revoke all current user's sessions
+    description: |
+      Revoke all sessions for the authenticated user except the current one.
+      Useful for "Sign out everywhere else" functionality.
+    operationId: revokeAllCurrentUserSessions
+    security:
+      - bearerAuth: ["sessions:manage"]
+    responses:
+      '204':
+        description: All sessions revoked successfully (except current)
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

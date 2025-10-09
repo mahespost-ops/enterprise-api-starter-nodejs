@@ -1,0 +1,458 @@
+# Admin - Roles & Permissions Endpoints
+
+listRoles:
+  get:
+    tags:
+      - Admin - Roles & Permissions
+    summary: List roles
+    description: |
+      Get all roles (globally scoped, requires admin:roles:read permission)
+
+      **Filterable fields:**
+      - `isSystem` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `name` (indexed)
+      - `permissionCount` (not indexed, may be slow for large datasets)
+
+      **Searchable fields:**
+      - Full-text search across name and description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, name, description, isSystem, permissions, permissionCount, createdAt, updatedAt, deletedAt
+
+      **Examples:**
+      ```
+      # Active custom roles only, sorted by name
+      ?filter[isSystem]=false&sort=name&limit=50
+
+      # Roles created after Jan 1, 2025
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&sort=-createdAt
+
+      # Search for roles and return only essential fields
+      ?search=admin&fields=id,name,description,permissionCount
+      ```
+    operationId: listRoles
+    security:
+      - bearerAuth: ["admin:roles:read"]
+    parameters:
+      # Pagination
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[isSystem]
+        in: query
+        required: false
+        description: |
+          Filter by system role flag (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: false
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter roles created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter roles created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[updatedAt][gte]
+        in: query
+        required: false
+        description: Filter roles updated on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+    responses:
+      '200':
+        description: Roles retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/RoleList'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                      name: 'Device Administrator'
+                      description: 'Full access to device management'
+                      isSystem: false
+                      permissionCount: 5
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                      deletedAt: null
+                    - id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                      name: 'System Admin'
+                      description: 'Full system administration access'
+                      isSystem: true
+                      permissionCount: 25
+                      createdAt: '2025-09-15T10:00:00Z'
+                      updatedAt: '2025-09-15T10:00:00Z'
+                      deletedAt: null
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+                      name: 'Device Administrator'
+                      permissionCount: 5
+                    - id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                      name: 'System Admin'
+                      permissionCount: 25
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 12
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getRole:
+  get:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Get role details
+    description: Retrieve detailed information about a specific role (requires admin:roles:read permission)
+    operationId: getRole
+    security:
+      - bearerAuth: ["admin:roles:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+    responses:
+      '200':
+        description: Role retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/Role'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateRole:
+  put:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Update role
+    description: |
+      Update role details (requires admin:roles:manage permission).
+      System-defined roles cannot be updated.
+    operationId: updateRole
+    security:
+      - bearerAuth: ["admin:roles:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/role.yaml#/RoleUpdateRequest'
+    responses:
+      '200':
+        description: Role updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/Role'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: Cannot update system role
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: System-defined roles cannot be updated
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteRole:
+  delete:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Delete role
+    description: |
+      Soft-delete a role (requires admin:roles:manage permission).
+      System-defined roles cannot be deleted.
+      Role assignments are removed when role is deleted.
+    operationId: deleteRole
+    security:
+      - bearerAuth: ["admin:roles:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+    responses:
+      '204':
+        description: Role deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: Cannot delete system role
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: System-defined roles cannot be deleted
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createRole:
+  post:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Create role
+    description: Create a new role (requires admin:roles:manage permission)
+    operationId: createRole
+    security:
+      - bearerAuth: ["admin:roles:manage"]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/role.yaml#/RoleCreateRequest'
+    responses:
+      '201':
+        description: Role created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/Role'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '409':
+        description: Role name already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Role with this name already exists
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listRolePermissions:
+  get:
+    tags:
+      - Admin - Roles & Permissions
+    summary: List role permissions
+    description: Get all permissions assigned to a role (requires admin:roles:read permission)
+    operationId: listRolePermissions
+    security:
+      - bearerAuth: ["admin:roles:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+    responses:
+      '200':
+        description: Role permissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/RolePermissionList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+addRolePermission:
+  post:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Add permission to role
+    description: |
+      Assign a permission to a role (requires admin:roles:manage permission).
+      System-defined roles cannot be modified.
+    operationId: addRolePermission
+    security:
+      - bearerAuth: ["admin:roles:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/role.yaml#/RolePermissionAddRequest'
+    responses:
+      '201':
+        description: Permission added to role successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/RolePermission'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: Role or permission not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '409':
+        description: Permission already assigned or system role cannot be modified
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: Permission is already assigned to this role
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123/permissions
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+removeRolePermission:
+  delete:
+    tags:
+      - Admin - Roles & Permissions
+    summary: Remove permission from role
+    description: |
+      Remove a permission from a role (requires admin:roles:manage permission).
+      System-defined roles cannot be modified.
+    operationId: removeRolePermission
+    security:
+      - bearerAuth: ["admin:roles:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/roleId'
+      - $ref: '../components/parameters.yaml#/permissionId'
+    responses:
+      '204':
+        description: Permission removed from role successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '409':
+        description: System role cannot be modified
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: System-defined roles cannot be modified
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/admin/roles/123/permissions/456
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listPermissions:
+  get:
+    tags:
+      - Admin - Roles & Permissions
+    summary: List all permissions
+    description: Get all available permissions in the system (requires admin:permissions:read permission)
+    operationId: listPermissions
+    security:
+      - bearerAuth: ["admin:permissions:read"]
+    parameters:
+      - name: resource
+        in: query
+        required: false
+        description: Filter by resource type
+        schema:
+          type: string
+        example: 'devices'
+      - name: action
+        in: query
+        required: false
+        description: Filter by action
+        schema:
+          type: string
+          enum:
+            - read
+            - manage
+            - assign
+        example: 'manage'
+    responses:
+      '200':
+        description: Permissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/role.yaml#/PermissionList'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

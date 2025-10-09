@@ -1,0 +1,120 @@
+# Event Type Schema
+
+EventType:
+  type: object
+  required:
+    - id
+    - verb
+    - httpMethod
+    - httpPath
+    - isWebhookEvent
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Event type ID
+      example: 'k4ff178c-8fbd-3ccc-9902-kmh4o6543002'
+    verb:
+      type: string
+      maxLength: 100
+      description: Event verb (e.g., "auth.login", "device.update", "user.created")
+      example: 'auth.login'
+    httpMethod:
+      type: string
+      maxLength: 10
+      description: HTTP method that triggers this event type
+      enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+      example: 'POST'
+    httpPath:
+      type: string
+      maxLength: 500
+      description: HTTP path pattern that triggers this event type
+      example: '/api/v1/auth/login'
+    description:
+      type: string
+      maxLength: 500
+      nullable: true
+      description: Human-readable description of the event type
+      example: 'User authentication via magic link or OAuth'
+    isWebhookEvent:
+      type: boolean
+      description: Whether this event type triggers webhooks
+      example: true
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the event type was created (ISO 8601, UTC)
+      example: '2025-10-03T14:30:00Z'
+
+EventTypeCreateRequest:
+  type: object
+  required:
+    - verb
+    - httpMethod
+    - httpPath
+  properties:
+    verb:
+      type: string
+      maxLength: 100
+      description: Event verb (e.g., "auth.login", "device.update", "user.created")
+      example: 'auth.login'
+    httpMethod:
+      type: string
+      maxLength: 10
+      description: HTTP method that triggers this event type
+      enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+      example: 'POST'
+    httpPath:
+      type: string
+      maxLength: 500
+      description: HTTP path pattern that triggers this event type
+      example: '/api/v1/auth/login'
+    description:
+      type: string
+      maxLength: 500
+      description: Human-readable description of the event type
+      example: 'User authentication via magic link or OAuth'
+    isWebhookEvent:
+      type: boolean
+      description: Whether this event type triggers webhooks (defaults to false)
+      example: true
+
+EventTypeUpdateRequest:
+  type: object
+  properties:
+    httpMethod:
+      type: string
+      maxLength: 10
+      description: HTTP method that triggers this event type
+      enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+      example: 'POST'
+    httpPath:
+      type: string
+      maxLength: 500
+      description: HTTP path pattern that triggers this event type
+      example: '/api/v1/auth/login'
+    description:
+      type: string
+      maxLength: 500
+      description: Human-readable description of the event type
+      example: 'User authentication via magic link or OAuth'
+    isWebhookEvent:
+      type: boolean
+      description: Whether this event type triggers webhooks
+      example: true

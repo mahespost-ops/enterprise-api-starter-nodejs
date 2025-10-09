@@ -1,0 +1,215 @@
+# Organization Schemas
+
+Organization:
+  type: object
+  required:
+    - id
+    - name
+    - slug
+    - defaultEnvId
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Organization unique identifier
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    name:
+      type: string
+      description: Organization name
+      minLength: 1
+      maxLength: 100
+      example: 'Acme Corporation'
+    slug:
+      type: string
+      description: URL-friendly organization identifier
+      pattern: '^[a-z0-9-]+$'
+      minLength: 3
+      maxLength: 50
+      example: 'acme-corp'
+    description:
+      type: string
+      description: Organization description
+      maxLength: 500
+      example: 'Leading provider of enterprise solutions'
+    defaultEnvId:
+      type: string
+      format: uuid
+      description: Default environment ID for this organization
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    logoUrl:
+      type: string
+      format: uri
+      description: Organization logo URL
+      example: 'https://cdn.example.com/logos/acme.png'
+    website:
+      type: string
+      format: uri
+      description: Organization website
+      example: 'https://acme.com'
+    metadata:
+      type: object
+      description: Custom metadata for organization
+      additionalProperties: true
+      example:
+        industry: 'Technology'
+        size: 'Enterprise'
+    isActive:
+      type: boolean
+      description: Whether the organization is active
+      default: true
+      example: true
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when organization was created (UTC)
+      example: '2025-01-15T10:30:00Z'
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when organization was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deletedAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when organization was soft-deleted (UTC)
+      example: null
+
+OrganizationList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Organization'
+    pagination:
+      $ref: './common.yaml#/OffsetPaginationInfo'
+
+OrganizationCreateRequest:
+  type: object
+  required:
+    - name
+    - slug
+  properties:
+    name:
+      type: string
+      description: Organization name
+      minLength: 1
+      maxLength: 100
+      example: 'Acme Corporation'
+    slug:
+      type: string
+      description: URL-friendly organization identifier (must be unique)
+      pattern: '^[a-z0-9-]+$'
+      minLength: 3
+      maxLength: 50
+      example: 'acme-corp'
+    description:
+      type: string
+      description: Organization description
+      maxLength: 500
+      example: 'Leading provider of enterprise solutions'
+    logoUrl:
+      type: string
+      format: uri
+      description: Organization logo URL
+      example: 'https://cdn.example.com/logos/acme.png'
+    website:
+      type: string
+      format: uri
+      description: Organization website
+      example: 'https://acme.com'
+    metadata:
+      type: object
+      description: Custom metadata for organization
+      additionalProperties: true
+      example:
+        industry: 'Technology'
+        size: 'Enterprise'
+
+OrganizationUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Organization name
+      minLength: 1
+      maxLength: 100
+      example: 'Acme Corporation'
+    description:
+      type: string
+      description: Organization description
+      maxLength: 500
+      example: 'Leading provider of enterprise solutions'
+    logoUrl:
+      type: string
+      format: uri
+      description: Organization logo URL
+      example: 'https://cdn.example.com/logos/acme.png'
+    website:
+      type: string
+      format: uri
+      description: Organization website
+      example: 'https://acme.com'
+    metadata:
+      type: object
+      description: Custom metadata for organization
+      additionalProperties: true
+    isActive:
+      type: boolean
+      description: Whether the organization is active
+      example: true
+
+SwitchContextRequest:
+  type: object
+  required:
+    - envId
+  properties:
+    envId:
+      type: string
+      format: uuid
+      description: Environment ID to switch to
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+
+SwitchContextResponse:
+  type: object
+  required:
+    - message
+    - accessToken
+    - organization
+    - environment
+  properties:
+    message:
+      type: string
+      description: Success message
+      example: 'Context switched successfully'
+    accessToken:
+      type: string
+      description: New JWT token with updated orgId/envId context
+      example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    environment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - live
+            - sandbox

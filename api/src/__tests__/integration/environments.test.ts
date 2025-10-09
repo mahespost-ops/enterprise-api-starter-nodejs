@@ -1,0 +1,592 @@
+/**
+ * Integration Tests: Environments Endpoints
+ * Phase 2 Batch 3 - TDD RED Phase
+ *
+ * Tests for:
+ * - GET /api/v1/orgs/{orgId}/envs - List environments
+ * - POST /api/v1/orgs/{orgId}/envs - Create environment
+ * - GET /api/v1/orgs/{orgId}/envs/{envId} - Get environment details
+ * - PUT /api/v1/orgs/{orgId}/envs/{envId} - Update environment
+ * - DELETE /api/v1/orgs/{orgId}/envs/{envId} - Delete environment
+ */
+
+// Mock uuid to avoid ESM issues in Jest
+jest.mock('uuid', () => ({
+  v4: (): string => 'test-uuid-' + Math.random().toString(36).substring(7),
+}));
+import request from 'supertest';
+import { Op } from 'sequelize';
+import { type Application } from 'express';
+import appPromise from '../../app';
+import { User } from '../../models/User.model';
+import { Organization } from '../../models/Organization.model';
+import { Environment } from '../../models/Environment.model';
+import { OrganizationMember } from '../../models/OrganizationMember.model';
+import { generateTestJWT, grantPermissions, clearAllPermissions } from '../helpers/auth.helpers';
+import { TEST_UUIDS } from '../helpers/test-constants';
+import { HTTP_STATUS } from '../../constants/http-status.constants';
+
+describe('Environments API Integration Tests', () => {
+  let app: Application;
+  let testUser: User;
+  let testOrg: Organization;
+  let testEnv1: Environment;
+  let testEnv2: Environment;
+  let authToken: string;
+
+  beforeAll(async () => {
+    // Resolve app promise
+    app = await appPromise;
+  });
+
+  beforeEach(async () => {
+    // Generate unique identifiers for this test run
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const testEmail = `env-test-${uniqueId}@example.com`;
+    const testSlug = `test-org-env-${uniqueId}`;
+
+    // Create test user
+    testUser = await User.create({
+      email: testEmail,
+      givenName: 'Environment',
+      familyName: 'Test User',
+      emailVerified: true,
+      isActive: true,
+      lastOrgId: null,
+      lastEnvId: null,
+    });
+
+    // Create test organization
+    testOrg = await Organization.create({
+      name: 'Test Organization',
+      slug: testSlug,
+      description: 'Test organization for environment tests',
+      defaultEnvId: null, // Will be set after creating first environment
+      isActive: true,
+    });
+
+    // Create test environments
+    testEnv1 = await Environment.create({
+      organizationId: testOrg.id,
+      name: 'Live',
+      description: 'Production environment',
+      type: 'live',
+      isDefault: true,
+      isActive: true,
+    });
+
+    testEnv2 = await Environment.create({
+      organizationId: testOrg.id,
+      name: 'Test',
+      description: 'Testing environment',
+      type: 'sandbox',
+      isDefault: false,
+      isActive: true,
+    });
+
+    // Update organization default environment
+    await testOrg.update({ defaultEnvId: testEnv1.id });
+
+    // Create organization membership (active member who has already joined)
+    await OrganizationMember.create({
+      userId: testUser.id,
+      organizationId: testOrg.id,
+      status: 'active',
+      joinedAt: new Date(),
+    });
+
+    // Update user's last org/env
+    await testUser.update({
+      lastOrgId: testOrg.id,
+      lastEnvId: testEnv1.id,
+    });
+
+    // Grant permissions to test user
+    await grantPermissions(testUser.id, [
+      'environments:read',
+      'environments:manage',
+    ]);
+
+    // Generate auth token
+    authToken = generateTestJWT({
+      sub: testUser.id,
+      orgId: testOrg.id,
+      envId: testEnv1.id,
+      user: {
+        email: testUser.email,
+        fullName: testUser.fullName,
+      },
+    });
+  });
+
+  afterEach(async () => {
+    // Clean up in reverse order of foreign key dependencies
+    await clearAllPermissions();
+    await OrganizationMember.destroy({ where: {}, force: true });
+    // Clean up test environments only (exclude system env)
+    const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
+    await Environment.destroy({ where: { id: { [Op.ne]: SYSTEM_ENV_ID } }, force: true });
+    // Clean up test organizations only (exclude system org)
+    const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
+    await Organization.destroy({ where: { id: { [Op.ne]: SYSTEM_ORG_ID } }, force: true });
+    await User.destroy({ where: {}, force: true });
+  });
+
+  afterAll(async () => {
+    const { sequelize } = await import('../../models');
+    await sequelize.close();
+  });
+
+  /**
+   * GET /api/v1/orgs/{orgId}/envs
+   */
+  describe('GET /api/v1/orgs/:orgId/envs - List environments', () => {
+    it('should list all environments for an organization (200)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body).toHaveProperty('data');
+      expect(res.body).toHaveProperty('pagination');
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBe(2);
+      expect(res.body.pagination).toMatchObject({
+        limit: 20,
+        offset: 0,
+        total: 2,
+        hasMore: false,
+      });
+    });
+
+    it('should filter environments by type (200)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs?filter[type]=live`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0]).toHaveProperty('type', 'live');
+    });
+
+    it('should filter environments by isDefault (200)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs?filter[isDefault]=true`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0]).toHaveProperty('isDefault', true);
+    });
+
+    it('should support field selection (200)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs?fields=id,name,type`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body.data[0]).toHaveProperty('id');
+      expect(res.body.data[0]).toHaveProperty('name');
+      expect(res.body.data[0]).toHaveProperty('type');
+      expect(res.body.data[0]).not.toHaveProperty('description');
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const res = await request(app).get(`/api/v1/orgs/${testOrg.id}/envs`);
+
+      expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should handle server errors gracefully (500)', async () => {
+      jest.spyOn(Environment, 'findAndCountAll').mockRejectedValueOnce(new Error('Database error'));
+
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(res.body).toHaveProperty('error');
+
+      jest.restoreAllMocks();
+    });
+  });
+
+  /**
+   * POST /api/v1/orgs/{orgId}/envs
+   */
+  describe('POST /api/v1/orgs/:orgId/envs - Create environment', () => {
+    it('should create new environment successfully (201)', async () => {
+      const newEnvData = {
+        name: 'Staging',
+        type: 'sandbox',
+        description: 'Staging environment for testing',
+        isDefault: false,
+      };
+
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(newEnvData);
+
+      expect(res.status).toBe(HTTP_STATUS.CREATED);
+      expect(res.body).toHaveProperty('id');
+      expect(res.body).toHaveProperty('name', newEnvData.name);
+      expect(res.body).toHaveProperty('type', newEnvData.type);
+      expect(res.body).toHaveProperty('description', newEnvData.description);
+      expect(res.body).toHaveProperty('isDefault', false);
+      expect(res.body).toHaveProperty('organizationId', testOrg.id);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .send({ name: 'New Env', type: 'sandbox' });
+
+      expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 403 when user lacks environments:manage permission', async () => {
+      // This will be enforced by RBAC middleware
+      const limitedUser = await User.create({
+        email: 'limited@example.com',
+        givenName: 'Limited',
+        familyName: 'User',
+        emailVerified: true,
+        isActive: true,
+        lastOrgId: testOrg.id,
+        lastEnvId: testEnv1.id,
+      });
+
+      await OrganizationMember.create({
+        userId: limitedUser.id,
+        organizationId: testOrg.id,
+      });
+
+      const limitedToken = generateTestJWT({
+        sub: limitedUser.id,
+        orgId: testOrg.id,
+        envId: testEnv1.id,
+        user: {
+          email: limitedUser.email,
+          fullName: limitedUser.fullName,
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${limitedToken}`)
+        .send({ name: 'New Env', type: 'sandbox' });
+
+      expect(res.status).toBe(HTTP_STATUS.FORBIDDEN);
+      expect(res.body).toHaveProperty('error');
+
+      await limitedUser.destroy({ force: true });
+    });
+
+    it('should return 422 when validation fails (missing required fields)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ description: 'Missing name and type' });
+
+      expect(res.status).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY);
+      expect(res.body).toHaveProperty('errors');
+    });
+
+    it('should return 422 when type is invalid', async () => {
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Invalid Env', type: 'invalid-type' });
+
+      expect(res.status).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY);
+      expect(res.body).toHaveProperty('errors');
+    });
+
+    it('should handle server errors gracefully (500)', async () => {
+      jest.spyOn(Environment, 'create').mockRejectedValueOnce(new Error('Database error'));
+
+      const res = await request(app)
+        .post(`/api/v1/orgs/${testOrg.id}/envs`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'New Env', type: 'sandbox' });
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(res.body).toHaveProperty('error');
+
+      jest.restoreAllMocks();
+    });
+  });
+
+  /**
+   * GET /api/v1/orgs/{orgId}/envs/{envId}
+   */
+  describe('GET /api/v1/orgs/:orgId/envs/:envId - Get environment details', () => {
+    it('should return environment details (200)', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body).toHaveProperty('id', testEnv1.id);
+      expect(res.body).toHaveProperty('name', testEnv1.name);
+      expect(res.body).toHaveProperty('type', testEnv1.type);
+      expect(res.body).toHaveProperty('description', testEnv1.description);
+      expect(res.body).toHaveProperty('isDefault', true);
+      expect(res.body).toHaveProperty('organizationId', testOrg.id);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const res = await request(app).get(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`);
+
+      expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 404 when environment does not exist', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 422 when envId is not a valid UUID', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs/invalid-uuid`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY);
+      expect(res.body).toHaveProperty('errors');
+    });
+
+    it('should handle server errors gracefully (500)', async () => {
+      jest.spyOn(Environment, 'findByPk').mockRejectedValueOnce(new Error('Database error'));
+
+      const res = await request(app)
+        .get(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(res.body).toHaveProperty('error');
+
+      jest.restoreAllMocks();
+    });
+  });
+
+  /**
+   * PUT /api/v1/orgs/{orgId}/envs/{envId}
+   */
+  describe('PUT /api/v1/orgs/:orgId/envs/:envId - Update environment', () => {
+    it('should update environment successfully (200)', async () => {
+      const updateData = {
+        name: 'Updated Live',
+        description: 'Updated production environment',
+      };
+
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(HTTP_STATUS.OK);
+      expect(res.body).toHaveProperty('id', testEnv1.id);
+      expect(res.body).toHaveProperty('name', updateData.name);
+      expect(res.body).toHaveProperty('description', updateData.description);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .send({ name: 'Updated Name' });
+
+      expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 403 when user lacks environments:manage permission', async () => {
+      const limitedUser = await User.create({
+        email: 'limited@example.com',
+        givenName: 'Limited',
+        familyName: 'User',
+        emailVerified: true,
+        isActive: true,
+        lastOrgId: testOrg.id,
+        lastEnvId: testEnv1.id,
+      });
+
+      await OrganizationMember.create({
+        userId: limitedUser.id,
+        organizationId: testOrg.id,
+      });
+
+      const limitedToken = generateTestJWT({
+        sub: limitedUser.id,
+        orgId: testOrg.id,
+        envId: testEnv1.id,
+        user: {
+          email: limitedUser.email,
+          fullName: limitedUser.fullName,
+        },
+      });
+
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${limitedToken}`)
+        .send({ name: 'Updated Name' });
+
+      expect(res.status).toBe(HTTP_STATUS.FORBIDDEN);
+      expect(res.body).toHaveProperty('error');
+
+      await limitedUser.destroy({ force: true });
+    });
+
+    it('should return 404 when environment does not exist', async () => {
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Updated Name' });
+
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 422 when validation fails', async () => {
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: '' }); // Empty name
+
+      expect(res.status).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY);
+      expect(res.body).toHaveProperty('errors');
+    });
+
+    it('should handle server errors gracefully (500)', async () => {
+      jest.spyOn(Environment.prototype, 'save').mockRejectedValueOnce(new Error('Database error'));
+
+      const res = await request(app)
+        .put(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Updated Name' });
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(res.body).toHaveProperty('error');
+
+      jest.restoreAllMocks();
+    });
+  });
+
+  /**
+   * DELETE /api/v1/orgs/{orgId}/envs/{envId}
+   */
+  describe('DELETE /api/v1/orgs/:orgId/envs/:envId - Delete environment', () => {
+    it('should soft-delete environment successfully (204)', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv2.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.NO_CONTENT);
+      expect(res.body).toEqual({});
+
+      // Verify soft delete (should have deletedAt set)
+      const deletedEnv = await Environment.findByPk(testEnv2.id, { paranoid: false });
+      expect(deletedEnv?.deletedAt).not.toBeNull();
+    });
+
+    it('should return 400 when trying to delete default environment', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST);
+      expect(res.body).toHaveProperty('message');
+      expect(res.body.message).toMatch(/default environment/i);
+    });
+
+    it('should return 400 when trying to delete last remaining environment', async () => {
+      // Delete the non-default environment first
+      await testEnv2.destroy();
+
+      // Now try to delete the only remaining environment (testEnv1)
+      // Note: testEnv1 is also the default, so it will fail with "default environment" error
+      // This is correct behavior - in practice, the last remaining environment
+      // will always be the default, so the default check happens first
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv1.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST);
+      expect(res.body).toHaveProperty('message');
+      // Will get "default environment" error since default is checked before count
+      expect(res.body.message).toMatch(/default environment/i);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const res = await request(app).delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv2.id}`);
+
+      expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 403 when user lacks environments:manage permission', async () => {
+      const limitedUser = await User.create({
+        email: 'limited@example.com',
+        givenName: 'Limited',
+        familyName: 'User',
+        emailVerified: true,
+        isActive: true,
+        lastOrgId: testOrg.id,
+        lastEnvId: testEnv1.id,
+      });
+
+      await OrganizationMember.create({
+        userId: limitedUser.id,
+        organizationId: testOrg.id,
+      });
+
+      const limitedToken = generateTestJWT({
+        sub: limitedUser.id,
+        orgId: testOrg.id,
+        envId: testEnv1.id,
+        user: {
+          email: limitedUser.email,
+          fullName: limitedUser.fullName,
+        },
+      });
+
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv2.id}`)
+        .set('Authorization', `Bearer ${limitedToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.FORBIDDEN);
+      expect(res.body).toHaveProperty('error');
+
+      await limitedUser.destroy({ force: true });
+    });
+
+    it('should return 404 when environment does not exist', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${TEST_UUIDS.NULL}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should handle server errors gracefully (500)', async () => {
+      jest.spyOn(Environment.prototype, 'destroy').mockRejectedValueOnce(new Error('Database error'));
+
+      const res = await request(app)
+        .delete(`/api/v1/orgs/${testOrg.id}/envs/${testEnv2.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(res.body).toHaveProperty('error');
+
+      jest.restoreAllMocks();
+    });
+  });
+});

@@ -1,0 +1,639 @@
+# Organization Member Endpoints
+
+listMembers:
+  get:
+    tags:
+      - Core - Members
+    summary: List organization members
+    description: |
+      Get all members of the organization (requires members:read permission)
+
+      **Filterable fields:**
+      - `status` (eq, ne, in, nin) - Values: active, invited, suspended
+      - `role` (eq, ne, in, nin) - Values: owner, admin, member, viewer (legacy field)
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `updatedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `joinedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `updatedAt` (indexed)
+      - `joinedAt` (indexed)
+      - `status` (indexed)
+      - `role` (indexed, legacy field)
+
+      **Searchable fields:**
+      - Full-text search across user.email and user.name (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, organizationId, userId, user, lastOrgId, lastEnvId, role, status, invitedBy, joinedAt, createdAt, updatedAt
+
+      **Examples:**
+      ```
+      # Active members only, sorted by join date
+      ?filter[status]=active&sort=-joinedAt&limit=50
+
+      # Members created after Jan 1, 2025 with active or invited status
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[status][in]=active,invited
+
+      # Search for members and return only id, email, name
+      ?search=john&fields=id,user.email,user.name
+      ```
+    operationId: listMembers
+    security:
+      - bearerAuth: ["members:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      # Pagination
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[status]
+        in: query
+        required: false
+        description: |
+          Filter by member status (supports: eq, ne, in, nin)
+          Values: active, invited, suspended
+        schema:
+          type: string
+        example: 'active'
+      - name: filter[role]
+        in: query
+        required: false
+        description: |
+          Filter by member role - legacy field (supports: eq, ne, in, nin)
+          Values: owner, admin, member, viewer
+        schema:
+          type: string
+        example: 'member'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter members created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter members created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[joinedAt][gte]
+        in: query
+        required: false
+        description: Filter members who joined on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+    responses:
+      '200':
+        description: Members retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMemberList'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      userId: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                      user:
+                        id: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                        email: 'john@example.com'
+                        name: 'John Doe'
+                      status: 'active'
+                      role: 'member'
+                      joinedAt: '2025-10-02T14:45:00Z'
+                      createdAt: '2025-10-02T14:00:00Z'
+                      updatedAt: '2025-10-02T14:45:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 45
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      user:
+                        email: 'john@example.com'
+                        name: 'John Doe'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 45
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getMember:
+  get:
+    tags:
+      - Core - Members
+    summary: Get member details
+    description: Retrieve detailed information about a specific organization member (requires members:read permission)
+    operationId: getMember
+    security:
+      - bearerAuth: ["members:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '200':
+        description: Member retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMember'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateMember:
+  put:
+    tags:
+      - Core - Members
+    summary: Update member
+    description: Update organization member details (requires members:manage permission)
+    operationId: updateMember
+    security:
+      - bearerAuth: ["members:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/member.yaml#/OrganizationMemberUpdateRequest'
+    responses:
+      '200':
+        description: Member updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMember'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+removeMember:
+  delete:
+    tags:
+      - Core - Members
+    summary: Remove member
+    description: |
+      Remove a member from the organization (requires members:manage permission).
+      Soft-deletes the organization_member record and all associated group memberships.
+    operationId: removeMember
+    security:
+      - bearerAuth: ["members:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '204':
+        description: Member removed successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+inviteMember:
+  post:
+    tags:
+      - Core - Members
+    summary: Invite member
+    description: |
+      Invite a new member to the organization (requires members:manage permission).
+      Creates organization_member with status='invited' and sends invitation email.
+      If user doesn't exist, creates user account with status='invited'.
+    operationId: inviteMember
+    security:
+      - bearerAuth: ["members:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/member.yaml#/OrganizationMemberInviteRequest'
+    responses:
+      '201':
+        description: Member invited successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/member.yaml#/OrganizationMemberInviteResponse'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '409':
+        description: Member already exists in organization
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            example:
+              status: 409
+              message: User is already a member of this organization
+              error: Conflict
+              timestamp: '2025-10-04T12:34:56.789Z'
+              path: /api/v1/orgs/123/members
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getMemberOrganizations:
+  get:
+    tags:
+      - Core - Members
+    summary: Get member organizations
+    description: |
+      Get all organizations that a member belongs to (requires members:manage permission).
+      Allows member managers to see what organizations their managed members are in.
+    operationId: getMemberOrganizations
+    security:
+      - bearerAuth: ["members:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '200':
+        description: Member organizations retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getMemberPermissions:
+  get:
+    tags:
+      - Core - Members
+    summary: Get member permissions
+    description: |
+      Get effective permissions for a member within the organization/environment context (requires members:manage permission).
+      Returns computed permissions based on role assignments and group memberships.
+    operationId: getMemberPermissions
+    security:
+      - bearerAuth: ["members:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+      - name: envId
+        in: query
+        required: false
+        description: Environment ID to get permissions for (defaults to current environment)
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174001'
+    responses:
+      '200':
+        description: Member permissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - organizationId
+                - environmentId
+                - permissions
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                organizationId:
+                  type: string
+                  format: uuid
+                environmentId:
+                  type: string
+                  format: uuid
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of permission strings
+                  example:
+                    - devices:read
+                    - devices:manage
+                    - sessions:read
+                    - sessions:manage
+                roles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      source:
+                        type: string
+                        enum:
+                          - direct
+                          - group
+                        description: How the role was assigned
+                      groupId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: Group ID if role was inherited from group
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+startMemberImpersonation:
+  post:
+    tags:
+      - Core - Members
+    summary: Start organization member impersonation
+    description: |
+      Start impersonating an organization member (requires members:impersonate permission).
+
+      **Hierarchy Validation:**
+      - Can only impersonate members in subordinate groups (lower hierarchy_level)
+      - Cannot impersonate self, peers (same level), or superiors (higher level)
+      - Hierarchy check is enforced at the group level
+
+      **Impersonation Type:** organization
+      **Scope:** Organization-level (not environment-specific)
+
+      Returns a new JWT token with impersonation context.
+    operationId: startMemberImpersonation
+    security:
+      - bearerAuth: ["members:impersonate"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - reason
+            properties:
+              reason:
+                type: string
+                description: Required reason for impersonation (audit compliance)
+                minLength: 10
+                maxLength: 500
+                example: 'Troubleshooting user-reported session timeout issue'
+              expiresInMinutes:
+                type: integer
+                description: Session duration in minutes (default 60, max 480)
+                minimum: 5
+                maximum: 480
+                default: 60
+                example: 120
+              environmentId:
+                type: string
+                format: uuid
+                description: Optional environment context (defaults to impersonated user's last_env_id)
+                example: '123e4567-e89b-12d3-a456-426614174002'
+    responses:
+      '201':
+        description: Impersonation session started successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - accessToken
+                - expiresAt
+                - impersonatedUser
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Impersonation session ID
+                accessToken:
+                  type: string
+                  description: New JWT token with impersonation context
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: When the impersonation session expires
+                impersonatedUser:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    email:
+                      type: string
+                      format: email
+                    fullName:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        description: Forbidden - hierarchy validation failed or insufficient permissions
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+            examples:
+              hierarchyViolation:
+                value:
+                  status: 403
+                  message: Cannot impersonate member at same or higher hierarchy level
+                  error: Forbidden
+                  timestamp: '2025-10-04T12:34:56.789Z'
+                  path: /api/v1/orgs/123/members/456/impersonate
+              insufficientPermissions:
+                value:
+                  status: 403
+                  message: Insufficient permissions to impersonate members
+                  error: Forbidden
+                  timestamp: '2025-10-04T12:34:56.789Z'
+                  path: /api/v1/orgs/123/members/456/impersonate
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+endMemberImpersonation:
+  delete:
+    tags:
+      - Core - Members
+    summary: End organization member impersonation
+    description: |
+      End an active organization member impersonation session.
+      Returns original user's JWT token.
+    operationId: endMemberImpersonation
+    security:
+      - bearerAuth: ["members:impersonate"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '200':
+        description: Impersonation session ended successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accessToken
+                - originalUser
+              properties:
+                accessToken:
+                  type: string
+                  description: Original user's JWT token
+                originalUser:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    email:
+                      type: string
+                      format: email
+                    fullName:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: No active impersonation session found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getMemberImpersonationStatus:
+  get:
+    tags:
+      - Core - Members
+    summary: Get organization member impersonation status
+    description: |
+      Get current impersonation status for a member.
+      Shows if currently impersonating, who is being impersonated, and session details.
+    operationId: getMemberImpersonationStatus
+    security:
+      - bearerAuth: ["members:impersonate"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+      - $ref: '../components/parameters.yaml#/memberId'
+    responses:
+      '200':
+        description: Impersonation status retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - isImpersonating
+              properties:
+                isImpersonating:
+                  type: boolean
+                  description: Whether currently impersonating this member
+                session:
+                  type: object
+                  nullable: true
+                  description: Active impersonation session details (null if not impersonating)
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    originalUserId:
+                      type: string
+                      format: uuid
+                    impersonatedUserId:
+                      type: string
+                      format: uuid
+                    startedAt:
+                      type: string
+                      format: date-time
+                    expiresAt:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    impersonationType:
+                      type: string
+                      enum:
+                        - organization
+                    chainDepth:
+                      type: integer
+                      description: Depth in impersonation chain (0 = direct)
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

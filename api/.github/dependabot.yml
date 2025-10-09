@@ -1,0 +1,114 @@
+# Dependabot Configuration
+# Automated dependency updates and security vulnerability scanning
+# Docs: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # NPM dependencies for API service
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+
+    # Group updates by dependency type
+    groups:
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier"
+          - "jest"
+          - "typescript"
+          - "nodemon"
+          - "ts-*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      development-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier"
+          - "jest"
+          - "typescript"
+          - "nodemon"
+          - "ts-*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Open pull requests for security and major version updates
+    open-pull-requests-limit: 10
+
+    # Pull request settings
+    pull-request-branch-name:
+      separator: "-"
+
+    # Commit message configuration
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+
+    # Reviewers and assignees (customize for your team)
+    # reviewers:
+    #   - "your-team"
+    # assignees:
+    #   - "project-maintainer"
+
+    # Labels for categorization
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Allow Dependabot to update lock files
+    versioning-strategy: "increase"
+
+    # Ignore specific dependencies (uncomment and customize as needed)
+    # ignore:
+    #   - dependency-name: "express"
+    #     versions: ["5.x"]
+
+  # Docker base image updates
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+
+    commit-message:
+      prefix: "docker"
+
+    labels:
+      - "docker"
+      - "dependencies"
+      - "automated"
+
+    open-pull-requests-limit: 5
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+
+    commit-message:
+      prefix: "ci"
+
+    labels:
+      - "ci"
+      - "dependencies"
+      - "automated"
+
+    open-pull-requests-limit: 5

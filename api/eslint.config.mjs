@@ -5,13 +5,22 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
+    ignores: [
+      "node_modules/**",
+      "dist/**",
+      "coverage/**",
+      "*.config.js",
+      "jest.config.ts",
+    ],
+  },
+  {
     files: ["**/*.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",
-        project: "./tsconfig.json",
+        project: "./tsconfig.eslint.json",
       },
     },
     plugins: {

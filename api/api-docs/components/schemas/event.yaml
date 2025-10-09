@@ -1,0 +1,122 @@
+# Event Schemas (W3C Activity Streams Format)
+
+Event:
+  type: object
+  required:
+    - id
+    - environmentId
+    - verb
+    - actorType
+    - actor
+    - timestamp
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Event unique identifier
+      example: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
+    environmentId:
+      type: string
+      format: uuid
+      description: Environment ID where event occurred
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    verb:
+      type: string
+      description: Event verb/type (e.g., "auth.login", "device.update", "user.created")
+      maxLength: 100
+      example: 'auth.login'
+    actorType:
+      type: string
+      enum:
+        - User
+        - System
+      description: Type of actor who performed the action
+      example: 'User'
+    actor:
+      type: object
+      description: Actor who performed the action (JSONB field with type, id, name, impersonationContext)
+      additionalProperties: true
+      example:
+        type: 'User'
+        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+        name: 'John Doe'
+        email: 'john.doe@example.com'
+        impersonationContext: null
+    object:
+      type: object
+      nullable: true
+      description: Object that was acted upon (JSONB field)
+      additionalProperties: true
+      example:
+        type: 'Device'
+        id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+        name: 'Chrome on MacBook Pro'
+    target:
+      type: object
+      nullable: true
+      description: Target of the action (JSONB field)
+      additionalProperties: true
+      example:
+        type: 'Organization'
+        id: '550e8400-e29b-41d4-a716-446655440000'
+        name: 'Acme Corporation'
+    audit:
+      type: object
+      nullable: true
+      description: Audit metadata including HTTP request/response/headers/IP/user agent
+      additionalProperties: true
+      example:
+        ipAddress: '192.168.1.100'
+        xForwardedFor: '203.0.113.45'
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+        requestMethod: 'POST'
+        requestPath: '/api/v1/auth/login'
+        requestHeaders:
+          authorization: '[REDACTED]'
+          contentType: 'application/json'
+        responseStatus: 200
+        responseTimeMs: 145
+    description:
+      type: string
+      nullable: true
+      description: Human-readable description of the event
+      example: 'User John Doe logged in from Chrome on MacBook Pro'
+    timestamp:
+      type: string
+      format: date-time
+      description: Event timestamp (UTC)
+      example: '2025-10-03T14:30:00Z'
+    organizationId:
+      type: string
+      format: uuid
+      nullable: true
+      description: Organization ID (denormalized for filtering)
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    organizationName:
+      type: string
+      nullable: true
+      description: Organization name (denormalized for display)
+      example: 'Acme Corporation'
+    environmentName:
+      type: string
+      nullable: true
+      description: Environment name (denormalized for display)
+      example: 'Live'
+    isWebhookEvent:
+      type: boolean
+      description: Whether this event triggers webhooks
+      default: false
+      example: true
+
+EventList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Event'
+    pagination:
+      $ref: './common.yaml#/CursorPaginationInfo'

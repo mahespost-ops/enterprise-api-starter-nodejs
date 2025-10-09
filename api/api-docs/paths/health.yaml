@@ -1,7 +1,7 @@
 health:
   get:
     tags:
-      - Health
+      - Core - Health
     summary: Health check
     description: Check if the API is running and database is accessible
     operationId: healthCheck

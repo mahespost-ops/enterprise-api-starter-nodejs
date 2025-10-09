@@ -1,0 +1,146 @@
+# OAuth 2.0 Security Scopes
+# Defines all permission scopes used throughout the API for fine-grained access control
+
+# Tenant-Scoped Permissions (require org/env context)
+users:read:
+  description: Read own user profile and preferences
+
+users:manage:
+  description: Manage own user profile and preferences
+
+devices:read:
+  description: Read own devices
+
+devices:manage:
+  description: Manage own devices (create, update, revoke)
+
+sessions:read:
+  description: Read own sessions
+
+sessions:manage:
+  description: Manage own sessions (revoke)
+
+organizations:read:
+  description: Read organizations user has access to
+
+organizations:manage:
+  description: Manage organizations (create, update, delete)
+
+environments:read:
+  description: Read environments within organization
+
+environments:manage:
+  description: Manage environments (create, update, delete)
+
+members:read:
+  description: Read organization members
+
+members:manage:
+  description: Manage organization members (invite, update, remove)
+
+members:impersonate:
+  description: Impersonate subordinate organization members (requires hierarchy validation)
+
+groups:read:
+  description: Read groups within organization
+
+groups:manage:
+  description: Manage groups (create, update, delete, add/remove members)
+
+roles:read:
+  description: Read roles (tenant-scoped, read-only)
+
+roles:assign:
+  description: Assign roles to users/groups within organization/environment context
+
+events:read:
+  description: Read events and audit logs within environment
+
+webhooks:read:
+  description: Read webhooks within environment
+
+webhooks:manage:
+  description: Manage webhooks (create, update, delete, retry deliveries)
+
+# Admin-Scoped Permissions (global, bypass org/env restrictions)
+admin:users:read:
+  description: Read all users system-wide
+
+admin:users:manage:
+  description: Manage all users system-wide (create, update, delete)
+
+admin:users:impersonate:
+  description: Impersonate any user system-wide (no hierarchy restrictions)
+
+admin:organizations:read:
+  description: Read all organizations system-wide
+
+admin:organizations:manage:
+  description: Manage all organizations system-wide (create, update, delete)
+
+admin:environments:read:
+  description: Read all environments system-wide
+
+admin:environments:manage:
+  description: Manage all environments system-wide (create, update, delete)
+
+admin:members:read:
+  description: Read all organization members system-wide
+
+admin:members:manage:
+  description: Manage all organization members system-wide
+
+admin:groups:read:
+  description: Read all groups system-wide
+
+admin:groups:manage:
+  description: Manage all groups system-wide (create, update, delete)
+
+admin:roles:read:
+  description: Read all roles system-wide
+
+admin:roles:manage:
+  description: Manage all roles system-wide (create, update, delete, assign permissions)
+
+admin:permissions:read:
+  description: Read all permissions system-wide
+
+admin:assignments:read:
+  description: Read all role assignments system-wide
+
+admin:assignments:manage:
+  description: Manage all role assignments system-wide (create, delete)
+
+admin:devices:read:
+  description: Read all devices system-wide
+
+admin:devices:manage:
+  description: Manage all devices system-wide (update, revoke)
+
+admin:sessions:read:
+  description: Read all sessions system-wide
+
+admin:sessions:manage:
+  description: Manage all sessions system-wide (revoke)
+
+admin:impersonation:read:
+  description: Monitor all impersonation sessions system-wide
+
+admin:impersonation:manage:
+  description: Manage all impersonation sessions system-wide (force-end)
+
+admin:events:read:
+  description: Read all events and audit logs system-wide
+
+admin:webhooks:read:
+  description: Read all webhooks system-wide
+
+admin:webhooks:manage:
+  description: Manage all webhooks system-wide (update, delete, retry deliveries)
+
+# Special System Scopes
+system:admin:
+  description: Full system administrator access (superuser)
+
+system:support:
+  description: System support access for troubleshooting and monitoring

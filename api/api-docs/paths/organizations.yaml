@@ -1,0 +1,63 @@
+# Organization Endpoints
+
+getOrganization:
+  get:
+    tags:
+      - Core - Organizations
+    summary: Get organization details
+    description: Retrieve detailed information about a specific organization the user is a member of
+    operationId: getOrganization
+    security:
+      - bearerAuth: ["organizations:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    responses:
+      '200':
+        description: Organization retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+  patch:
+    tags:
+      - Core - Organizations
+    summary: Update organization
+    description: |
+      Partially update organization details (requires organizations:manage permission).
+      Allows tenants to update their organization's contact info, address, branding, etc.
+    operationId: updateOrganization
+    security:
+      - bearerAuth: ["organizations:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/orgId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/organization.yaml#/OrganizationUpdateRequest'
+    responses:
+      '200':
+        description: Organization updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/organization.yaml#/Organization'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

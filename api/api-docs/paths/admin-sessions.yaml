@@ -1,0 +1,366 @@
+# Admin - Sessions Endpoints
+
+listSessions:
+  get:
+    tags:
+      - Admin - Sessions
+    summary: List all sessions
+    description: |
+      Get all sessions across all users and organizations (requires admin:sessions:read permission)
+
+      **Filterable fields:**
+      - `userId` (eq, ne, in, nin) - UUID of the user
+      - `deviceId` (eq, ne, in, nin) - UUID of the device
+      - `isActive` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `lastActivityAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `expiresAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `ipAddress` (eq, ne) - IP address string
+
+      **Sortable fields:**
+      - `createdAt` (default: -createdAt, indexed)
+      - `lastActivityAt` (indexed)
+      - `expiresAt` (indexed)
+      - `userId` (indexed)
+      - `deviceId` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across userEmail, ipAddress, userAgent (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, userId, userEmail, deviceId, ipAddress, userAgent, isActive, lastActivityAt, expiresAt, createdAt, revokedAt
+
+      **Examples:**
+      ```
+      # Active sessions only, sorted by last activity
+      ?filter[isActive]=true&sort=-lastActivityAt&limit=50
+
+      # Sessions created after Jan 1, 2025 for specific user
+      ?filter[createdAt][gte]=2025-01-01T00:00:00Z&filter[userId]=550e8400-e29b-41d4-a716-446655440000
+
+      # Search for sessions by email and return only essential fields
+      ?search=john@example.com&fields=id,userId,userEmail,lastActivityAt,isActive
+      ```
+    operationId: adminListSessions
+    security:
+      - bearerAuth: ["admin:sessions:read"]
+    parameters:
+      # Pagination
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[userId]
+        in: query
+        required: false
+        description: |
+          Filter by user ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+        example: '550e8400-e29b-41d4-a716-446655440000'
+      - name: filter[deviceId]
+        in: query
+        required: false
+        description: |
+          Filter by device ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+        example: '123e4567-e89b-12d3-a456-426614174001'
+      - name: filter[isActive]
+        in: query
+        required: false
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: true
+      - name: filter[ipAddress]
+        in: query
+        required: false
+        description: |
+          Filter by IP address (supports: eq, ne)
+        schema:
+          type: string
+        example: '192.168.1.100'
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter sessions created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[createdAt][lte]
+        in: query
+        required: false
+        description: Filter sessions created on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[lastActivityAt][gte]
+        in: query
+        required: false
+        description: Filter sessions with last activity on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-01T00:00:00Z'
+      - name: filter[expiresAt][lte]
+        in: query
+        required: false
+        description: Filter sessions expiring on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-10-31T23:59:59Z'
+    responses:
+      '200':
+        description: Sessions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - userId
+                      - deviceId
+                      - isActive
+                      - createdAt
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      userId:
+                        type: string
+                        format: uuid
+                      userEmail:
+                        type: string
+                        format: email
+                      deviceId:
+                        type: string
+                        format: uuid
+                      ipAddress:
+                        type: string
+                      userAgent:
+                        type: string
+                      isActive:
+                        type: boolean
+                      lastActivityAt:
+                        type: string
+                        format: date-time
+                      expiresAt:
+                        type: string
+                        format: date-time
+                      createdAt:
+                        type: string
+                        format: date-time
+                      revokedAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      userId: '550e8400-e29b-41d4-a716-446655440000'
+                      userEmail: 'john@example.com'
+                      deviceId: '123e4567-e89b-12d3-a456-426614174001'
+                      ipAddress: '192.168.1.100'
+                      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                      isActive: true
+                      lastActivityAt: '2025-10-03T14:30:00Z'
+                      expiresAt: '2025-10-10T14:45:00Z'
+                      createdAt: '2025-10-02T14:45:00Z'
+                      revokedAt: null
+                    - id: '7e2b0a1c-3d4e-5f6a-7b8c-9d0e1f2a3b4c'
+                      userId: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                      userEmail: 'jane@example.com'
+                      deviceId: '234e5678-f89b-12d3-a456-426614174002'
+                      ipAddress: '10.0.0.50'
+                      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                      isActive: false
+                      lastActivityAt: '2025-09-25T10:15:00Z'
+                      expiresAt: '2025-10-05T10:15:00Z'
+                      createdAt: '2025-09-25T10:15:00Z'
+                      revokedAt: '2025-09-30T12:00:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 156
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      userEmail: 'john@example.com'
+                      isActive: true
+                      lastActivityAt: '2025-10-03T14:30:00Z'
+                    - id: '7e2b0a1c-3d4e-5f6a-7b8c-9d0e1f2a3b4c'
+                      userEmail: 'jane@example.com'
+                      isActive: false
+                      lastActivityAt: '2025-09-25T10:15:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 156
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getSession:
+  get:
+    tags:
+      - Admin - Sessions
+    summary: Get session details
+    description: Retrieve detailed information about a specific session (requires admin:sessions:read permission)
+    operationId: adminGetSession
+    security:
+      - bearerAuth: ["admin:sessions:read"]
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '200':
+        description: Session retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - user_id
+                - device_id
+                - is_active
+                - created_at
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                user_email:
+                  type: string
+                  format: email
+                device_id:
+                  type: string
+                  format: uuid
+                ip_address:
+                  type: string
+                user_agent:
+                  type: string
+                is_active:
+                  type: boolean
+                last_activity_at:
+                  type: string
+                  format: date-time
+                expires_at:
+                  type: string
+                  format: date-time
+                created_at:
+                  type: string
+                  format: date-time
+                revoked_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeSession:
+  delete:
+    tags:
+      - Admin - Sessions
+    summary: Revoke session
+    description: Revoke a specific session (requires admin:sessions:manage permission)
+    operationId: adminRevokeSession
+    security:
+      - bearerAuth: ["admin:sessions:manage"]
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Session revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+revokeUserSessions:
+  delete:
+    tags:
+      - Admin - Sessions
+    summary: Revoke all user sessions
+    description: Revoke all sessions for a specific user (requires admin:sessions:manage permission)
+    operationId: adminRevokeUserSessions
+    security:
+      - bearerAuth: ["admin:sessions:manage"]
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: User sessions revoked successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

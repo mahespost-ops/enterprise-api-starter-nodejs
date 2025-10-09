@@ -1,0 +1,596 @@
+# Admin - Impersonation Endpoints
+
+startUserImpersonation:
+  post:
+    tags:
+      - Admin - Impersonation
+    summary: Start system-level user impersonation
+    description: |
+      Start impersonating any user across any organization (requires admin:users:impersonate permission).
+
+      **Impersonation Type:** system
+
+      **No Hierarchy Restrictions** - can impersonate ANY user in ANY organization/environment.
+
+      Returns a new JWT token with impersonation context.
+    operationId: adminStartUserImpersonation
+    security:
+      - bearerAuth: ["admin:users:impersonate"]
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User ID to impersonate
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - reason
+            properties:
+              reason:
+                type: string
+                description: Required reason for impersonation (audit compliance)
+                minLength: 10
+                maxLength: 500
+                example: 'Emergency troubleshooting for production incident'
+              expiresInMinutes:
+                type: integer
+                description: Session duration in minutes (default 60, max 480)
+                minimum: 5
+                maximum: 480
+                default: 60
+                example: 120
+              organizationId:
+                type: string
+                format: uuid
+                description: Organization context (optional, defaults to user's last_org_id)
+                example: '123e4567-e89b-12d3-a456-426614174001'
+              environmentId:
+                type: string
+                format: uuid
+                description: Environment context (optional, defaults to user's last_env_id)
+                example: '123e4567-e89b-12d3-a456-426614174002'
+    responses:
+      '201':
+        description: Impersonation session started successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - accessToken
+                - expiresAt
+                - impersonatedUser
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Impersonation session ID
+                accessToken:
+                  type: string
+                  description: New JWT token with impersonation context
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: When the impersonation session expires
+                impersonatedUser:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    email:
+                      type: string
+                      format: email
+                    fullName:
+                      type: string
+                organizationContext:
+                  type: object
+                  properties:
+                    organizationId:
+                      type: string
+                      format: uuid
+                    organizationName:
+                      type: string
+                    environmentId:
+                      type: string
+                      format: uuid
+                    environmentName:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+endImpersonation:
+  delete:
+    tags:
+      - Admin - Impersonation
+    summary: End impersonation session
+    description: |
+      End the current impersonation session (system-level).
+      Returns original admin user's JWT token.
+    operationId: adminEndImpersonation
+    security:
+      - bearerAuth: ["admin:users:impersonate"]
+    responses:
+      '200':
+        description: Impersonation session ended successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accessToken
+                - originalUser
+              properties:
+                accessToken:
+                  type: string
+                  description: Original user's JWT token
+                originalUser:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    email:
+                      type: string
+                      format: email
+                    fullName:
+                      type: string
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        description: No active impersonation session found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/Error'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getActiveImpersonationSessions:
+  get:
+    tags:
+      - Admin - Impersonation
+    summary: Get all active impersonation sessions
+    description: Get all currently active impersonation sessions (requires admin:impersonation:read permission)
+    operationId: adminGetActiveImpersonationSessions
+    security:
+      - bearerAuth: ["admin:impersonation:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      - name: impersonationType
+        in: query
+        required: false
+        description: Filter by impersonation type
+        schema:
+          type: string
+          enum:
+            - system
+            - organization
+        example: 'system'
+    responses:
+      '200':
+        description: Active impersonation sessions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - original_user_id
+                      - impersonated_user_id
+                      - impersonation_type
+                      - started_at
+                      - expires_at
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      original_user_id:
+                        type: string
+                        format: uuid
+                      original_user_email:
+                        type: string
+                        format: email
+                      impersonated_user_id:
+                        type: string
+                        format: uuid
+                      impersonated_user_email:
+                        type: string
+                        format: email
+                      parent_session_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                      environment_id:
+                        type: string
+                        format: uuid
+                      impersonation_type:
+                        type: string
+                        enum:
+                          - system
+                          - organization
+                      reason:
+                        type: string
+                      started_at:
+                        type: string
+                        format: date-time
+                      expires_at:
+                        type: string
+                        format: date-time
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listImpersonationSessions:
+  get:
+    tags:
+      - Admin - Impersonation
+    summary: List all impersonation sessions
+    description: |
+      Get all impersonation sessions across the system (requires admin:impersonation:read permission)
+
+      **Filterable fields:**
+      - `isActive` (eq) - Values: true, false
+      - `originalUserId` (eq, ne, in, nin) - UUID of impersonator
+      - `impersonatedUserId` (eq, ne, in, nin) - UUID of impersonated user
+      - `impersonationType` (eq, ne, in, nin) - Values: system, organization
+      - `organizationId` (eq, ne, in, nin) - UUID of organization
+      - `environmentId` (eq, ne, in, nin) - UUID of environment
+      - `startedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `expiresAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+      - `endedAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `startedAt` (default: -startedAt, indexed)
+      - `expiresAt` (indexed)
+      - `endedAt` (indexed)
+      - `impersonationType` (indexed)
+      - `isActive` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across originalUser.email, originalUser.fullName, impersonatedUser.email, impersonatedUser.fullName, reason, ipAddress (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, originalUserId, originalUserEmail, originalUserFullName, impersonatedUserId, impersonatedUserEmail, impersonatedUserFullName, parentSessionId, environmentId, organizationId, organizationName, environmentName, impersonationType, permissions, reason, ipAddress, userAgent, startedAt, expiresAt, endedAt, isActive, metadata
+
+      **Examples:**
+      ```
+      # Active system impersonation sessions only, sorted by start date
+      ?filter[isActive]=true&filter[impersonationType]=system&sort=-startedAt&limit=50
+
+      # Sessions started after Jan 1, 2025 that are expired
+      ?filter[startedAt][gte]=2025-01-01T00:00:00Z&filter[isActive]=false&filter[endedAt][gte]=2025-01-01T00:00:00Z
+
+      # Search for sessions and return only key fields
+      ?search=emergency&fields=id,originalUserId,impersonatedUserId,reason,startedAt
+      ```
+    operationId: adminListImpersonationSessions
+    security:
+      - bearerAuth: ["admin:impersonation:read"]
+    parameters:
+      # Pagination
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[isActive]
+        in: query
+        required: false
+        description: |
+          Filter by active status (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: true
+      - name: filter[originalUserId]
+        in: query
+        required: false
+        description: |
+          Filter by original user (impersonator) ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      - name: filter[impersonatedUserId]
+        in: query
+        required: false
+        description: |
+          Filter by impersonated user ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174001'
+      - name: filter[impersonationType]
+        in: query
+        required: false
+        description: |
+          Filter by impersonation type (supports: eq, ne, in, nin)
+          Values: system, organization
+        schema:
+          type: string
+          enum:
+            - system
+            - organization
+        example: 'system'
+      - name: filter[organizationId]
+        in: query
+        required: false
+        description: |
+          Filter by organization ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174002'
+      - name: filter[environmentId]
+        in: query
+        required: false
+        description: |
+          Filter by environment ID (supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174003'
+      - name: filter[startedAt][gte]
+        in: query
+        required: false
+        description: Filter sessions started on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[startedAt][lte]
+        in: query
+        required: false
+        description: Filter sessions started on or before this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+      - name: filter[expiresAt][gte]
+        in: query
+        required: false
+        description: Filter sessions expiring on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+      - name: filter[endedAt][gte]
+        in: query
+        required: false
+        description: Filter sessions ended on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+    responses:
+      '200':
+        description: Impersonation sessions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - originalUserId
+                      - impersonatedUserId
+                      - impersonationType
+                      - startedAt
+                      - isActive
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Session ID
+                      originalUserId:
+                        type: string
+                        format: uuid
+                        description: Original user (impersonator) ID
+                      originalUserEmail:
+                        type: string
+                        format: email
+                        description: Original user email
+                      originalUserFullName:
+                        type: string
+                        description: Original user full name
+                      impersonatedUserId:
+                        type: string
+                        format: uuid
+                        description: Impersonated user ID
+                      impersonatedUserEmail:
+                        type: string
+                        format: email
+                        description: Impersonated user email
+                      impersonatedUserFullName:
+                        type: string
+                        description: Impersonated user full name
+                      parentSessionId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: Parent session ID for chained impersonation
+                      environmentId:
+                        type: string
+                        format: uuid
+                        description: Environment ID
+                      organizationId:
+                        type: string
+                        format: uuid
+                        description: Organization ID
+                      organizationName:
+                        type: string
+                        description: Organization name
+                      environmentName:
+                        type: string
+                        description: Environment name
+                      impersonationType:
+                        type: string
+                        enum:
+                          - system
+                          - organization
+                        description: Type of impersonation
+                      permissions:
+                        type: object
+                        nullable: true
+                        description: Permission overrides (reserved for future use)
+                      reason:
+                        type: string
+                        description: Reason for impersonation
+                      ipAddress:
+                        type: string
+                        description: IP address of impersonator
+                      userAgent:
+                        type: string
+                        description: User agent of impersonator
+                      startedAt:
+                        type: string
+                        format: date-time
+                        description: When impersonation started
+                      expiresAt:
+                        type: string
+                        format: date-time
+                        description: When impersonation expires
+                      endedAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        description: When impersonation ended (if ended)
+                      isActive:
+                        type: boolean
+                        description: Whether session is currently active
+                      metadata:
+                        type: object
+                        additionalProperties: true
+                        description: Additional session metadata
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      originalUserId: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                      originalUserEmail: 'admin@example.com'
+                      originalUserFullName: 'Admin User'
+                      impersonatedUserId: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
+                      impersonatedUserEmail: 'user@example.com'
+                      impersonatedUserFullName: 'Regular User'
+                      parentSessionId: null
+                      environmentId: '550e8400-e29b-41d4-a716-446655440001'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corp'
+                      environmentName: 'Live'
+                      impersonationType: 'system'
+                      permissions: null
+                      reason: 'Emergency troubleshooting for production incident'
+                      ipAddress: '192.168.1.100'
+                      userAgent: 'Mozilla/5.0...'
+                      startedAt: '2025-10-03T14:30:00Z'
+                      expiresAt: '2025-10-03T16:30:00Z'
+                      endedAt: null
+                      isActive: true
+                      metadata: {}
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 156
+                    hasMore: true
+              fieldSelection:
+                summary: With field selection
+                value:
+                  data:
+                    - id: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+                      originalUserId: 'a7b3c4d5-e6f7-8901-2345-6789abcdef01'
+                      impersonatedUserId: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
+                      reason: 'Emergency troubleshooting for production incident'
+                      startedAt: '2025-10-03T14:30:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 156
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+
+forceEndImpersonationSession:
+  delete:
+    tags:
+      - Admin - Impersonation
+    summary: Force end impersonation session
+    description: Forcibly end an active impersonation session (requires admin:impersonation:manage permission)
+    operationId: adminForceEndImpersonationSession
+    security:
+      - bearerAuth: ["admin:impersonation:manage"]
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: Impersonation session ID
+        schema:
+          type: string
+          format: uuid
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    responses:
+      '204':
+        description: Impersonation session ended successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

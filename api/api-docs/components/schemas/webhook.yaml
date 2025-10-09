@@ -1,0 +1,536 @@
+# Webhook Schemas
+# Purpose: Webhook configuration and delivery schemas for CloudEvents 1.0.2 format
+# Based on CloudEvents spec: https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md
+
+Webhook:
+  type: object
+  required:
+    - id
+    - url
+    - eventTypes
+    - authMethod
+    - isActive
+    - retryConfig
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Webhook identifier
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    environmentId:
+      type: string
+      format: uuid
+      description: Environment this webhook belongs to
+      example: "660e8400-e29b-41d4-a716-446655440000"
+    url:
+      type: string
+      format: uri
+      description: Webhook endpoint URL (HTTPS required)
+      example: "https://api.example.com/webhooks/receive"
+      pattern: "^https://"
+    eventTypes:
+      type: array
+      description: Event types to subscribe to (e.g., "user.login", "device.revoked")
+      items:
+        type: string
+        example: "user.login"
+      minItems: 1
+      example: ["user.login", "device.revoked", "session.created"]
+    description:
+      type: string
+      maxLength: 500
+      description: Optional webhook description
+      example: "Notify external system when users login"
+    authMethod:
+      type: string
+      enum: [none, hmac, jwt, basic, digest]
+      description: Authentication method for webhook delivery
+      example: "hmac"
+    authConfig:
+      type: object
+      description: Authentication configuration (varies by authMethod)
+      properties:
+        secret:
+          type: string
+          description: Secret key for HMAC or Basic auth (write-only, never returned in GET responses)
+          example: "your-secret-key"
+        algorithm:
+          type: string
+          description: HMAC algorithm (sha256, sha512)
+          enum: [sha256, sha512]
+          default: sha256
+          example: "sha256"
+        headerName:
+          type: string
+          description: Header name for signature (HMAC/JWT)
+          default: "X-Webhook-Signature"
+          example: "X-Webhook-Signature"
+        username:
+          type: string
+          description: Username for Basic/Digest auth
+          example: "webhook-user"
+        jwtConfig:
+          type: object
+          description: JWT configuration
+          properties:
+            algorithm:
+              type: string
+              enum: [HS256, HS512, RS256, RS512]
+              default: HS256
+            expiresIn:
+              type: string
+              description: JWT expiration time (e.g., "5m", "1h")
+              default: "5m"
+              example: "5m"
+    isActive:
+      type: boolean
+      description: Whether webhook is active
+      default: true
+      example: true
+    retryConfig:
+      type: object
+      required:
+        - maxRetries
+        - initialDelaySeconds
+        - maxDelaySeconds
+        - backoffMultiplier
+      properties:
+        maxRetries:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 3
+          description: Maximum number of retry attempts
+          example: 3
+        initialDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+          default: 60
+          description: Initial delay before first retry (seconds)
+          example: 60
+        maxDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 86400
+          default: 3600
+          description: Maximum delay between retries (seconds)
+          example: 3600
+        backoffMultiplier:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 10.0
+          default: 2.0
+          description: Exponential backoff multiplier
+          example: 2.0
+    headers:
+      type: object
+      description: Custom HTTP headers to include in webhook requests
+      additionalProperties:
+        type: string
+      example:
+        X-Custom-Header: "custom-value"
+    timeout:
+      type: integer
+      minimum: 1000
+      maximum: 30000
+      default: 10000
+      description: Request timeout in milliseconds
+      example: 10000
+    createdAt:
+      type: string
+      format: date-time
+      description: Creation timestamp (UTC)
+      example: "2025-10-03T12:00:00.000Z"
+    updatedAt:
+      type: string
+      format: date-time
+      description: Last update timestamp (UTC)
+      example: "2025-10-03T12:30:00.000Z"
+    lastDeliveryAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Last successful delivery timestamp (UTC)
+      example: "2025-10-03T12:25:00.000Z"
+    lastFailureAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Last failed delivery timestamp (UTC)
+      example: "2025-10-03T12:20:00.000Z"
+    successCount:
+      type: integer
+      minimum: 0
+      description: Total successful deliveries
+      example: 142
+    failureCount:
+      type: integer
+      minimum: 0
+      description: Total failed deliveries
+      example: 3
+
+CreateWebhookRequest:
+  type: object
+  required:
+    - url
+    - eventTypes
+    - authMethod
+  properties:
+    url:
+      type: string
+      format: uri
+      description: Webhook endpoint URL (HTTPS required)
+      pattern: "^https://"
+      example: "https://api.example.com/webhooks/receive"
+    eventTypes:
+      type: array
+      description: Event types to subscribe to
+      items:
+        type: string
+      minItems: 1
+      example: ["user.login", "device.revoked"]
+    description:
+      type: string
+      maxLength: 500
+      description: Optional webhook description
+      example: "Notify external system when users login"
+    authMethod:
+      type: string
+      enum: [none, hmac, jwt, basic, digest]
+      description: Authentication method for webhook delivery
+      example: "hmac"
+    authConfig:
+      type: object
+      description: Authentication configuration (varies by authMethod)
+      properties:
+        secret:
+          type: string
+          description: Secret key for HMAC or Basic auth
+          example: "your-secret-key"
+        algorithm:
+          type: string
+          description: HMAC algorithm (sha256, sha512)
+          enum: [sha256, sha512]
+          default: sha256
+        headerName:
+          type: string
+          description: Header name for signature
+          default: "X-Webhook-Signature"
+        username:
+          type: string
+          description: Username for Basic/Digest auth
+        jwtConfig:
+          type: object
+          description: JWT configuration
+          properties:
+            algorithm:
+              type: string
+              enum: [HS256, HS512, RS256, RS512]
+              default: HS256
+            expiresIn:
+              type: string
+              default: "5m"
+    isActive:
+      type: boolean
+      description: Whether webhook is active
+      default: true
+    retryConfig:
+      type: object
+      properties:
+        maxRetries:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 3
+        initialDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+          default: 60
+        maxDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 86400
+          default: 3600
+        backoffMultiplier:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 10.0
+          default: 2.0
+    headers:
+      type: object
+      description: Custom HTTP headers
+      additionalProperties:
+        type: string
+    timeout:
+      type: integer
+      minimum: 1000
+      maximum: 30000
+      default: 10000
+      description: Request timeout in milliseconds
+
+UpdateWebhookRequest:
+  type: object
+  properties:
+    url:
+      type: string
+      format: uri
+      pattern: "^https://"
+      description: Webhook endpoint URL (HTTPS required)
+    eventTypes:
+      type: array
+      description: Event types to subscribe to
+      items:
+        type: string
+      minItems: 1
+    description:
+      type: string
+      maxLength: 500
+    authMethod:
+      type: string
+      enum: [none, hmac, jwt, basic, digest]
+    authConfig:
+      type: object
+      properties:
+        secret:
+          type: string
+        algorithm:
+          type: string
+          enum: [sha256, sha512]
+        headerName:
+          type: string
+        username:
+          type: string
+        jwtConfig:
+          type: object
+          properties:
+            algorithm:
+              type: string
+              enum: [HS256, HS512, RS256, RS512]
+            expiresIn:
+              type: string
+    isActive:
+      type: boolean
+    retryConfig:
+      type: object
+      properties:
+        maxRetries:
+          type: integer
+          minimum: 0
+          maximum: 10
+        initialDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+        maxDelaySeconds:
+          type: integer
+          minimum: 1
+          maximum: 86400
+        backoffMultiplier:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 10.0
+    headers:
+      type: object
+      additionalProperties:
+        type: string
+    timeout:
+      type: integer
+      minimum: 1000
+      maximum: 30000
+
+WebhookList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/Webhook'
+    pagination:
+      $ref: './common.yaml#/OffsetPaginationInfo'
+
+WebhookDelivery:
+  type: object
+  required:
+    - id
+    - webhookId
+    - eventId
+    - status
+    - attempt
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Delivery identifier
+      example: "770e8400-e29b-41d4-a716-446655440000"
+    webhookId:
+      type: string
+      format: uuid
+      description: Webhook this delivery belongs to
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    eventId:
+      type: string
+      format: uuid
+      description: Event that triggered this delivery
+      example: "880e8400-e29b-41d4-a716-446655440000"
+    status:
+      type: string
+      enum: [pending, success, failed, retrying]
+      description: Delivery status
+      example: "success"
+    attempt:
+      type: integer
+      minimum: 1
+      description: Delivery attempt number (1 for first attempt)
+      example: 1
+    httpStatusCode:
+      type: integer
+      minimum: 100
+      maximum: 599
+      nullable: true
+      description: HTTP status code from webhook endpoint
+      example: 200
+    requestPayload:
+      type: object
+      description: CloudEvents 1.0.2 format payload sent to webhook
+      required:
+        - specversion
+        - type
+        - source
+        - id
+        - time
+        - data
+      properties:
+        specversion:
+          type: string
+          description: CloudEvents version
+          example: "1.0.2"
+        type:
+          type: string
+          description: Event type (verb)
+          example: "user.login"
+        source:
+          type: string
+          format: uri
+          description: Event source URI
+          example: "https://api.example.com/orgs/123/envs/456"
+        id:
+          type: string
+          format: uuid
+          description: Event ID
+          example: "880e8400-e29b-41d4-a716-446655440000"
+        time:
+          type: string
+          format: date-time
+          description: Event timestamp (UTC)
+          example: "2025-10-03T12:00:00.000Z"
+        datacontenttype:
+          type: string
+          description: Content type of data
+          default: "application/json"
+          example: "application/json"
+        subject:
+          type: string
+          description: Subject of the event (optional)
+          example: "user:123"
+        data:
+          type: object
+          description: Event payload (W3C Activity Streams format)
+          properties:
+            verb:
+              type: string
+              example: "login"
+            actor:
+              type: object
+            object:
+              type: object
+            target:
+              type: object
+            audit:
+              type: object
+    responseBody:
+      type: string
+      nullable: true
+      maxLength: 10000
+      description: Response body from webhook endpoint (truncated to 10KB)
+      example: '{"success":true}'
+    responseHeaders:
+      type: object
+      nullable: true
+      additionalProperties:
+        type: string
+      description: Response headers from webhook endpoint
+      example:
+        Content-Type: "application/json"
+    errorMessage:
+      type: string
+      nullable: true
+      maxLength: 1000
+      description: Error message if delivery failed
+      example: "Connection timeout"
+    duration:
+      type: integer
+      minimum: 0
+      nullable: true
+      description: Request duration in milliseconds
+      example: 125
+    nextRetryAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Next retry scheduled time (UTC)
+      example: "2025-10-03T12:05:00.000Z"
+    createdAt:
+      type: string
+      format: date-time
+      description: Delivery creation timestamp (UTC)
+      example: "2025-10-03T12:00:00.000Z"
+    completedAt:
+      type: string
+      format: date-time
+      nullable: true
+      description: Delivery completion timestamp (UTC)
+      example: "2025-10-03T12:00:05.000Z"
+
+WebhookDeliveryList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/WebhookDelivery'
+    pagination:
+      $ref: './common.yaml#/OffsetPaginationInfo'
+
+WebhookDeliveryRetryResponse:
+  type: object
+  required:
+    - success
+    - message
+  properties:
+    success:
+      type: boolean
+      description: Whether retry was successfully queued
+      example: true
+    message:
+      type: string
+      description: Status message
+      example: "Delivery retry queued successfully"
+    deliveryId:
+      type: string
+      format: uuid
+      description: New delivery ID for the retry
+      example: "990e8400-e29b-41d4-a716-446655440000"

@@ -1,0 +1,94 @@
+BadRequestError:
+  description: Bad request - invalid parameters or malformed request
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 400
+        message: Invalid request parameters
+        error: Bad Request
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/users
+
+UnauthorizedError:
+  description: Authentication token is missing or invalid
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 401
+        message: Invalid or missing authentication token
+        error: Unauthorized
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/users
+
+ForbiddenError:
+  description: User does not have permission to access this resource
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 403
+        message: Insufficient permissions to access this resource
+        error: Forbidden
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/orgs/123/envs/456/webhooks
+
+NotFoundError:
+  description: The requested resource was not found
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 404
+        message: Resource not found
+        error: Not Found
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/users/123
+
+ValidationError:
+  description: Request validation failed
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/ValidationError'
+      example:
+        status: 422
+        message: Request validation failed
+        error: Unprocessable Entity
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/users
+        errors:
+          - field: email
+            message: Invalid email format
+            value: invalid-email
+
+RateLimitError:
+  description: Rate limit exceeded
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 429
+        message: Rate limit exceeded. Please try again later.
+        error: Too Many Requests
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/auth/login
+
+InternalServerError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/Error'
+      example:
+        status: 500
+        message: An unexpected error occurred
+        error: Internal Server Error
+        timestamp: '2025-10-04T12:34:56.789Z'
+        path: /api/v1/users

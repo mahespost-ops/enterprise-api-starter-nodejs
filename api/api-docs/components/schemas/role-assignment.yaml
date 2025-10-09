@@ -1,0 +1,116 @@
+# Role Assignment Schemas
+
+RoleAssignment:
+  type: object
+  description: |
+    Role assignment within an environment.
+    Polymorphic: assigns role to either organization_member OR group (one required).
+  required:
+    - id
+    - environment_id
+    - role_id
+    - role
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Role assignment unique identifier
+      example: 'e8ff512c-2fcd-7ccc-3356-egb8i0987446'
+    environment_id:
+      type: string
+      format: uuid
+      description: Environment ID
+      example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+    role_id:
+      type: string
+      format: uuid
+      description: Role ID
+      example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+    role:
+      $ref: './role.yaml#/Role'
+      description: Role object (denormalized)
+    membership_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Organization member ID (null if assigned to group)
+      example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+    member:
+      allOf:
+        - $ref: './member.yaml#/OrganizationMember'
+        - nullable: true
+      description: Organization member object (null if assigned to group)
+    group_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Group ID (null if assigned to member)
+      example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+    group:
+      allOf:
+        - $ref: './group.yaml#/Group'
+        - nullable: true
+      description: Group object (null if assigned to member)
+    assigned_by:
+      type: string
+      format: uuid
+      nullable: true
+      description: User ID who created this assignment
+      example: 'b8c4d5e6-f7a8-9012-3456-789abcdef012'
+    created_at:
+      type: string
+      format: date-time
+      description: Timestamp when assignment was created (UTC)
+      example: '2025-10-02T14:45:00Z'
+    updated_at:
+      type: string
+      format: date-time
+      description: Timestamp when assignment was last updated (UTC)
+      example: '2025-10-02T14:45:00Z'
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when assignment was soft-deleted (UTC)
+      example: null
+
+RoleAssignmentList:
+  type: object
+  required:
+    - data
+    - pagination
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/RoleAssignment'
+    pagination:
+      $ref: './common.yaml#/OffsetPaginationInfo'
+
+RoleAssignmentCreateRequest:
+  type: object
+  required:
+    - role_id
+  properties:
+    role_id:
+      type: string
+      format: uuid
+      description: Role ID to assign
+      example: 'c6dd390a-0dab-5aaa-1134-cef6g8765224'
+    membership_id:
+      type: string
+      format: uuid
+      description: Organization member ID (required if group_id not provided)
+      example: '8f3a1b2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
+    group_id:
+      type: string
+      format: uuid
+      description: Group ID (required if membership_id not provided)
+      example: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+  oneOf:
+    - required:
+        - membership_id
+    - required:
+        - group_id

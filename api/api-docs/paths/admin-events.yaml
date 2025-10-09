@@ -1,0 +1,618 @@
+# Admin - Events Endpoints
+
+listEvents:
+  get:
+    tags:
+      - Admin - Events
+    summary: List all events
+    description: |
+      Get all events (activity log) across all organizations and environments.
+      Requires `admin:events:read` permission.
+
+      This is a HIGH-VOLUME endpoint (10M+ records) using cursor-based pagination for optimal performance.
+
+      **Filterable fields:**
+      - `verb` (eq, ne, in, nin) - Event type/action (e.g., "auth.login", "device.update", "user.created")
+      - `actorType` (eq, ne, in, nin) - Values: User, System
+      - `actorId` (eq, ne, in, nin) - Actor user ID (UUID format)
+      - `organizationId` (eq, ne, in, nin) - Organization ID (UUID format)
+      - `environmentId` (eq, ne, in, nin) - Environment ID (UUID format)
+      - `isWebhookEvent` (eq) - Values: true, false
+      - `timestamp` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `timestamp` (default: -timestamp, indexed) - Event occurrence time
+      - `verb` (indexed) - Event type/action
+      - `actorType` (indexed) - Type of actor
+
+      **Searchable fields:**
+      - Full-text search across description, actor name/email, organization name, environment name (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, environmentId, verb, actorType, actor, object, target, audit, description, timestamp, organizationId, organizationName, environmentName, isWebhookEvent
+
+      **Examples:**
+      ```
+      # Example 1: Recent events for a specific organization
+      ?filter[organizationId]=550e8400-e29b-41d4-a716-446655440000&limit=100
+
+      # Example 2: Authentication events in date range
+      ?filter[verb][in]=auth.login,auth.logout&filter[timestamp][gte]=2025-01-01T00:00:00Z&filter[timestamp][lte]=2025-01-31T23:59:59Z
+
+      # Example 3: Webhook-eligible events with field selection
+      ?filter[isWebhookEvent]=true&fields=id,verb,timestamp,description&limit=50
+
+      # Example 4: Search for specific user activity
+      ?search=john.doe@example.com&sort=-timestamp
+      ```
+    operationId: adminListEvents
+    security:
+      - bearerAuth: ["admin:events:read"]
+    parameters:
+      # Pagination (Cursor-Based for HIGH-VOLUME)
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/cursor'
+
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+
+      # Filters
+      - name: filter[verb]
+        in: query
+        required: false
+        description: |
+          Filter by event verb/type (supports: eq, ne, in, nin)
+          Examples: "auth.login", "device.update", "user.created"
+        schema:
+          type: string
+        example: 'auth.login'
+
+      - name: filter[verb][in]
+        in: query
+        required: false
+        description: Filter by multiple event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'auth.login,auth.logout,device.update'
+
+      - name: filter[actorType]
+        in: query
+        required: false
+        description: |
+          Filter by actor type (supports: eq, ne, in, nin)
+          Values: User, System
+        schema:
+          type: string
+          enum:
+            - User
+            - System
+        example: 'User'
+
+      - name: filter[actorId]
+        in: query
+        required: false
+        description: Filter by actor user ID (UUID format)
+        schema:
+          type: string
+          format: uuid
+        example: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+
+      - name: filter[organizationId]
+        in: query
+        required: false
+        description: |
+          Filter by organization ID (UUID format, supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '550e8400-e29b-41d4-a716-446655440000'
+
+      - name: filter[organizationId][in]
+        in: query
+        required: false
+        description: Filter by multiple organization IDs (comma-separated UUIDs)
+        schema:
+          type: string
+        example: '550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440001'
+
+      - name: filter[environmentId]
+        in: query
+        required: false
+        description: |
+          Filter by environment ID (UUID format, supports: eq, ne, in, nin)
+        schema:
+          type: string
+          format: uuid
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+
+      - name: filter[environmentId][in]
+        in: query
+        required: false
+        description: Filter by multiple environment IDs (comma-separated UUIDs)
+        schema:
+          type: string
+        example: '7c9e6679-7425-40de-944b-e07fc1f90ae7,8d9e6679-7425-40de-944b-e07fc1f90ae8'
+
+      - name: filter[isWebhookEvent]
+        in: query
+        required: false
+        description: |
+          Filter by webhook eligibility (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: true
+
+      - name: filter[timestamp][gte]
+        in: query
+        required: false
+        description: Filter events on or after this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[timestamp][lte]
+        in: query
+        required: false
+        description: Filter events on or before this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
+      - name: filter[timestamp][gt]
+        in: query
+        required: false
+        description: Filter events after this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+
+      - name: filter[timestamp][lt]
+        in: query
+        required: false
+        description: Filter events before this timestamp (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-12-31T23:59:59Z'
+
+    responses:
+      '200':
+        description: Events retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/event.yaml#/Event'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/CursorPaginationInfo'
+            examples:
+              default:
+                summary: First page
+                value:
+                  data:
+                    - id: 'f9aa623d-3ade-8ddd-4467-fhc9j1098557'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'auth.login'
+                      actorType: 'User'
+                      actor:
+                        type: 'User'
+                        id: 'h1cc845f-5cfa-0fff-6689-hje1l3210779'
+                        name: 'John Doe'
+                        email: 'john.doe@example.com'
+                        impersonationContext: null
+                      object:
+                        type: 'Device'
+                        id: 'a3bb189e-8bf9-3888-9912-ace4e6543002'
+                        name: 'Chrome on MacBook Pro'
+                      target:
+                        type: 'Organization'
+                        id: '550e8400-e29b-41d4-a716-446655440000'
+                        name: 'Acme Corporation'
+                      audit:
+                        ipAddress: '192.168.1.100'
+                        xForwardedFor: '203.0.113.45'
+                        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+                        requestMethod: 'POST'
+                        requestPath: '/api/v1/auth/login'
+                        responseStatus: 200
+                        responseTimeMs: 145
+                      description: 'User John Doe logged in from Chrome on MacBook Pro'
+                      timestamp: '2025-10-03T14:30:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Live'
+                      isWebhookEvent: true
+                  pagination:
+                    limit: 100
+                    nextCursor: 'eyJpZCI6ImY5YWE2MjNkLTNhZGUtOGRkZC00NDY3LWZoYzlqMTA5ODU1NyIsInRpbWVzdGFtcCI6IjIwMjUtMTAtMDNUMTQ6MzA6MDBaIn0='
+                    hasMore: true
+              lastPage:
+                summary: Last page
+                value:
+                  data:
+                    - id: 'a1bb734e-4bef-9eee-5578-gid0k2109668'
+                      environmentId: '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+                      verb: 'device.created'
+                      actorType: 'System'
+                      actor:
+                        type: 'System'
+                        id: 'system'
+                        name: 'System'
+                      object:
+                        type: 'Device'
+                        id: 'b2cc845f-5cfa-0fff-6689-hje1l3210780'
+                        name: 'Firefox on Ubuntu'
+                      target: null
+                      audit:
+                        ipAddress: '10.0.0.15'
+                        requestMethod: 'POST'
+                        requestPath: '/api/v1/devices'
+                        responseStatus: 201
+                        responseTimeMs: 89
+                      description: 'Device Firefox on Ubuntu created'
+                      timestamp: '2025-10-01T10:00:00Z'
+                      organizationId: '550e8400-e29b-41d4-a716-446655440000'
+                      organizationName: 'Acme Corporation'
+                      environmentName: 'Test'
+                      isWebhookEvent: false
+                  pagination:
+                    limit: 100
+                    hasMore: false
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getEvent:
+  get:
+    tags:
+      - Admin - Events
+    summary: Get event details
+    description: Retrieve detailed information about a specific event (requires admin:events:read permission)
+    operationId: adminGetEvent
+    security:
+      - bearerAuth: ["admin:events:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/eventId'
+    responses:
+      '200':
+        description: Event retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event.yaml#/Event'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+listEventTypes:
+  get:
+    tags:
+      - Admin - Events
+    summary: List all event types
+    description: |
+      Get all event types (verb mappings to HTTP methods and paths).
+      Requires `admin:events:read` permission.
+
+      **Filterable fields:**
+      - `verb` (eq, ne, in, nin) - Event verb/type (e.g., "auth.login", "device.update")
+      - `httpMethod` (eq, ne, in, nin) - Values: GET, POST, PUT, PATCH, DELETE
+      - `isWebhookEvent` (eq) - Values: true, false
+      - `createdAt` (eq, ne, gt, gte, lt, lte) - ISO 8601 timestamp
+
+      **Sortable fields:**
+      - `verb` (default: verb, indexed)
+      - `httpMethod` (not indexed)
+      - `createdAt` (indexed)
+
+      **Searchable fields:**
+      - Full-text search across verb, httpPath, description (case-insensitive)
+
+      **Selectable fields:**
+      - All fields: id, verb, httpMethod, httpPath, description, isWebhookEvent, createdAt
+
+      **Examples:**
+      ```
+      # All webhook-triggering event types
+      ?filter[isWebhookEvent]=true
+
+      # Authentication-related event types
+      ?search=auth&sort=verb
+
+      # POST endpoints only
+      ?filter[httpMethod]=POST&sort=-createdAt
+      ```
+    operationId: adminListEventTypes
+    security:
+      - bearerAuth: ["admin:events:read"]
+    parameters:
+      # Pagination
+      - $ref: '../components/parameters.yaml#/limit'
+      - $ref: '../components/parameters.yaml#/offset'
+      # Sorting
+      - $ref: '../components/parameters.yaml#/sort'
+      # Search
+      - $ref: '../components/parameters.yaml#/search'
+      # Field Selection
+      - $ref: '../components/parameters.yaml#/fields'
+      # Filters
+      - name: filter[verb]
+        in: query
+        required: false
+        description: |
+          Filter by event verb (supports: eq, ne, in, nin)
+          Example: "auth.login"
+        schema:
+          type: string
+        example: 'auth.login'
+      - name: filter[verb][in]
+        in: query
+        required: false
+        description: Filter by multiple event verbs (comma-separated)
+        schema:
+          type: string
+        example: 'auth.login,auth.logout,device.update'
+      - name: filter[httpMethod]
+        in: query
+        required: false
+        description: |
+          Filter by HTTP method (supports: eq, ne, in, nin)
+          Values: GET, POST, PUT, PATCH, DELETE
+        schema:
+          type: string
+          enum:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+        example: 'POST'
+      - name: filter[isWebhookEvent]
+        in: query
+        required: false
+        description: |
+          Filter by webhook eligibility (supports: eq)
+          Values: true, false
+        schema:
+          type: boolean
+        example: true
+      - name: filter[createdAt][gte]
+        in: query
+        required: false
+        description: Filter event types created on or after this date (ISO 8601, UTC)
+        schema:
+          type: string
+          format: date-time
+        example: '2025-01-01T00:00:00Z'
+    responses:
+      '200':
+        description: Event types retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '../components/schemas/event-type.yaml#/EventType'
+                pagination:
+                  $ref: '../components/schemas/common.yaml#/OffsetPaginationInfo'
+            examples:
+              default:
+                summary: Standard list response
+                value:
+                  data:
+                    - id: 'k4ff178c-8fbd-3ccc-9902-kmh4o6543002'
+                      verb: 'auth.login'
+                      httpMethod: 'POST'
+                      httpPath: '/api/v1/auth/verify-token'
+                      description: 'User authentication via magic link or OAuth'
+                      isWebhookEvent: true
+                      createdAt: '2025-10-03T14:30:00Z'
+                    - id: 'l5gg289d-9gce-4ddd-0013-lni5p7654113'
+                      verb: 'device.update'
+                      httpMethod: 'PUT'
+                      httpPath: '/api/v1/orgs/{orgId}/envs/{envId}/devices/{deviceId}'
+                      description: 'Device trust status or name updated'
+                      isWebhookEvent: true
+                      createdAt: '2025-10-03T14:30:00Z'
+                  pagination:
+                    limit: 20
+                    offset: 0
+                    total: 47
+                    hasMore: true
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+createEventType:
+  post:
+    tags:
+      - Admin - Events
+    summary: Create event type
+    description: |
+      Create a new event type mapping (requires admin:events:manage permission).
+      Event types map HTTP endpoints to event verbs for the activity log.
+    operationId: adminCreateEventType
+    security:
+      - bearerAuth: ["admin:events:manage"]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/event-type.yaml#/EventTypeCreateRequest'
+          examples:
+            default:
+              summary: Create authentication event type
+              value:
+                verb: 'auth.login'
+                httpMethod: 'POST'
+                httpPath: '/api/v1/auth/verify-token'
+                description: 'User authentication via magic link or OAuth'
+                isWebhookEvent: true
+    responses:
+      '201':
+        description: Event type created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event-type.yaml#/EventType'
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '409':
+        description: Event type with this verb already exists
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: 'CONFLICT'
+                message:
+                  type: string
+                  example: 'Event type with verb "auth.login" already exists'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+getEventType:
+  get:
+    tags:
+      - Admin - Events
+    summary: Get event type details
+    description: Retrieve detailed information about a specific event type (requires admin:events:read permission)
+    operationId: adminGetEventType
+    security:
+      - bearerAuth: ["admin:events:read"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/eventTypeId'
+    responses:
+      '200':
+        description: Event type retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event-type.yaml#/EventType'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+updateEventType:
+  put:
+    tags:
+      - Admin - Events
+    summary: Update event type
+    description: |
+      Update event type details (requires admin:events:manage permission).
+      Note: The verb cannot be changed once created.
+    operationId: adminUpdateEventType
+    security:
+      - bearerAuth: ["admin:events:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/eventTypeId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/event-type.yaml#/EventTypeUpdateRequest'
+          examples:
+            default:
+              summary: Update event type
+              value:
+                httpMethod: 'POST'
+                httpPath: '/api/v1/auth/verify-token'
+                description: 'User authentication via magic link, OAuth, or SSO'
+                isWebhookEvent: true
+    responses:
+      '200':
+        description: Event type updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/event-type.yaml#/EventType'
+      '400':
+        $ref: '../index.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '422':
+        $ref: '../index.yaml#/components/responses/ValidationError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'
+
+deleteEventType:
+  delete:
+    tags:
+      - Admin - Events
+    summary: Delete event type
+    description: |
+      Delete an event type (requires admin:events:manage permission).
+      This will prevent future events from being logged for this endpoint,
+      but will not delete existing events in the log.
+    operationId: adminDeleteEventType
+    security:
+      - bearerAuth: ["admin:events:manage"]
+    parameters:
+      - $ref: '../components/parameters.yaml#/eventTypeId'
+    responses:
+      '204':
+        description: Event type deleted successfully
+      '401':
+        $ref: '../index.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../index.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../index.yaml#/components/responses/NotFoundError'
+      '500':
+        $ref: '../index.yaml#/components/responses/InternalServerError'

@@ -1,0 +1,138 @@
+Device:
+  type: object
+  required:
+    - id
+    - userId
+    - fingerprintHash
+    - trustStatus
+    - createdAt
+    - lastUsedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Unique device identifier
+      example: d1e2f3a4-b5c6-7890-1234-567890abcdef
+    userId:
+      type: string
+      format: uuid
+      description: Owner user ID
+      example: a7b3c4d5-e6f7-8901-2345-6789abcdef01
+    fingerprintHash:
+      type: string
+      description: SHA-256 hash of device fingerprint
+      example: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+    deviceName:
+      type: string
+      description: User-defined or auto-generated device name
+      example: Chrome on macOS
+      maxLength: 100
+    deviceType:
+      type: string
+      enum:
+        - desktop
+        - mobile
+        - tablet
+        - unknown
+      example: desktop
+    os:
+      type: string
+      description: Operating system
+      example: macOS
+      maxLength: 50
+    browser:
+      type: string
+      description: Browser name
+      example: Chrome
+      maxLength: 50
+    userAgent:
+      type: string
+      description: Full user agent string
+      example: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...
+    timezone:
+      type: string
+      description: Device timezone
+      example: America/New_York
+      maxLength: 50
+    screenResolution:
+      type: string
+      description: Screen resolution
+      example: 1920x1080
+      maxLength: 20
+    trustStatus:
+      type: string
+      enum:
+        - trusted
+        - pending
+        - revoked
+      description: Device trust status
+      example: trusted
+    firstSeenIp:
+      type: string
+      format: ipv4
+      description: IP address when device was first seen
+      example: 192.168.1.100
+    lastSeenIp:
+      type: string
+      format: ipv4
+      description: IP address from last activity
+      example: 192.168.1.100
+    lastCountry:
+      type: string
+      description: Country code from last activity (ISO 3166-1 alpha-2)
+      example: US
+      maxLength: 2
+    lastRegion:
+      type: string
+      description: Region/state from last activity
+      example: New York
+      maxLength: 100
+    lastCity:
+      type: string
+      description: City from last activity
+      example: New York City
+      maxLength: 100
+    createdAt:
+      type: string
+      format: date-time
+      description: When device was first registered
+      example: '2025-10-01T10:00:00.000Z'
+    lastUsedAt:
+      type: string
+      format: date-time
+      description: Last activity timestamp
+      example: '2025-10-02T12:34:56.789Z'
+    revokedAt:
+      type: string
+      format: date-time
+      description: When device was revoked (if applicable)
+      example: '2025-10-03T08:15:00.000Z'
+
+DeviceUpdate:
+  type: object
+  properties:
+    deviceName:
+      type: string
+      description: Custom device name
+      example: My Work Laptop
+      minLength: 1
+      maxLength: 100
+
+DeviceList:
+  type: object
+  required:
+    - devices
+    - total
+  properties:
+    devices:
+      type: array
+      items:
+        $ref: '#/Device'
+    total:
+      type: integer
+      description: Total number of devices
+      example: 5
+    active:
+      type: integer
+      description: Number of active (trusted) devices
+      example: 3
