@@ -137,7 +137,9 @@ describe('Admin Roles & Permissions Endpoints', () => {
     await Role.destroy({ where: {}, force: true });
     await Permission.destroy({ where: {}, force: true });
     await OrganizationMember.destroy({ where: {}, force: true });
-    await Organization.destroy({ where: {}, force: true });
+    // Clean up test organizations only (exclude system org)
+    const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
+    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
     await UserSession.destroy({ where: {}, force: true });
     await Device.destroy({ where: {}, force: true });
     await User.destroy({ where: {}, force: true });

@@ -87,31 +87,31 @@ describe('Admin Event Types Endpoints', () => {
       joinedAt: new Date(),
     });
 
-    // Create test event types
+    // Create test event types (use unique verbs to avoid conflicts with seed data)
     testEventType1 = await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_1,
-      verb: 'auth.login',
+      verb: 'test.action1',
       httpMethod: 'POST',
-      httpPath: '/api/v1/auth/verify-token',
-      description: 'User authentication via magic link',
+      httpPath: '/api/v1/test/action1',
+      description: 'Test action 1 for testing',
       isWebhookEvent: true,
     });
 
     await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_2,
-      verb: 'device.update',
+      verb: 'test.action2',
       httpMethod: 'PUT',
-      httpPath: '/api/v1/devices/{deviceId}',
-      description: 'Device trust status or name updated',
+      httpPath: '/api/v1/test/action2',
+      description: 'Test action 2 for testing',
       isWebhookEvent: true,
     });
 
     await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_3,
-      verb: 'session.revoke',
+      verb: 'test.action3',
       httpMethod: 'DELETE',
-      httpPath: '/api/v1/sessions/{sessionId}',
-      description: 'User session revoked',
+      httpPath: '/api/v1/test/action3',
+      description: 'Test action 3 for testing',
       isWebhookEvent: false,
     });
 
@@ -126,8 +126,11 @@ describe('Admin Event Types Endpoints', () => {
   afterEach(async () => {
     await clearAllPermissions();
     await OrganizationMember.destroy({ where: {}, force: true });
-    await Organization.destroy({ where: {}, force: true });
-    await EventType.destroy({ where: {}, force: true });
+    // Clean up test organizations only (exclude system org)
+    const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
+    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
+    // Clean up test event types only (test.* verbs)
+    await EventType.destroy({ where: { verb: { [require('sequelize').Op.like]: 'test.%' } }, force: true });
     await User.destroy({ where: {}, force: true });
   });
 
@@ -140,7 +143,7 @@ describe('Admin Event Types Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ limit: 10, offset: 0 });
+        .query({ limit: 10, offset: 0, search: 'test.' });
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('data');
@@ -159,11 +162,11 @@ describe('Admin Event Types Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ 'filter[verb]': 'auth.login' });
+        .query({ 'filter[verb]': 'test.action1' });
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(1);
-      expect(res.body.data[0].verb).toBe('auth.login');
+      expect(res.body.data[0].verb).toBe('test.action1');
     });
 
     it('should filter by httpMethod', async () => {
@@ -211,16 +214,16 @@ describe('Admin Event Types Endpoints', () => {
         .query({ sort: 'verb' });
 
       expect(res.status).toBe(200);
-      expect(res.body.data[0].verb).toBe('auth.login');
-      expect(res.body.data[1].verb).toBe('device.update');
-      expect(res.body.data[2].verb).toBe('session.revoke');
+      expect(res.body.data[0].verb).toBe('test.action1');
+      expect(res.body.data[1].verb).toBe('test.action2');
+      expect(res.body.data[2].verb).toBe('test.action3');
     });
 
     it('should sort by createdAt descending', async () => {
       const res = await request(app)
         .get('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ sort: '-createdAt' });
+        .query({ sort: '-createdAt', search: 'test.' });
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(3);
@@ -288,18 +291,18 @@ describe('Admin Event Types Endpoints', () => {
         .post('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          verb: 'user.created',
+          verb: 'test.new_event',
           httpMethod: 'POST',
-          httpPath: '/api/v1/auth/register',
-          description: 'New user account created',
+          httpPath: '/api/v1/test/new',
+          description: 'Test event creation',
           isWebhookEvent: true,
         });
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('id');
-      expect(res.body.verb).toBe('user.created');
+      expect(res.body.verb).toBe('test.new_event');
       expect(res.body.httpMethod).toBe('POST');
-      expect(res.body.httpPath).toBe('/api/v1/auth/register');
+      expect(res.body.httpPath).toBe('/api/v1/test/new');
       expect(res.body.isWebhookEvent).toBe(true);
     });
 
@@ -308,10 +311,10 @@ describe('Admin Event Types Endpoints', () => {
         .post('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          verb: 'user.login.failed',
+          verb: 'test.default_webhook',
           httpMethod: 'POST',
-          httpPath: '/api/v1/auth/verify-token',
-          description: 'User login failed',
+          httpPath: '/api/v1/test/default',
+          description: 'Test default webhook event value',
         });
 
       expect(res.status).toBe(201);
@@ -323,9 +326,9 @@ describe('Admin Event Types Endpoints', () => {
         .post('/api/v1/admin/event-types')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          verb: 'auth.login',
+          verb: 'test.action1',
           httpMethod: 'POST',
-          httpPath: '/api/v1/auth/verify-token',
+          httpPath: '/api/v1/test/action1',
         });
 
       expect(res.status).toBe(409);

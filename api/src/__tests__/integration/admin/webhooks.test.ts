@@ -103,22 +103,22 @@ describe('Admin Webhooks Endpoints', () => {
       joinedAt: new Date(),
     });
 
-    // Create test event types
+    // Create test event types (use unique verbs to avoid conflicts with seed data)
     await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_1,
-      verb: 'user.login',
+      verb: 'test.webhook1',
       httpMethod: 'POST',
-      httpPath: '/api/v1/auth/verify-token',
-      description: 'User login event',
+      httpPath: '/api/v1/test/webhook1',
+      description: 'Test webhook event 1',
       isWebhookEvent: true,
     });
 
     await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_2,
-      verb: 'device.revoked',
+      verb: 'test.webhook2',
       httpMethod: 'DELETE',
-      httpPath: '/api/v1/devices/{deviceId}',
-      description: 'Device revocation event',
+      httpPath: '/api/v1/test/webhook2',
+      description: 'Test webhook event 2',
       isWebhookEvent: true,
     });
 
@@ -128,7 +128,7 @@ describe('Admin Webhooks Endpoints', () => {
       environmentId: testEnv.id,
       name: 'Production Alerts',
       url: 'https://api.example.com/webhooks/alerts',
-      eventTypes: ['user.login', 'device.revoked'],
+      eventTypes: ['test.webhook1', 'test.webhook2'],
       authMethod: 'hmac',
       authConfig: {
         secret: 'test-secret-123',
@@ -151,7 +151,7 @@ describe('Admin Webhooks Endpoints', () => {
       environmentId: testEnv.id,
       name: 'Staging Notifications',
       url: 'https://staging.example.com/webhooks/notifications',
-      eventTypes: ['user.login'],
+      eventTypes: ['test.webhook1'],
       authMethod: 'none',
       authConfig: null,
       retryConfig: {
@@ -169,7 +169,7 @@ describe('Admin Webhooks Endpoints', () => {
     await EventTypeSubscription.create({
       webhookId: testWebhook1.id,
       eventTypeId: TEST_UUIDS.EVENT_TYPE_1,
-      eventTypeVerb: 'user.login',
+      eventTypeVerb: 'test.webhook1',
       webhookName: testWebhook1.name,
       webhookUrl: testWebhook1.url,
       webhookAuthMethod: testWebhook1.authMethod,
@@ -182,7 +182,7 @@ describe('Admin Webhooks Endpoints', () => {
     await EventTypeSubscription.create({
       webhookId: testWebhook1.id,
       eventTypeId: TEST_UUIDS.EVENT_TYPE_2,
-      eventTypeVerb: 'device.revoked',
+      eventTypeVerb: 'test.webhook2',
       webhookName: testWebhook1.name,
       webhookUrl: testWebhook1.url,
       webhookAuthMethod: testWebhook1.authMethod,
@@ -211,10 +211,15 @@ describe('Admin Webhooks Endpoints', () => {
     // Clean up test data (order matters for FK constraints)
     await EventTypeSubscription.destroy({ where: {}, force: true });
     await Webhook.destroy({ where: {}, force: true });
-    await EventType.destroy({ where: {}, force: true });
+    // Clean up test event types only (test.* verbs)
+    await EventType.destroy({ where: { verb: { [require('sequelize').Op.like]: 'test.%' } }, force: true });
     await OrganizationMember.destroy({ where: {}, force: true });
-    await Environment.destroy({ where: {}, force: true });
-    await Organization.destroy({ where: {}, force: true });
+    // Clean up test environments only (exclude system env)
+    const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
+    await Environment.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ENV_ID } }, force: true });
+    // Clean up test organizations only (exclude system org)
+    const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
+    await Organization.destroy({ where: { id: { [require('sequelize').Op.ne]: SYSTEM_ORG_ID } }, force: true });
     await User.destroy({ where: {}, force: true });
   });
 
@@ -382,7 +387,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'New Test Webhook',
         url: 'https://new.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'jwt',
         authConfig: {
           secret: 'jwt-secret-456',
@@ -415,7 +420,7 @@ describe('Admin Webhooks Endpoints', () => {
         where: { webhookId: res.body.id },
       });
       expect(subscriptions).toHaveLength(1); // 1 event type = 1 subscription
-      expect(subscriptions[0].eventTypeVerb).toBe('user.login');
+      expect(subscriptions[0].eventTypeVerb).toBe('test.webhook1');
       expect(subscriptions[0].webhookUrl).toBe(newWebhook.url);
     });
 
@@ -424,7 +429,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'Multi-Event Webhook',
         url: 'https://multi.example.com/webhook',
-        eventTypes: ['user.login', 'device.revoked'],
+        eventTypes: ['test.webhook1', 'test.webhook2'],
         authMethod: 'hmac',
         authConfig: { secret: 'test-secret' },
       };
@@ -446,11 +451,11 @@ describe('Admin Webhooks Endpoints', () => {
       });
 
       expect(subscriptions).toHaveLength(2);
-      expect(subscriptions[0].eventTypeVerb).toBe('device.revoked');
+      expect(subscriptions[0].eventTypeVerb).toBe('test.webhook2');
       expect(subscriptions[0].webhookUrl).toBe(webhookWithMultipleEvents.url);
       expect(subscriptions[0].isActive).toBe(true);
 
-      expect(subscriptions[1].eventTypeVerb).toBe('user.login');
+      expect(subscriptions[1].eventTypeVerb).toBe('test.webhook1');
 
       // All subscriptions should have denormalized webhook data
       subscriptions.forEach((sub) => {
@@ -464,7 +469,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'Minimal Webhook',
         url: 'https://minimal.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
       };
 
@@ -486,7 +491,7 @@ describe('Admin Webhooks Endpoints', () => {
       const invalidWebhook = {
         environmentId: testEnv.id,
         url: 'https://test.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
       };
 
@@ -501,7 +506,7 @@ describe('Admin Webhooks Endpoints', () => {
       const invalidWebhook = {
         environmentId: testEnv.id,
         name: 'Test Webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
       };
 
@@ -517,7 +522,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'Test Webhook',
         url: 'http://insecure.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
       };
 
@@ -549,7 +554,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'Test Webhook',
         url: 'https://test.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'invalid-method',
       };
 
@@ -565,7 +570,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: testEnv.id,
         name: 'Test Webhook',
         url: 'https://test.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
         retryConfig: {
           maxAttempts: 20, // Exceeds max of 10
@@ -586,7 +591,7 @@ describe('Admin Webhooks Endpoints', () => {
         environmentId: TEST_UUIDS.NONEXISTENT,
         name: 'Test Webhook',
         url: 'https://test.example.com/webhook',
-        eventTypes: ['user.login'],
+        eventTypes: ['test.webhook1'],
         authMethod: 'none',
       };
 
@@ -676,7 +681,7 @@ describe('Admin Webhooks Endpoints', () => {
     });
 
     it('should update webhook eventTypes', async () => {
-      const updates = { eventTypes: ['device.revoked'] };
+      const updates = { eventTypes: ['test.webhook2'] };
 
       const res = await request(app)
         .put(`/api/v1/admin/webhooks/${testWebhook1.id}`)
@@ -846,13 +851,13 @@ describe('Admin Webhooks Endpoints', () => {
       const res = await request(app)
         .get('/api/v1/admin/event-type-subscriptions')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ 'filter[eventTypeVerb]': 'user.login' })
+        .query({ 'filter[eventTypeVerb]': 'test.webhook1' })
         .expect(200);
 
       expect(Array.isArray(res.body.data)).toBe(true);
       if (res.body.data.length > 0) {
         expect(
-          res.body.data.every((s: { eventTypeVerb: string }) => s.eventTypeVerb === 'user.login')
+          res.body.data.every((s: { eventTypeVerb: string }) => s.eventTypeVerb === 'test.webhook1')
         ).toBe(true);
       }
     });

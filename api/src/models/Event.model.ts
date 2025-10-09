@@ -19,9 +19,9 @@ export interface EventAttributes {
   audit: Record<string, unknown> | null;
   description: string | null;
   timestamp: Date;
-  organizationId: string;
-  organizationName: string;
-  environmentName: string;
+  organizationId: string | null;
+  organizationName: string | null;
+  environmentName: string | null;
   isWebhookEvent: boolean;
 }
 
@@ -29,7 +29,7 @@ export interface EventAttributes {
 export type EventCreationAttributes =
   Optional<
     EventAttributes,
-    'id' | 'target' | 'audit' | 'description' | 'timestamp' | 'organizationName' | 'environmentName' | 'isWebhookEvent'
+    'id' | 'target' | 'audit' | 'description' | 'timestamp' | 'organizationId' | 'organizationName' | 'environmentName' | 'isWebhookEvent'
   >;
 
 /**
@@ -46,9 +46,9 @@ export class Event extends Model<EventAttributes, EventCreationAttributes> imple
   declare audit: Record<string, unknown> | null;
   declare description: string | null;
   declare timestamp: Date;
-  declare organizationId: string;
-  declare organizationName: string;
-  declare environmentName: string;
+  declare organizationId: string | null;
+  declare organizationName: string | null;
+  declare environmentName: string | null;
   declare isWebhookEvent: boolean;
 
   /**
@@ -352,7 +352,7 @@ Event.init(
     },
     organizationId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       field: 'organization_id',
       comment: 'Denormalized for read performance',
     },

@@ -25,6 +25,17 @@ import type { EventData, WALEntry } from '../types/event.types';
 import { buildActor, buildObject, buildAudit, buildDescription } from '../utils/event.helpers';
 
 /**
+ * System IDs for unauthenticated/system events
+ * UUID Pattern: 00000000-0000-0000-0000-00000000XXYY
+ * - XX = Environment ID (01 = System)
+ * - YY = Organization ID (01 = System)
+ */
+const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000001';
+const SYSTEM_ENV_ID = '00000000-0000-0000-0000-000000000100';
+const SYSTEM_ORG_NAME = 'System';
+const SYSTEM_ENV_NAME = 'System';
+
+/**
  * EventBatchWriterService Class
  * Singleton pattern for managing batched event writes
  */
@@ -130,7 +141,7 @@ class EventBatchWriterService {
   private async bulkInsertEvents(batch: EventData[]): Promise<void> {
     const events = batch.map((data) => ({
       id: uuidv4(),
-      environmentId: data.context.envId ?? '',
+      environmentId: data.context.envId ?? SYSTEM_ENV_ID,
       verb: data.eventType.verb,
       actorType: (data.context.userId ? 'User' : 'System') as 'User' | 'System',
       actor: buildActor(data.context),
@@ -139,9 +150,9 @@ class EventBatchWriterService {
       audit: buildAudit(data.request, data.response, data.context.requestId),
       description: buildDescription(data),
       timestamp: new Date(),
-      organizationId: data.context.orgId ?? '',
-      organizationName: data.context.orgName ?? '',
-      environmentName: data.context.envName ?? '',
+      organizationId: data.context.orgId ?? SYSTEM_ORG_ID,
+      organizationName: data.context.orgName ?? SYSTEM_ORG_NAME,
+      environmentName: data.context.envName ?? SYSTEM_ENV_NAME,
       isWebhookEvent: data.eventType.isWebhookEvent,
     }));
 
@@ -157,7 +168,7 @@ class EventBatchWriterService {
       try {
         await Event.create({
           id: uuidv4(),
-          environmentId: eventData.context.envId ?? '',
+          environmentId: eventData.context.envId ?? SYSTEM_ENV_ID,
           verb: eventData.eventType.verb,
           actorType: (eventData.context.userId ? 'User' : 'System') as 'User' | 'System',
           actor: buildActor(eventData.context),
@@ -166,9 +177,9 @@ class EventBatchWriterService {
           audit: buildAudit(eventData.request, eventData.response, eventData.context.requestId),
           description: buildDescription(eventData),
           timestamp: new Date(),
-          organizationId: eventData.context.orgId ?? '',
-          organizationName: eventData.context.orgName,
-          environmentName: eventData.context.envName,
+          organizationId: eventData.context.orgId ?? SYSTEM_ORG_ID,
+          organizationName: eventData.context.orgName ?? SYSTEM_ORG_NAME,
+          environmentName: eventData.context.envName ?? SYSTEM_ENV_NAME,
           isWebhookEvent: eventData.eventType.isWebhookEvent,
         });
       } catch (error) {
