@@ -8,6 +8,9 @@ import http from 'http';
 import appPromise from './app';
 import config from './config';
 import logger from './config/logger';
+import sequelize from './config/database';
+import { eventProcessorService } from './services/event-processor.service';
+import { getAdapterFactory } from './services/adapter.factory';
 
 /**
  * Normalize port number
@@ -85,13 +88,18 @@ async function initServer(): Promise<http.Server> {
       logger.info('Server closed. Cleaning up resources...');
 
       try {
-        // TODO: Close database connections after Sequelize setup
-        // await sequelize.close();
-        // logger.info('Database connections closed');
+        // Flush pending events to database
+        logger.info('Flushing pending events...');
+        await eventProcessorService.shutdown();
+        logger.info('Event processor shutdown complete');
 
-        // TODO: Close Redis connections if used
-        // await redis.quit();
-        // logger.info('Redis connection closed');
+        // Close database connections
+        await sequelize.close();
+        logger.info('Database connections closed');
+
+        // Close adapter connections (message queue, etc.)
+        await getAdapterFactory().cleanup();
+        logger.info('Adapters cleaned up');
 
         logger.info('Graceful shutdown completed');
         process.exit(0);

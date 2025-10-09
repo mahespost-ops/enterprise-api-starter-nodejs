@@ -21,7 +21,9 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.middle
 import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
 import { xssSanitizationMiddleware } from './middleware/xss.middleware';
+import { auditLogger } from './middleware/audit-logger.middleware';
 import { initializeAssociations } from './models/associations';
+import { eventTypeCacheService } from './services/event-type-cache.service';
 
 // Initialize Sequelize model associations
 initializeAssociations();
@@ -144,7 +146,22 @@ async function createApp(): Promise<Application> {
   }
 
   // ============================================
-  // 7. API Routes
+  // 7. Event Logging Initialization
+  // ============================================
+  // Initialize EventTypeCache for O(1) endpoint lookups
+  await eventTypeCacheService.initialize();
+  logger.info('EventTypeCache initialized', {
+    eventTypes: eventTypeCacheService.getStats().size,
+  });
+
+  // ============================================
+  // 8. Audit Logger Middleware
+  // ============================================
+  // Register event capture listener (executes after response sent)
+  app.use(auditLogger);
+
+  // ============================================
+  // 9. API Routes
   // ============================================
   // Apply rate limiting to all API routes
   app.use('/api/', apiLimiter);
@@ -165,7 +182,7 @@ async function createApp(): Promise<Application> {
   });
 
   // ============================================
-  // 8. Error Handling (Last)
+  // 10. Error Handling (Last)
   // ============================================
 
   // 404 handler for undefined routes
