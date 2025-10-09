@@ -1,8 +1,8 @@
 # Admin Endpoints - Test Implementation Progress
 
 **Date Started:** 2025-10-07
-**Last Updated:** 2025-10-08 21:30 UTC
-**Status:** In Progress - 61/62 endpoints complete (98.4%)
+**Last Updated:** 2025-10-08 22:00 UTC
+**Status:** COMPLETE - 62/62 endpoints (100%) ✅
 **Strategy:** Test-Driven Development (TDD)
 
 ---
@@ -10,9 +10,9 @@
 ## Overall Progress Summary
 
 **Total Admin Endpoints:** 62
-**Endpoints Complete:** 61/62 (98.4%)
-**Tests Written:** 559/577 (96.9%)
-**Tests Passing:** 559/559 (100%) ✅
+**Endpoints Complete:** 62/62 (100%) ✅
+**Tests Written:** 565/565 (100%)
+**Tests Passing:** 565/565 (100%) ✅
 
 ### Completed Sub-Batches:
 - ✅ **6.1 - Admin Users:** 4 endpoints, 31 tests (100%)
@@ -29,9 +29,10 @@
 - ✅ **6.12 - Admin Event Types:** 5 endpoints, 43 tests (100%)
 - ✅ **6.12.1 - Event Type Subscription Helper:** Schema/spec complete (integrated in 6.13)
 - ✅ **6.13 - Admin Webhooks (Part 1):** 6 endpoints, 68 tests (100%)
+- ✅ **6.14 - Admin Webhooks (Part 2):** 1 endpoint, 6 tests (100%)
 
 ### Remaining Sub-Batches:
-- ⏭️ **6.14 - Admin Webhooks (Part 2):** 1 endpoint (delivery retry), ~6 tests
+- ✅ **ALL COMPLETE!**
 
 ---
 
@@ -914,54 +915,59 @@ WHERE event_type_verb = 'user.created'
 
 ---
 
-### 6.14 Admin Webhooks - Part 2 (3 endpoints)
-**File:** `admin/webhook-deliveries.test.ts` or combined with Part 1
-**Estimated Tests:** ~18
+### 6.14 Admin Webhooks - Part 2 (1 endpoint) ✅
+**File:** `admin/webhook-deliveries.test.ts`
+**Date Completed:** 2025-10-08
+**Tests:** 6/6 passing (100%)
 
-#### Endpoints (Delivery management):
-1. `GET /admin/webhooks/{webhookId}/deliveries` - List webhook deliveries
-2. `GET /admin/webhook-deliveries/{deliveryId}` - Get delivery details
-3. `POST /admin/webhook-deliveries/{deliveryId}/retry` - Retry failed delivery
+#### Endpoint:
+1. ✅ `POST /admin/webhook-deliveries/{deliveryId}/retry` - Retry failed delivery
 
-**Status:** Not started
+**Note:** Other delivery endpoints (GET list, GET details) exist in tenant-scoped webhooks. Only the admin retry endpoint was needed for admin-level operations.
 
-#### Implementation Checklist:
-- [ ] Test file: `admin/webhook-deliveries.test.ts`
-- [ ] Constants: `webhook-delivery.constants.ts` (if not exists)
-- [ ] Model: Add `WebhookDelivery.findWithFilters()` if needed
-- [ ] Validation: `admin-webhook-delivery.schemas.ts`
-- [ ] Service: Update `admin-webhook.service.ts` or create separate service
-- [ ] Controller: Update `admin-webhook.controller.ts` or create separate controller
-- [ ] Routes: Add delivery routes to `admin-webhook.routes.ts`
-- [ ] Wire into main router
+#### Implementation:
+- [x] Test file: `admin/webhook-deliveries.test.ts`
+- [x] Validation: `admin-webhook.schemas.ts` (deliveryIdParamSchema)
+- [x] Service: `admin-webhook.service.ts` (retryDelivery method)
+- [x] Controller: `admin-webhook.controller.ts` (retryWebhookDelivery)
+- [x] Routes: `admin-webhook-delivery.routes.ts` (new file)
+- [x] Wired into main router (mounted at `/admin/webhook-deliveries`)
 
-#### Key Features (Expected):
-- **Filtering:** webhookId, eventId, status, httpStatusCode, createdAt, deliveredAt
-- **Sorting:** createdAt (default DESC), deliveredAt, responseTimeMs, httpStatusCode
-- **Search:** Full-text across requestUrl
-- **Field Selection:** Optimized responses
-- **Retry Logic:** Re-queue failed deliveries with exponential backoff
-- **Delivery Status:** pending, success, failed, retrying
+#### Key Features:
+- **Retry Logic:** Updates delivery status to 'retrying' and schedules for immediate retry
+- **Status Validation:** Only failed deliveries can be retried (returns 400 for others)
+- **Stubbed Async Queue:** Comments indicate future integration with Pub/Sub, SQS, etc.
+- **Field Validation:** UUID validation for deliveryId parameter
+
+#### Test Coverage (6 tests):
+- Success (202): Retry failed delivery, verify status changed to 'retrying' and nextRetryAt set
+- Bad Request (400): Cannot retry non-failed delivery (validates status check)
+- Unauthorized (401): No authentication token
+- Forbidden (403): User lacks admin:webhooks:manage permission
+- Not Found (404): Delivery doesn't exist
+- Validation Error (422): Invalid UUID format for deliveryId
+
+#### Architectural Patterns:
+- **TDD Workflow:** RED (failing tests) → GREEN (implementation) → All passing ✅
+- **Separation of Concerns:** All DB operations in model layer
+- **Field Naming:** Consistent camelCase across all layers
+- **Stub for Future:** Async delivery mechanism stubbed (comments explain integration point)
+- **Model Fields:** Used correct WebhookDelivery schema fields (requestPayload, attempt, scheduledFor)
 
 ---
 
-## Next Steps
+## Summary
 
-**Current Focus:** Admin Webhooks Part 2 (Batch 6.14) - FINAL BATCH
+**🎉 ALL ADMIN ENDPOINTS COMPLETE! 🎉**
 
-**Planning Notes:**
-- ✅ **Batch 6.13 Complete:** All webhook CRUD + event_type_subscription endpoints (68 tests passing)
-- ✅ **Model Exports Fixed:** EventTypeSubscription properly exported and associated
-- ✅ **Test Data Quality:** Fixed invalid UUID formats in test constants
-- ✅ **OpenAPI Docs Updated:** POST /admin/webhooks fully documented
-- Part 2: Delivery retry endpoint only (other delivery endpoints exist in tenant-scoped webhooks)
+**Final Stats:**
+- ✅ **62/62 endpoints implemented** (100%)
+- ✅ **565/565 tests passing** (100%)
+- ✅ **13 sub-batches completed**
+- ✅ **TDD workflow maintained throughout**
+- ✅ **Zero failing tests**
 
-**Estimated Remaining Effort:**
-- 1 endpoint remaining: POST /admin/webhook-deliveries/{deliveryId}/retry
-- ~6 tests to write
-- Estimated: 30 minutes of implementation
-
-**Progress:** 98.4% complete (61/62 endpoints)
+**Progress:** 100% complete (62/62 endpoints)
 
 **IMPORTANT for Webhook Implementation:**
 The webhook service must manage the event_type_subscription table lifecycle:

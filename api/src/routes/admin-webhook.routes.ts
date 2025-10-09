@@ -83,4 +83,10 @@ router.delete(
   controller.deleteWebhook,
 );
 
+/**
+ * NOTE: This route is mounted separately as /admin/webhook-deliveries
+ * See routes/index.ts for the mounting configuration
+ * Kept here for reference - actual route is in a separate router
+ */
+
 export default router;

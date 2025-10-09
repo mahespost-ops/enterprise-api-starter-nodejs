@@ -11,12 +11,14 @@
 import { Webhook } from '../models/Webhook.model';
 import { Environment } from '../models/Environment.model';
 import { EventTypeSubscription } from '../models/EventTypeSubscription.model';
-import { NotFoundError } from '../utils/errors';
+import { WebhookDelivery } from '../models/WebhookDelivery.model';
+import { NotFoundError, BadRequestError } from '../utils/errors';
 import { ERROR_MESSAGES } from '../constants/error-messages.constants';
 import {
   WEBHOOK_SORTABLE_FIELDS,
   WEBHOOK_SEARCHABLE_FIELDS,
   WEBHOOK_AUTH_METHOD,
+  WEBHOOK_DELIVERY_STATUS,
   type WebhookAuthMethod,
 } from '../constants/webhook.constants';
 import logger from '../config/logger';
@@ -323,6 +325,43 @@ class AdminWebhookService {
     await webhook.destroy();
 
     logger.info('Admin: Webhook deleted', { webhookId, name: webhook.name });
+  }
+
+  /**
+   * Retry failed webhook delivery
+   * @param deliveryId - Delivery ID
+   * @returns Message indicating retry scheduled
+   * @throws NotFoundError if delivery not found
+   * @throws BadRequestError if delivery cannot be retried (not in failed status)
+   */
+  async retryDelivery(deliveryId: string): Promise<{ message: string }> {
+    logger.debug('Admin: Retrying webhook delivery', { deliveryId });
+
+    const delivery = await WebhookDelivery.findByPk(deliveryId);
+
+    if (!delivery) {
+      throw new NotFoundError(ERROR_MESSAGES.WEBHOOK_DELIVERY_NOT_FOUND);
+    }
+
+    // Can only retry failed deliveries
+    if (delivery.status !== WEBHOOK_DELIVERY_STATUS.FAILED) {
+      throw new BadRequestError(
+        `Cannot retry delivery with status: ${delivery.status}. Only failed deliveries can be retried.`
+      );
+    }
+
+    // Update delivery status to 'retrying' and schedule for immediate retry
+    // In production, this would enqueue the delivery to a message queue (Pub/Sub, SQS, etc.)
+    delivery.status = WEBHOOK_DELIVERY_STATUS.RETRYING;
+    delivery.scheduledFor = new Date();
+    delivery.nextRetryAt = new Date();
+    await delivery.save();
+
+    logger.info('Admin: Delivery scheduled for retry', { deliveryId });
+
+    return {
+      message: 'Delivery scheduled for retry',
+    };
   }
 }
 

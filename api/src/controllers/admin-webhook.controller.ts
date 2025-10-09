@@ -234,3 +234,20 @@ export const deleteWebhook = asyncHandler(async (req: Request, res: Response): P
 
   res.status(HTTP_STATUS.NO_CONTENT).send();
 });
+
+/**
+ * @desc    Retry failed webhook delivery (admin)
+ * @route   POST /api/v1/admin/webhook-deliveries/:deliveryId/retry
+ * @access  Private (admin:webhooks:manage)
+ */
+export const retryWebhookDelivery = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { deliveryId } = req.params;
+
+    logger.debug(`Admin: Retrying delivery: ${deliveryId}`);
+
+    const result = await adminWebhookService.retryDelivery(deliveryId);
+
+    res.status(HTTP_STATUS.ACCEPTED).json(result);
+  }
+);

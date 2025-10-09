@@ -148,3 +148,10 @@ export const updateWebhookBodySchema = Joi.object({
   isActive: Joi.boolean().optional(),
   metadata: Joi.object().optional().allow(null),
 }).options({ allowUnknown: false });
+
+/**
+ * Path parameter validation for deliveryId
+ */
+export const deliveryIdParamSchema = Joi.object({
+  deliveryId: Joi.string().uuid().required(),
+}).options({ allowUnknown: false });

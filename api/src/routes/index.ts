@@ -28,6 +28,7 @@ import adminEventRoutes from './admin-event.routes';
 import adminEventTypeRoutes from './admin-event-type.routes';
 import adminWebhookRoutes from './admin-webhook.routes';
 import adminEventTypeSubscriptionRoutes from './admin-event-type-subscription.routes';
+import adminWebhookDeliveryRoutes from './admin-webhook-delivery.routes';
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.use('/admin/events', adminEventRoutes);
 router.use('/admin/event-types', adminEventTypeRoutes);
 router.use('/admin/webhooks', adminWebhookRoutes);
 router.use('/admin/event-type-subscriptions', adminEventTypeSubscriptionRoutes);
+router.use('/admin/webhook-deliveries', adminWebhookDeliveryRoutes);
 
 // Future routes will be added here:
 
