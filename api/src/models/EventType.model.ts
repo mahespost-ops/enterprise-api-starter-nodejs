@@ -3,7 +3,8 @@
  * Maps HTTP endpoints (method + path) to event verbs for activity logging
  */
 
-import { Model, DataTypes, Optional, UUIDV1, WhereOptions, Op, Order } from 'sequelize';
+import { Model, DataTypes, Optional, UUIDV1, Op, Order } from 'sequelize';
+import type { WhereOptions } from 'sequelize';
 import sequelize from '../config/database';
 
 // EventType attributes

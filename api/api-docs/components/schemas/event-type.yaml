@@ -87,7 +87,7 @@ EventTypeCreateRequest:
       example: 'User authentication via magic link or OAuth'
     isWebhookEvent:
       type: boolean
-      description: Whether this event type triggers webhooks (defaults to false if not provided)
+      description: Whether this event type triggers webhooks (defaults to false)
       example: true
 
 EventTypeUpdateRequest:
