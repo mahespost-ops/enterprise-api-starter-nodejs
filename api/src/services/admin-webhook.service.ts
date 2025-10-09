@@ -23,9 +23,10 @@ import logger from '../config/logger';
 
 /**
  * DTO for creating webhook
+ * environmentId is optional - NULL creates a global webhook that applies to all environments
  */
 export interface CreateWebhookDto {
-  environmentId: string;
+  environmentId?: string | null;
   name: string;
   url: string;
   eventTypes: string[];
@@ -167,15 +168,17 @@ class AdminWebhookService {
   async createWebhook(data: CreateWebhookDto): Promise<Webhook> {
     logger.debug('Admin: Creating webhook', { environmentId: data.environmentId, name: data.name });
 
-    // Verify environment exists
-    const environment = await Environment.findByPk(data.environmentId);
-    if (!environment) {
-      throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
+    // Verify environment exists (if specified)
+    if (data.environmentId) {
+      const environment = await Environment.findByPk(data.environmentId);
+      if (!environment) {
+        throw new NotFoundError(ERROR_MESSAGES.ENVIRONMENT_NOT_FOUND);
+      }
     }
 
     // Create webhook
     const webhook = await Webhook.create({
-      environmentId: data.environmentId,
+      environmentId: data.environmentId ?? null,
       name: data.name,
       url: data.url,
       eventTypes: data.eventTypes,
@@ -300,7 +303,7 @@ class AdminWebhookService {
 
   /**
    * Delete webhook (soft delete)
-   * EventTypeSubscription CASCADE DELETE handled by FK constraint
+   * Manually deletes EventTypeSubscription records (FK CASCADE doesn't fire on soft delete)
    * @param webhookId - Webhook ID
    * @throws NotFoundError if webhook not found
    */
@@ -309,6 +312,14 @@ class AdminWebhookService {
 
     const webhook = await this.getWebhookById(webhookId);
 
+    // Delete all subscriptions (hard delete since EventTypeSubscription isn't paranoid)
+    // Must do this before soft-deleting webhook since FK CASCADE only fires on hard delete
+    const eventTypes = webhook.eventTypes;
+    if (eventTypes.length > 0) {
+      await EventTypeSubscription.deleteForWebhookEventTypes(webhookId, eventTypes);
+    }
+
+    // Soft delete webhook
     await webhook.destroy();
 
     logger.info('Admin: Webhook deleted', { webhookId, name: webhook.name });

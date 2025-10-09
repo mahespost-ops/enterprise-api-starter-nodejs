@@ -193,15 +193,19 @@
       - Admin - Webhooks
     summary: Create new webhook (system-wide)
     description: |
-      Create a new webhook for any environment (requires admin:webhooks:manage permission).
+      Create a new webhook for any environment or globally (requires admin:webhooks:manage permission).
+
+      **Global vs Environment-Specific Webhooks:**
+      - Omit `environmentId` or set to `null` to create a **global webhook** that applies to all environments
+      - Provide `environmentId` to create an **environment-specific webhook**
 
       **Required fields:**
-      - `environmentId` - UUID of the environment
       - `name` - Webhook name (1-255 characters)
       - `url` - HTTPS URL endpoint (max 2048 characters)
       - `eventTypes` - Array of event type verbs (min 1 item)
 
       **Optional fields:**
+      - `environmentId` - UUID of environment (omit for global webhook)
       - `authMethod` - Authentication method (default: 'none')
       - `authConfig` - Authentication configuration object
       - `retryConfig` - Retry policy configuration
@@ -217,7 +221,6 @@
           schema:
             type: object
             required:
-              - environmentId
               - name
               - url
               - eventTypes
@@ -225,7 +228,8 @@
               environmentId:
                 type: string
                 format: uuid
-                description: Environment ID where webhook will be registered
+                nullable: true
+                description: Environment ID (omit or set to null for global webhook)
               name:
                 type: string
                 minLength: 1
@@ -284,8 +288,8 @@
                 nullable: true
                 description: Additional webhook metadata
           examples:
-            basic:
-              summary: Basic webhook with HMAC auth
+            environmentSpecific:
+              summary: Environment-specific webhook with HMAC auth
               value:
                 environmentId: '660e8400-e29b-41d4-a716-446655440000'
                 name: 'Production Alerts'
@@ -296,6 +300,16 @@
                   secret: 'your-secret-key'
                   algorithm: 'sha256'
                   headerName: 'X-Webhook-Signature'
+            global:
+              summary: Global webhook (applies to all environments)
+              value:
+                name: 'Global Security Alerts'
+                url: 'https://security.example.com/webhook'
+                eventTypes: ['device.revoked', 'session.terminated']
+                authMethod: 'hmac'
+                authConfig:
+                  secret: 'global-secret-key'
+                  algorithm: 'sha256'
             minimal:
               summary: Minimal webhook (defaults applied)
               value:

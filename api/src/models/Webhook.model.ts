@@ -10,7 +10,7 @@ import { WEBHOOK_AUTH_METHOD, type WebhookAuthMethod } from '../constants/webhoo
 // Webhook attributes
 export interface WebhookAttributes {
   id: string;
-  environmentId: string;
+  environmentId: string | null; // NULL = global webhook (all environments)
   name: string;
   url: string;
   eventTypes: string[];
@@ -36,6 +36,7 @@ export type WebhookCreationAttributes =
   Optional<
     WebhookAttributes,
     | 'id'
+    | 'environmentId' // Optional for global webhooks
     | 'authMethod'
     | 'authConfig'
     | 'retryConfig'
@@ -54,7 +55,7 @@ export type WebhookCreationAttributes =
  */
 export class Webhook extends Model<WebhookAttributes, WebhookCreationAttributes> implements WebhookAttributes {
   declare id: string;
-  declare environmentId: string;
+  declare environmentId: string | null;
   declare name: string;
   declare url: string;
   declare eventTypes: string[];
@@ -360,8 +361,9 @@ Webhook.init(
     },
     environmentId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true, // NULL = global webhook (all environments)
       field: 'environment_id',
+      comment: 'Environment ID (NULL for global webhooks)',
     },
     name: {
       type: DataTypes.STRING(255),

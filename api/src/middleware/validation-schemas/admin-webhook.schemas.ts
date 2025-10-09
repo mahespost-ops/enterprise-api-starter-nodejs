@@ -78,9 +78,10 @@ export const webhookIdParamSchema = Joi.object({
 
 /**
  * Request body for creating webhook (POST /admin/webhooks)
+ * environmentId is optional - NULL creates a global webhook that applies to all environments
  */
 export const createWebhookBodySchema = Joi.object({
-  environmentId: Joi.string().uuid().required(),
+  environmentId: Joi.string().uuid().optional().allow(null),
   name: Joi.string().min(1).max(255).required(),
   url: Joi.string()
     .uri({ scheme: ['https'] })

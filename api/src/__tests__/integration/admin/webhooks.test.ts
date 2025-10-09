@@ -160,6 +160,33 @@ describe('Admin Webhooks Endpoints', () => {
       lastFailureAt: new Date(),
     });
 
+    // Create event type subscriptions for testWebhook1 (to test CASCADE DELETE)
+    await EventTypeSubscription.create({
+      webhookId: testWebhook1.id,
+      eventTypeId: TEST_UUIDS.EVENT_TYPE_1,
+      eventTypeVerb: 'user.login',
+      webhookName: testWebhook1.name,
+      webhookUrl: testWebhook1.url,
+      webhookAuthMethod: testWebhook1.authMethod,
+      webhookAuthConfig: testWebhook1.authConfig,
+      webhookRetryConfig: testWebhook1.retryConfig,
+      webhookMetadata: testWebhook1.metadata,
+      isActive: testWebhook1.isActive,
+    });
+
+    await EventTypeSubscription.create({
+      webhookId: testWebhook1.id,
+      eventTypeId: TEST_UUIDS.EVENT_TYPE_2,
+      eventTypeVerb: 'device.revoked',
+      webhookName: testWebhook1.name,
+      webhookUrl: testWebhook1.url,
+      webhookAuthMethod: testWebhook1.authMethod,
+      webhookAuthConfig: testWebhook1.authConfig,
+      webhookRetryConfig: testWebhook1.retryConfig,
+      webhookMetadata: testWebhook1.metadata,
+      isActive: testWebhook1.isActive,
+    });
+
     // Grant admin permissions
     await grantPermissions(adminUser.id, ['admin:webhooks:read', 'admin:webhooks:manage', 'admin:events:read']);
 
@@ -377,6 +404,54 @@ describe('Admin Webhooks Endpoints', () => {
       expect(res.body.eventTypes).toEqual(newWebhook.eventTypes);
       expect(res.body.authMethod).toBe(newWebhook.authMethod);
       expect(res.body.isActive).toBe(true);
+
+      // Verify subscriptions were created
+      const subscriptions = await EventTypeSubscription.findAll({
+        where: { webhookId: res.body.id },
+      });
+      expect(subscriptions).toHaveLength(1); // 1 event type = 1 subscription
+      expect(subscriptions[0].eventTypeVerb).toBe('user.login');
+      expect(subscriptions[0].webhookUrl).toBe(newWebhook.url);
+    });
+
+    it('should create subscriptions for each event type when webhook has multiple event types', async () => {
+      const webhookWithMultipleEvents = {
+        environmentId: testEnv.id,
+        name: 'Multi-Event Webhook',
+        url: 'https://multi.example.com/webhook',
+        eventTypes: ['user.login', 'device.revoked'],
+        authMethod: 'hmac',
+        authConfig: { secret: 'test-secret' },
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/webhooks')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(webhookWithMultipleEvents)
+        .expect(201);
+
+      // Verify webhook was created
+      expect(res.body).toHaveProperty('id');
+      expect(res.body.eventTypes).toHaveLength(2);
+
+      // Verify subscriptions were created for each event type
+      const subscriptions = await EventTypeSubscription.findAll({
+        where: { webhookId: res.body.id },
+        order: [['eventTypeVerb', 'ASC']],
+      });
+
+      expect(subscriptions).toHaveLength(2);
+      expect(subscriptions[0].eventTypeVerb).toBe('device.revoked');
+      expect(subscriptions[0].webhookUrl).toBe(webhookWithMultipleEvents.url);
+      expect(subscriptions[0].isActive).toBe(true);
+
+      expect(subscriptions[1].eventTypeVerb).toBe('user.login');
+
+      // All subscriptions should have denormalized webhook data
+      subscriptions.forEach((sub) => {
+        expect(sub.webhookName).toBe(webhookWithMultipleEvents.name);
+        expect(sub.webhookAuthMethod).toBe('hmac');
+      });
     });
 
     it('should create webhook with default values', async () => {
@@ -687,7 +762,13 @@ describe('Admin Webhooks Endpoints', () => {
   });
 
   describe('DELETE /api/v1/admin/webhooks/{webhookId}', () => {
-    it('should soft delete webhook', async () => {
+    it('should soft delete webhook and cascade delete subscriptions', async () => {
+      // First, verify subscriptions exist
+      const subscriptionsBefore = await EventTypeSubscription.findAll({
+        where: { webhookId: testWebhook1.id },
+      });
+      expect(subscriptionsBefore.length).toBeGreaterThan(0); // Should have subscriptions
+
       await request(app)
         .delete(`/api/v1/admin/webhooks/${testWebhook1.id}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -697,6 +778,12 @@ describe('Admin Webhooks Endpoints', () => {
       const webhook = await Webhook.findByPk(testWebhook1.id, { paranoid: false });
       expect(webhook).not.toBeNull();
       expect(webhook!.deletedAt).not.toBeNull();
+
+      // Verify subscriptions were deleted (CASCADE DELETE via FK constraint)
+      const subscriptionsAfter = await EventTypeSubscription.findAll({
+        where: { webhookId: testWebhook1.id },
+      });
+      expect(subscriptionsAfter).toHaveLength(0); // All subscriptions should be gone
     });
 
     it('should return 401 when not authenticated', async () => {
