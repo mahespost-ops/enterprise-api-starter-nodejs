@@ -501,9 +501,10 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       metadata JSONB,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'UTC') NOT NULL,
-      deleted_at TIMESTAMP WITH TIME ZONE,
-      COMMENT ON COLUMN webhook.environment_id IS 'NULL = global webhook (all environments), non-NULL = environment-specific webhook'
+      deleted_at TIMESTAMP WITH TIME ZONE
     );
+
+    COMMENT ON COLUMN webhook.environment_id IS 'NULL = global webhook (all environments), non-NULL = environment-specific webhook';
 
     CREATE INDEX idx_webhook_env_id ON webhook(environment_id) WHERE is_active = TRUE AND environment_id IS NOT NULL;
     CREATE INDEX idx_webhook_is_active ON webhook(is_active);

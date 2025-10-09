@@ -19,9 +19,11 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     DROP TRIGGER IF EXISTS update_role_updated_at ON role CASCADE;
     DROP TRIGGER IF EXISTS update_env_role_updated_at ON environment_role_assignment CASCADE;
     DROP TRIGGER IF EXISTS update_webhook_updated_at ON webhook CASCADE;
+    DROP TRIGGER IF EXISTS update_event_type_subscription_updated_at ON event_type_subscription CASCADE;
 
     -- Drop all tables in reverse dependency order
     DROP TABLE IF EXISTS webhook_delivery CASCADE;
+    DROP TABLE IF EXISTS event_type_subscription CASCADE;
     DROP TABLE IF EXISTS webhook CASCADE;
     DROP TABLE IF EXISTS event_type CASCADE;
     DROP TABLE IF EXISTS event CASCADE;
