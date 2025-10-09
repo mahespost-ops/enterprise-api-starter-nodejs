@@ -16,22 +16,22 @@ Originally conceived as a configuration drift reduction demonstration, this proj
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         CLIENT APPLICATION                           │
-│                    (Web / Mobile / Third-Party)                      │
+│                         CLIENT APPLICATION                          │
+│                    (Web / Mobile / Third-Party)                     │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
                              │ HTTPS/REST
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         API GATEWAY LAYER                            │
-│  ┌──────────────┐  ┌───────────┐  ┌──────────┐  ┌───────────────┐  │
-│  │ Rate Limiter │→ │   CORS    │→ │  Helmet  │→ │  Compression  │  │
-│  └──────────────┘  └───────────┘  └──────────┘  └───────────────┘  │
+│                         API GATEWAY LAYER                           │
+│  ┌──────────────┐  ┌───────────┐  ┌──────────┐  ┌───────────────┐   │
+│  │ Rate Limiter │→ │   CORS    │→ │  Helmet  │→ │  Compression  │   │
+│  └──────────────┘  └───────────┘  └──────────┘  └───────────────┘   │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      AUTHENTICATION LAYER                            │
+│                      AUTHENTICATION LAYER                           │
 │  ┌────────────────────┐  ┌──────────────────────────────────────┐   │
 │  │  JWT Verification  │  │     Device Fingerprinting            │   │
 │  │  (Access/Refresh)  │  │     (Trust Status Tracking)          │   │
@@ -43,7 +43,7 @@ Originally conceived as a configuration drift reduction demonstration, this proj
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      AUTHORIZATION LAYER                             │
+│                      AUTHORIZATION LAYER                            │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │           Hierarchical RBAC Permission Resolution           │    │
 │  │   (Group-based → User-based → Environment-scoped)           │    │
@@ -55,17 +55,17 @@ Originally conceived as a configuration drift reduction demonstration, this proj
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         ROUTING LAYER                                │
-│  ┌──────────────────┐  ┌────────────────┐  ┌──────────────────┐    │
-│  │  Tenant-Scoped   │  │  Admin Routes  │  │  System Routes   │    │
-│  │  /orgs/{orgId}/  │  │  /admin/*      │  │  /health, /docs  │    │
-│  │  envs/{envId}/*  │  │                │  │                  │    │
-│  └──────────────────┘  └────────────────┘  └──────────────────┘    │
+│                         ROUTING LAYER                               │
+│  ┌──────────────────┐  ┌────────────────┐  ┌──────────────────┐     │
+│  │  Tenant-Scoped   │  │  Admin Routes  │  │  System Routes   │     │
+│  │  /orgs/{orgId}/  │  │  /admin/*      │  │  /health, /docs  │     │
+│  │  envs/{envId}/*  │  │                │  │                  │     │
+│  └──────────────────┘  └────────────────┘  └──────────────────┘     │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                       CONTROLLER LAYER                               │
+│                       CONTROLLER LAYER                              │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │    HTTP Request/Response Handling & Validation              │    │
 │  │    (Extract params → Delegate to services → Format output)  │    │
@@ -74,12 +74,12 @@ Originally conceived as a configuration drift reduction demonstration, this proj
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        SERVICE LAYER                                 │
-│  ┌──────────────┐  ┌───────────────┐  ┌────────────────────────┐   │
-│  │   Business   │  │  Transaction  │  │  External Service      │   │
-│  │     Logic    │  │  Management   │  │  Orchestration         │   │
-│  │              │  │               │  │  (Adapters)            │   │
-│  └──────────────┘  └───────────────┘  └────────────────────────┘   │
+│                        SERVICE LAYER                                │
+│  ┌──────────────┐  ┌───────────────┐  ┌────────────────────────┐    │
+│  │   Business   │  │  Transaction  │  │  External Service      │    │
+│  │     Logic    │  │  Management   │  │  Orchestration         │    │
+│  │              │  │               │  │  (Adapters)            │    │
+│  └──────────────┘  └───────────────┘  └────────────────────────┘    │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
                 ┌────────────┼────────────┐
@@ -87,13 +87,13 @@ Originally conceived as a configuration drift reduction demonstration, this proj
                 ▼                         ▼
 ┌───────────────────────────┐  ┌────────────────────────────────────┐
 │      MODEL LAYER          │  │      ADAPTER LAYER                 │
-│  ┌──────────────────────┐ │  │  ┌──────────────────────────────┐ │
-│  │  Sequelize ORM       │ │  │  │   Email (SendGrid/SMTP)      │ │
-│  │  (PostgreSQL)        │ │  │  │   Secrets (GCP/AWS/Vault)    │ │
-│  │                      │ │  │  │   Storage (GCS/S3/Local)     │ │
-│  │  - Entities          │ │  │  │   Queue (Pub/Sub/SQS/Kafka)  │ │
-│  │  - Associations      │ │  │  └──────────────────────────────┘ │
-│  │  - Validations       │ │  │     (Cloud-Agnostic Interfaces)  │
+│  ┌──────────────────────┐ │  │  ┌──────────────────────────────┐  │
+│  │  Sequelize ORM       │ │  │  │   Email (SendGrid/SMTP)      │  │
+│  │  (PostgreSQL)        │ │  │  │   Secrets (GCP/AWS/Vault)    │  │
+│  │                      │ │  │  │   Storage (GCS/S3/Local)     │  │
+│  │  - Entities          │ │  │  │   Queue (Pub/Sub/SQS/Kafka)  │  │
+│  │  - Associations      │ │  │  └──────────────────────────────┘  │
+│  │  - Validations       │ │  │     (Cloud-Agnostic Interfaces)    │
 │  └──────────────────────┘ │  └────────────────────────────────────┘
 │                           │
 │  ┌──────────────────────┐ │
@@ -106,7 +106,7 @@ Originally conceived as a configuration drift reduction demonstration, this proj
                 │
                 ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      EVENT PROCESSING LAYER                          │
+│                      EVENT PROCESSING LAYER                         │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │              Write-Ahead Log (WAL) Manager                  │    │
 │  │         (Batch buffering + PII redaction + Flush)           │    │
@@ -478,7 +478,7 @@ enterprise-api-starter-nodejs/
 
 ## 🤝 Contributing
 
-This project follows strict code quality standards and TDD practices. See [`CONTRIBUTING.md`](./api/CONTRIBUTING.md) for detailed guidelines.
+This project follows strict code quality standards and TDD practices. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for detailed guidelines.
 
 **Key Principles:**
 1. Always reference component STANDARDS.md files before creating new code
