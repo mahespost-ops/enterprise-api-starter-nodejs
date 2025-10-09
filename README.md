@@ -417,11 +417,6 @@ enterprise-api-starter-nodejs/
 │   │   │   ├── helpers/              # Test utilities (auth, constants)
 │   │   │   ├── integration/          # API endpoint tests (31 files)
 │   │   │   └── unit/                 # Middleware & utility tests
-│   │   ├── adapters/                 # Cloud-agnostic service adapters
-│   │   │   ├── email/                # SendGrid, SMTP, Mock
-│   │   │   ├── queue/                # Pub/Sub, SQS, Kafka, Redis, Memory
-│   │   │   ├── secrets/              # GCP, AWS, Vault, Env, Memory
-│   │   │   └── storage/              # GCS, S3, Local
 │   │   ├── config/                   # Configuration & database setup
 │   │   ├── constants/                # HTTP status, errors, auth constants
 │   │   ├── controllers/              # HTTP request/response handlers
@@ -433,6 +428,10 @@ enterprise-api-starter-nodejs/
 │   │   │   └── STANDARDS.md          # Routing best practices
 │   │   ├── services/                 # Business logic & orchestration
 │   │   │   └── STANDARDS.md          # Service layer best practices
+│   │   │   ├── email/                # SendGrid, SMTP, Mock
+│   │   │   ├── queue/                # Pub/Sub, SQS, Kafka, Redis, Memory
+│   │   │   ├── secrets/              # GCP, AWS, Vault, Env, Memory, File
+│   │   │   └── storage/              # GCS, S3, Local
 │   │   ├── types/                    # TypeScript type definitions
 │   │   ├── utils/                    # Helper functions
 │   │   ├── app.ts                    # Express app configuration
@@ -449,6 +448,7 @@ enterprise-api-starter-nodejs/
 │   │   ├── ADAPTER_USAGE.md          # Adapter implementation guide
 │   │   ├── QUERY_PARAMETER_STANDARDS.md # API query conventions
 │   │   └── progress-tracking/        # Implementation status
+│   │   └── security-analysis/        # Periodic self audits
 │   ├── migrations/                   # Sequelize database migrations
 │   ├── .env.example                  # Environment variable template
 │   ├── package.json                  # Dependencies & scripts
@@ -471,7 +471,7 @@ enterprise-api-starter-nodejs/
 | **Test Suites** | 36 passing, 1 skipped (37 total) |
 | **Tests** | 1066 passing, 11 skipped (1077 total) |
 | **Documentation Files** | 23+ markdown files |
-| **Database Entities** | 14 core models |
+| **Database Entities** | 20 core models |
 | **Supported Cloud Providers** | Local, GCP, AWS, Agnostic (via adapters) |
 | **API Response SLO** | <200ms (achieved via denormalization) |
 
