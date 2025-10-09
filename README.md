@@ -339,6 +339,31 @@ npm run format
 
 ## 📖 User Stories
 
+### Aa a Business Owner or FinOps Lead
+
+- **I want to save money** by enabling local development and remaining host agnostic
+- **I want efficient cloud operations** by patching vulnerabilities that could run up my bill
+- **I want flexible data integration** via API endpoints and configurable webhooks
+- **I want PII redaction, MFA security, and audit history compliance** so I can earn ISO and SOC certification
+
+### Aa a Salesperson
+
+- **I want my own demo environment(s)** to allow me to sell my product
+- **I want early sandbox access** to new features to drive more closed-won opportunities
+
+### Aa a Support team member
+
+- **I want searchable audit logs** to quickly diagnose customer issues
+- **I want to impersonate any user across any organization** so that I can provide customer support and resolve issues
+
+### As an Organization Administrator (Tenant)
+
+- **I want to invite users to my organization** so that I can grant team members access to our resources
+- **I want to organize users into hierarchical groups** so that I can manage permissions efficiently
+- **I want to assign roles at the environment level** so that users have different permissions in Live vs Test environments
+- **I want to impersonate users in subordinate groups** so that I can troubleshoot issues and provide support to my team
+- **I want to view audit logs of all user actions** so that I can ensure compliance and investigate security incidents
+
 ### As an API Consumer
 
 - **I want to authenticate without passwords** so that I can access my account securely without remembering complex credentials
@@ -346,22 +371,6 @@ npm run format
 - **I want my devices to be automatically recognized** so that I don't need to re-verify on trusted devices
 - **I want to manage my active sessions** so that I can revoke access from lost or stolen devices
 - **I want to switch between organizations and environments** so that I can manage multiple tenants from a single account
-
-### As an Organization Administrator
-
-- **I want to invite users to my organization** so that I can grant team members access to our resources
-- **I want to organize users into hierarchical groups** so that I can manage permissions efficiently
-- **I want to assign roles at the environment level** so that users have different permissions in Live vs Test environments
-- **I want to impersonate users in subordinate groups** so that I can troubleshoot issues and provide support
-- **I want to view audit logs of all user actions** so that I can ensure compliance and investigate security incidents
-
-### As a System Administrator
-
-- **I want to impersonate any user across any organization** so that I can provide customer support and resolve issues
-- **I want to track impersonation chains with full audit trails** so that I have complete accountability for all actions
-- **I want to force-revoke user sessions** so that I can respond to security incidents immediately
-- **I want to monitor webhook deliveries and retry failures** so that I can ensure event notifications are reliable
-- **I want to configure rate limits per environment** so that I can prevent abuse while allowing testing flexibility
 
 ### As a Developer Integrating with the API
 
@@ -371,11 +380,19 @@ npm run format
 - **I want consistent camelCase field names across all API responses** so that my frontend code is predictable
 - **I want cursor-based pagination for high-volume endpoints** so that I can efficiently process large datasets
 
+### As a System Administrator
+
+- **I want to impersonate any user across any organization** so that I can provide customer support and resolve issues
+- **I want to track impersonation chains with full audit trails** so that I have complete accountability for all actions
+- **I want to force-revoke user sessions** so that I can respond to security incidents immediately
+- **I want to monitor webhook deliveries and retry failures** so that I can ensure event notifications are reliable
+- **I want to configure rate limits per environment** so that I can prevent abuse while allowing testing flexibility
+
 ### As a DevOps Engineer
 
 - **I want cloud-agnostic service adapters** so that I can deploy to GCP, AWS, or on-premises without code changes
 - **I want environment-specific configuration** so that I can tune rate limits and TTLs per deployment stage
-- **I want structured logs to stdout** so that I can integrate with centralized logging platforms (Stackdriver, CloudWatch, Splunk)
+- **I want structured logs to stdout** so that I can integrate with centralized logging platforms (Cloud Logging, CloudWatch, Splunk)
 - **I want database migrations with rollback support** so that I can safely deploy schema changes
 - **I want graceful shutdown handlers** so that in-flight requests complete and buffers flush before termination
 
@@ -387,10 +404,6 @@ npm run format
 - **I want HMAC-signed webhook payloads** so that I can verify event authenticity
 - **I want rate limiting with exponential backoff** so that brute-force attacks are automatically mitigated
 
-### Aa a Business Owner or FinOps Lead
-
-- **I want to save money** by enabling local development and remaining host agnostic
-- **I want efficient cloud operations** by patching vulnerabilities that could run up my bill
 
 ---
 
