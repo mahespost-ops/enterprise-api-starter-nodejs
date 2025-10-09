@@ -26,6 +26,8 @@ import adminSessionRoutes from './admin-session.routes';
 import adminImpersonationRoutes from './admin-impersonation.routes';
 import adminEventRoutes from './admin-event.routes';
 import adminEventTypeRoutes from './admin-event-type.routes';
+import adminWebhookRoutes from './admin-webhook.routes';
+import adminEventTypeSubscriptionRoutes from './admin-event-type-subscription.routes';
 
 const router = Router();
 
@@ -54,9 +56,9 @@ router.use('/admin/sessions', adminSessionRoutes);
 router.use('/admin', adminImpersonationRoutes); // Handles /admin/users/:userId/impersonate, /admin/impersonation/*, /admin/impersonation-sessions
 router.use('/admin/events', adminEventRoutes);
 router.use('/admin/event-types', adminEventTypeRoutes);
+router.use('/admin/webhooks', adminWebhookRoutes);
+router.use('/admin/event-type-subscriptions', adminEventTypeSubscriptionRoutes);
 
 // Future routes will be added here:
-
-// router.use('/admin/webhooks', adminWebhookRoutes);
 
 export default router;

@@ -370,6 +370,8 @@ paths:
   /admin/webhooks:
     get:
       $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks/get'
+    post:
+      $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks/post'
   /admin/webhooks/{webhookId}:
     get:
       $ref: './paths/admin-webhooks.yaml#/~1admin~1webhooks~1{webhookId}/get'

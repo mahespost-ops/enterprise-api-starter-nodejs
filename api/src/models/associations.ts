@@ -21,6 +21,7 @@ import { UserImpersonationSession } from './UserImpersonationSession.model';
 import { EventType } from './EventType.model';
 import { Event } from './Event.model';
 import { Webhook } from './Webhook.model';
+import { EventTypeSubscription } from './EventTypeSubscription.model';
 import { WebhookDelivery } from './WebhookDelivery.model';
 
 /**
@@ -372,6 +373,28 @@ export function initializeAssociations(): void {
   WebhookDelivery.belongsTo(Event, {
     foreignKey: 'eventId',
     as: 'event',
+  });
+
+  // Webhook has many event type subscriptions
+  Webhook.hasMany(EventTypeSubscription, {
+    foreignKey: 'webhookId',
+    as: 'subscriptions',
+    onDelete: 'CASCADE',
+  });
+  EventTypeSubscription.belongsTo(Webhook, {
+    foreignKey: 'webhookId',
+    as: 'webhook',
+  });
+
+  // EventType has many subscriptions
+  EventType.hasMany(EventTypeSubscription, {
+    foreignKey: 'eventTypeId',
+    as: 'subscriptions',
+    onDelete: 'CASCADE',
+  });
+  EventTypeSubscription.belongsTo(EventType, {
+    foreignKey: 'eventTypeId',
+    as: 'eventType',
   });
 
   // ===========================

@@ -407,7 +407,7 @@ Webhook.init(
       allowNull: false,
       defaultValue: {
         maxAttempts: 5,
-        backoffMultiplier: 2,
+        backoffMultiplier: 2.0,
         maxBackoffSeconds: 3600,
       },
       field: 'retry_config',

@@ -33,6 +33,7 @@ export { UserImpersonationSession } from './UserImpersonationSession.model';
 export { EventType } from './EventType.model';
 export { Event } from './Event.model';
 export { Webhook } from './Webhook.model';
+export { EventTypeSubscription } from './EventTypeSubscription.model';
 export { WebhookDelivery } from './WebhookDelivery.model';
 
 // Type exports for convenience
@@ -60,6 +61,10 @@ export type {
 export type { EventTypeAttributes, EventTypeCreationAttributes } from './EventType.model';
 export type { EventAttributes, EventCreationAttributes } from './Event.model';
 export type { WebhookAttributes, WebhookCreationAttributes } from './Webhook.model';
+export type {
+  EventTypeSubscriptionAttributes,
+  EventTypeSubscriptionCreationAttributes,
+} from './EventTypeSubscription.model';
 export type { WebhookDeliveryAttributes, WebhookDeliveryCreationAttributes } from './WebhookDelivery.model';
 
 /**

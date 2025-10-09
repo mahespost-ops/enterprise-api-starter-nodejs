@@ -259,20 +259,20 @@ export const TEST_UUIDS = {
   EVENT_TYPE_NONEXISTENT: '99999999-9999-9999-9999-99999999999e',
 
   // ============================================================================
-  // Webhooks (ending in W)
+  // Webhooks (ending in W for 'Webhook')
   // ============================================================================
 
   /** Primary test webhook */
-  WEBHOOK_1: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww1',
+  WEBHOOK_1: '0000000a-000a-000a-000a-0000000000a1',
 
   /** Secondary test webhook */
-  WEBHOOK_2: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww2',
+  WEBHOOK_2: '0000000a-000a-000a-000a-0000000000a2',
 
   /** Third test webhook */
-  WEBHOOK_3: 'wwwwwwww-wwww-wwww-wwww-wwwwwwwwwww3',
+  WEBHOOK_3: '0000000a-000a-000a-000a-0000000000a3',
 
   /** Non-existent webhook */
-  WEBHOOK_NONEXISTENT: '99999999-9999-9999-9999-99999999999w',
+  WEBHOOK_NONEXISTENT: '99999999-9999-9999-9999-9999999999a9',
 
   // ============================================================================
   // Environments (additional)

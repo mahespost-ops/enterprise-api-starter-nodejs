@@ -69,8 +69,9 @@ export const WEBHOOK_SORTABLE_FIELDS = [
 /**
  * Fields that are searchable (full-text) in webhook queries
  * Used for search query implementation
+ * Note: eventTypes is excluded as it's an array field that can't be searched with ILIKE
  */
-export const WEBHOOK_SEARCHABLE_FIELDS = ['url', 'name', 'eventTypes'] as const;
+export const WEBHOOK_SEARCHABLE_FIELDS = ['url', 'name'] as const;
 
 /**
  * All selectable fields for field selection optimization

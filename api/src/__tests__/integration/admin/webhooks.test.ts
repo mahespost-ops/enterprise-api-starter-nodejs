@@ -19,6 +19,7 @@ import { Environment } from '../../../models/Environment.model';
 import { OrganizationMember } from '../../../models/OrganizationMember.model';
 import { Webhook } from '../../../models/Webhook.model';
 import { EventType } from '../../../models/EventType.model';
+import { EventTypeSubscription } from '../../../models/EventTypeSubscription.model';
 import { generateTestJWT, grantPermissions, clearAllPermissions } from '../../helpers/auth.helpers';
 import { TEST_UUIDS, createTestIdentifier } from '../../helpers/test-constants';
 
@@ -32,9 +33,6 @@ describe('Admin Webhooks Endpoints', () => {
   let adminToken: string;
   let regularUserToken: string;
   let testWebhook1: Webhook;
-  let testWebhook2: Webhook;
-  let testEventType1: EventType;
-  let testEventType2: EventType;
 
   beforeAll(async () => {
     app = await appPromise;
@@ -59,7 +57,7 @@ describe('Admin Webhooks Endpoints', () => {
       id: TEST_UUIDS.ENV_PROD,
       organizationId: testOrg.id,
       name: 'Production',
-      type: 'production',
+      type: 'live',
       isActive: true,
       isDefault: true,
     });
@@ -101,7 +99,7 @@ describe('Admin Webhooks Endpoints', () => {
     });
 
     // Create test event types
-    testEventType1 = await EventType.create({
+    await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_1,
       verb: 'user.login',
       httpMethod: 'POST',
@@ -110,7 +108,7 @@ describe('Admin Webhooks Endpoints', () => {
       isWebhookEvent: true,
     });
 
-    testEventType2 = await EventType.create({
+    await EventType.create({
       id: TEST_UUIDS.EVENT_TYPE_2,
       verb: 'device.revoked',
       httpMethod: 'DELETE',
@@ -143,7 +141,7 @@ describe('Admin Webhooks Endpoints', () => {
       lastFailureAt: null,
     });
 
-    testWebhook2 = await Webhook.create({
+    await Webhook.create({
       id: TEST_UUIDS.WEBHOOK_2,
       environmentId: testEnv.id,
       name: 'Staging Notifications',
@@ -163,26 +161,29 @@ describe('Admin Webhooks Endpoints', () => {
     });
 
     // Grant admin permissions
-    await grantPermissions(adminUser.id, ['admin:webhooks:read', 'admin:webhooks:manage', 'admin:event-types:read']);
+    await grantPermissions(adminUser.id, ['admin:webhooks:read', 'admin:webhooks:manage', 'admin:events:read']);
 
     // Generate tokens
     adminToken = generateTestJWT({
-      userId: adminUser.id,
-      organizationId: testOrg.id,
-      environmentId: testEnv.id,
-      permissions: ['admin:webhooks:read', 'admin:webhooks:manage', 'admin:event-types:read'],
+      sub: adminUser.id,
     });
 
     regularUserToken = generateTestJWT({
-      userId: regularUser.id,
-      organizationId: testOrg.id,
-      environmentId: testEnv.id,
-      permissions: [],
+      sub: regularUser.id,
     });
   });
 
   afterEach(async () => {
     await clearAllPermissions();
+
+    // Clean up test data (order matters for FK constraints)
+    await EventTypeSubscription.destroy({ where: {}, force: true });
+    await Webhook.destroy({ where: {}, force: true });
+    await EventType.destroy({ where: {}, force: true });
+    await OrganizationMember.destroy({ where: {}, force: true });
+    await Environment.destroy({ where: {}, force: true });
+    await Organization.destroy({ where: {}, force: true });
+    await User.destroy({ where: {}, force: true });
   });
 
   describe('GET /api/v1/admin/webhooks', () => {
@@ -291,18 +292,19 @@ describe('Admin Webhooks Endpoints', () => {
         .expect(200);
 
       expect(res.body.data.length).toBe(2);
-      expect(res.body.data[0].url).toBeLessThanOrEqual(res.body.data[1].url);
+      // Verify ascending alphabetical order using localeCompare
+      expect(res.body.data[0].url.localeCompare(res.body.data[1].url)).toBeLessThanOrEqual(0);
     });
 
     it('should search webhooks by url', async () => {
       const res = await request(app)
         .get('/api/v1/admin/webhooks')
         .set('Authorization', `Bearer ${adminToken}`)
-        .query({ search: 'example.com' })
+        .query({ search: 'api.example.com' })
         .expect(200);
 
       expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].url).toContain('example.com');
+      expect(res.body.data[0].url).toContain('api.example.com');
     });
 
     it('should return only selected fields when fields parameter is provided', async () => {
@@ -394,7 +396,7 @@ describe('Admin Webhooks Endpoints', () => {
 
       expect(res.body.isActive).toBe(true);
       expect(res.body.retryConfig).toMatchObject({
-        maxAttempts: 3,
+        maxAttempts: 5,
         backoffMultiplier: 2.0,
         maxBackoffSeconds: 3600,
       });
@@ -501,7 +503,7 @@ describe('Admin Webhooks Endpoints', () => {
 
     it('should return 404 when environment does not exist', async () => {
       const webhookWithInvalidEnv = {
-        environmentId: TEST_UUIDS.ENV_NONEXISTENT,
+        environmentId: TEST_UUIDS.NONEXISTENT,
         name: 'Test Webhook',
         url: 'https://test.example.com/webhook',
         eventTypes: ['user.login'],
@@ -757,7 +759,9 @@ describe('Admin Webhooks Endpoints', () => {
 
       expect(Array.isArray(res.body.data)).toBe(true);
       if (res.body.data.length > 0) {
-        expect(res.body.data.every((s: any) => s.eventTypeVerb === 'user.login')).toBe(true);
+        expect(
+          res.body.data.every((s: { eventTypeVerb: string }) => s.eventTypeVerb === 'user.login')
+        ).toBe(true);
       }
     });
 
@@ -770,7 +774,9 @@ describe('Admin Webhooks Endpoints', () => {
 
       expect(Array.isArray(res.body.data)).toBe(true);
       if (res.body.data.length > 0) {
-        expect(res.body.data.every((s: any) => s.webhookId === testWebhook1.id)).toBe(true);
+        expect(res.body.data.every((s: { webhookId: string }) => s.webhookId === testWebhook1.id)).toBe(
+          true
+        );
       }
     });
 
@@ -783,7 +789,7 @@ describe('Admin Webhooks Endpoints', () => {
 
       expect(Array.isArray(res.body.data)).toBe(true);
       if (res.body.data.length > 0) {
-        expect(res.body.data.every((s: any) => s.isActive === true)).toBe(true);
+        expect(res.body.data.every((s: { isActive: boolean }) => s.isActive === true)).toBe(true);
       }
     });
 
@@ -828,15 +834,12 @@ describe('Admin Webhooks Endpoints', () => {
       await request(app).get('/api/v1/admin/event-type-subscriptions').expect(401);
     });
 
-    it('should return 403 when user lacks admin:event-types:read permission', async () => {
-      // Grant only webhook permissions, not event-type permissions
+    it('should return 403 when user lacks admin:events:read permission', async () => {
+      // Grant only webhook permissions, not events:read permission
       await clearAllPermissions();
       await grantPermissions(adminUser.id, ['admin:webhooks:read']);
       const limitedToken = generateTestJWT({
-        userId: adminUser.id,
-        organizationId: testOrg.id,
-        environmentId: testEnv.id,
-        permissions: ['admin:webhooks:read'],
+        sub: adminUser.id,
       });
 
       await request(app)
