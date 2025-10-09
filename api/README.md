@@ -121,11 +121,6 @@ api/
 │   │   ├── helpers/         # Test utilities (auth, constants)
 │   │   ├── integration/     # API endpoint tests (31 files)
 │   │   └── unit/            # Middleware & utility tests
-│   ├── adapters/            # Cloud-agnostic service adapters
-│   │   ├── email/           # SendGrid, SMTP, Mock
-│   │   ├── queue/           # Pub/Sub, SQS, Kafka, Redis, Memory
-│   │   ├── secrets/         # GCP, AWS, Vault, Env, Memory
-│   │   └── storage/         # GCS, S3, Local
 │   ├── config/              # Configuration files
 │   ├── constants/           # Application constants
 │   ├── controllers/         # Request handlers
@@ -137,6 +132,10 @@ api/
 │   │   └── STANDARDS.md     # Routing best practices
 │   ├── services/            # Business logic
 │   │   └── STANDARDS.md     # Service layer best practices
+│   │   ├── email/           # SendGrid, SMTP, Mock
+│   │   ├── queue/           # Pub/Sub, SQS, Kafka, Redis, Memory
+│   │   ├── secrets/         # GCP, AWS, Vault, Env, Memory, File
+│   │   └── storage/         # GCS, S3, Local
 │   ├── types/               # TypeScript types
 │   ├── utils/               # Utility functions
 │   ├── app.ts               # Express app configuration
@@ -150,7 +149,8 @@ api/
 │   ├── JWT_TOKEN_STRUCTURE.md
 │   ├── AUTHENTICATION_DESIGN.md
 │   ├── ADAPTER_PATTERN.md
-│   └── progress-tracking/
+│   └── progress-tracking/   # Implementation status
+│   └── security-analysis/   # Periodic self audits
 ├── migrations/              # Sequelize database migrations
 ├── .env.example             # Environment variable template
 └── CONTRIBUTING.md          # Developer guide
