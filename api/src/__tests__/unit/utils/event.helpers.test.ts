@@ -6,7 +6,7 @@
 
 // Mock uuid before imports
 jest.mock('uuid', () => ({
-  v4: () => 'test-uuid-1234',
+  v4: (): string => 'test-uuid-1234',
 }));
 
 import {
@@ -207,6 +207,7 @@ describe('Event Helpers', () => {
           httpPath: '/api/v1/users/:userId',
           isWebhookEvent: true,
           description: 'User profile update',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         request: mockRequest,
         response: mockResponse,
@@ -222,6 +223,7 @@ describe('Event Helpers', () => {
       const systemEventData: EventData = {
         eventType: {
           verb: 'system.cleanup',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         request: mockRequest,
         response: mockResponse,
@@ -244,6 +246,7 @@ describe('Event Helpers', () => {
           httpPath: '/api/v1/users/:userId',
           isWebhookEvent: true,
           description: 'User update',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         request: mockRequest,
         response: mockResponse,
@@ -267,6 +270,7 @@ describe('Event Helpers', () => {
       const systemEventData: EventData = {
         eventType: {
           verb: 'system.cleanup',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         request: mockRequest,
         response: mockResponse,

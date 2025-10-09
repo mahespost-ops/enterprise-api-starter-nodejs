@@ -89,7 +89,7 @@ describe('auditLogger middleware', () => {
         if (header === 'user-agent') return 'Mozilla/5.0';
         if (header === 'set-cookie') return undefined;
         return undefined;
-      }) as any,
+      }) as unknown as Request['get'],
       user: {
         sub: 'user-123',
         orgId: 'org-456',
@@ -104,7 +104,7 @@ describe('auditLogger middleware', () => {
       id: 'req-abc-123',
       socket: {
         remoteAddress: '192.168.1.100',
-      } as any,
+      } as unknown as Request['socket'],
     };
 
     // Setup mock response with event emitter functionality
@@ -202,7 +202,7 @@ describe('auditLogger middleware', () => {
   });
 
   it('should handle impersonation context from JWT', () => {
-    (mockRequest as any).user = {
+    mockRequest.user = {
       ...mockRequest.user!,
       impersonation: {
         originalUserId: 'admin-123',
@@ -263,11 +263,14 @@ describe('auditLogger middleware', () => {
   });
 
   it('should handle requests without authentication', () => {
-    (mockRequest as any).user = undefined;
-    (mockRequest as any).id = undefined;
+    const unauthenticatedRequest = {
+      ...mockRequest,
+      user: undefined,
+      id: undefined,
+    };
 
     auditLogger(
-      mockRequest as Request,
+      unauthenticatedRequest as unknown as Request,
       mockResponse as Response,
       nextFunction
     );
@@ -311,11 +314,14 @@ describe('auditLogger middleware', () => {
   });
 
   it('should handle missing IP address', () => {
-    (mockRequest as any).ip = undefined;
-    (mockRequest as any).socket = {} as any;
+    const requestWithoutIp = {
+      ...mockRequest,
+      ip: undefined,
+      socket: {} as unknown as Request['socket'],
+    };
 
     auditLogger(
-      mockRequest as Request,
+      requestWithoutIp as Request,
       mockResponse as Response,
       nextFunction
     );

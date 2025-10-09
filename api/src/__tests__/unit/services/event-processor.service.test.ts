@@ -28,7 +28,7 @@ jest.mock('../../../services/adapter.factory', () => ({
 
 // Mock uuid for deterministic event IDs
 jest.mock('uuid', () => ({
-  v4: () => 'test-event-uuid-v1',
+  v4: (): string => 'test-event-uuid-v1',
 }));
 
 jest.mock('../../../config/logger', () => ({
@@ -63,6 +63,7 @@ describe('EventProcessorService', () => {
     httpPath: '/api/v1/users/:userId',
     isWebhookEvent: true,
     description: 'User profile update',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 
   const mockNonWebhookEventType = {
@@ -72,6 +73,7 @@ describe('EventProcessorService', () => {
     httpPath: '/api/v1/users',
     isWebhookEvent: false,
     description: 'List users',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 
   // Test data
@@ -230,7 +232,9 @@ describe('EventProcessorService', () => {
 
     it('should log warning when event received during shutdown', () => {
       // Arrange - Simulate shutdown on existing processor
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const originalShutdownState = (eventProcessorService as any).isShuttingDown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventProcessorService as any).isShuttingDown = true;
 
       // Act
@@ -246,6 +250,7 @@ describe('EventProcessorService', () => {
       expect(eventBatchWriterService.enqueue).not.toHaveBeenCalled();
 
       // Cleanup - Restore state
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventProcessorService as any).isShuttingDown = originalShutdownState;
     });
   });

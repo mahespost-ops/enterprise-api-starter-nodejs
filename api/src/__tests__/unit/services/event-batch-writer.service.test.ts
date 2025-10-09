@@ -97,10 +97,15 @@ describe('EventBatchWriterService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset service state by creating new instance
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (eventBatchWriterService as any).buffer = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (eventBatchWriterService as any).isShuttingDown = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((eventBatchWriterService as any).flushTimer) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       clearTimeout((eventBatchWriterService as any).flushTimer);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventBatchWriterService as any).flushTimer = null;
     }
   });
@@ -149,11 +154,13 @@ describe('EventBatchWriterService', () => {
       eventBatchWriterService.enqueue(mockEventData);
 
       // Assert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((eventBatchWriterService as any).flushTimer).not.toBeNull();
     });
 
     it('should write to WAL when shutting down', async () => {
       // Arrange
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventBatchWriterService as any).isShuttingDown = true;
 
       // Act
@@ -229,6 +236,7 @@ describe('EventBatchWriterService', () => {
       await eventBatchWriterService.flush();
 
       // Assert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((eventBatchWriterService as any).flushTimer).toBeNull();
     });
   });
@@ -307,8 +315,10 @@ describe('EventBatchWriterService', () => {
     it('should not write to WAL if disabled in config', async () => {
       // Arrange
       const originalEnableWAL = eventConfig.enableWAL;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventConfig as any).enableWAL = false;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventBatchWriterService as any).isShuttingDown = true;
 
       // Act
@@ -319,6 +329,7 @@ describe('EventBatchWriterService', () => {
       expect(fs.appendFile).not.toHaveBeenCalled();
 
       // Cleanup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (eventConfig as any).enableWAL = originalEnableWAL;
     });
   });

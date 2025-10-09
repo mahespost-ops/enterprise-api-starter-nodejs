@@ -47,7 +47,7 @@ class EventBatchWriterService {
 
   constructor() {
     this.walPath = path.resolve(eventConfig.walPath);
-    this.ensureDataDirectory();
+    void this.ensureDataDirectory();
   }
 
   /**
