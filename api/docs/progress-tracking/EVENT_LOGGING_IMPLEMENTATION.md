@@ -3,7 +3,7 @@
 **Date Started:** 2025-10-08
 **Date Last Updated:** 2025-10-08
 **Status:** 🟡 IN PROGRESS
-**Progress:** 6/9 phases complete (67%)
+**Progress:** 7/9 phases complete (78%)
 
 ---
 
@@ -20,7 +20,6 @@
 - Phase 8: Helper Utilities (21/21 tests ✅)
 
 ### ⏳ PENDING:
-- Phase 4 tests: Event Processor unit tests (0/10)
 - Phase 5 tests: Audit Logger middleware unit tests (0/6)
 - Phase 9: Integration tests (0/10)
 
@@ -47,13 +46,13 @@ Implementing non-blocking event logging system with CloudEvents 1.0.2 webhook de
 | 2 | EventType Cache Service | ✅ DONE | 1/1 | 11/11 ✅ |
 | 8 | Helper Utilities | ✅ DONE | 2/2 | 21/21 ✅ |
 | 3 | Event Batch Writer | ✅ DONE | 2/2 | 16/16 ✅ |
-| 4 | Event Processor | ✅ DONE | 1/1 | 0/10 ⏳ |
+| 4 | Event Processor | ✅ DONE | 1/1 | 10/10 ✅ |
 | 5 | Audit Logger Middleware | ✅ DONE | 1/1 | 0/6 ⏳ |
 | 6 | App Integration | ✅ DONE | 2/2 | - |
 | 7 | Adapter Factory Updates | ✅ DONE | 0/0 | - |
 | 9 | Testing & Validation | ⏳ TODO | 0/0 | 0/10 |
 
-**Total:** 9/9 files created (100%), 2/2 files modified, 48/64 tests passing (75%)
+**Total:** 10/10 files created (100%), 4/4 files modified, 58/64 tests passing (91%)
 
 ---
 
@@ -176,8 +175,21 @@ HTTP Request
 **Status:** ✅ COMPLETE
 **Files Created:**
 - `src/services/event-processor.service.ts` ✅
+- `src/__tests__/unit/services/event-processor.service.test.ts` ✅
 
-**Tests:** 0/10 (TODO)
+**Tests:** 10/10 passing ✅
+
+**Test Coverage:**
+- ✅ Enqueue event to batch writer when emitted
+- ✅ Publish webhook events to message queue
+- ✅ Skip non-webhook events from message queue
+- ✅ Handle queue publish failures gracefully
+- ✅ Log warning when event received during shutdown
+- ✅ Flush batch writer on shutdown
+- ✅ Cleanup adapter factory on shutdown
+- ✅ Handle adapter cleanup errors gracefully
+- ✅ Remove all listeners on shutdown
+- ✅ Return processor and batch writer statistics
 
 **Completion Notes:**
 - EventEmitter pattern implemented with `setImmediate()` for non-blocking processing
@@ -185,7 +197,8 @@ HTTP Request
 - CloudEvents 1.0.2 formatting for webhook events
 - Graceful shutdown with event flush
 - Emergency buffer fallback for failed queue publishes
-- **Tests pending:** Unit tests for processor logic
+- Full test coverage with proper mocking
+- UUID v4 used for consistency with existing codebase
 
 ---
 
@@ -297,37 +310,23 @@ HTTP Request
 
 ## Additional Files
 
-### Files to Update
+### Configuration Files ✅
 
-#### .gitignore
-Add WAL file to ignore:
-```
-# Event Logging WAL
-data/event-wal.jsonl
-```
+#### .gitignore ✅
+**Status:** ✅ COMPLETE
+- Added `data/event-wal.jsonl` to .gitignore
+- WAL files will not be committed to source control
 
-**Checklist:**
-- [ ] Add data/event-wal.jsonl to .gitignore
-- [ ] Ensure data/ directory exists
-
----
-
-#### .env.example
-Add event logging environment variables:
-```bash
-# Event Logging Configuration
-EVENT_BATCH_SIZE=100
-EVENT_FLUSH_INTERVAL_MS=50
-EVENT_ENABLE_WAL=true
-EVENT_WAL_PATH=./data/event-wal.jsonl
-EVENT_MAX_BUFFER_SIZE=10485760
-ENABLE_EVENT_CAPTURE=true
-```
-
-**Checklist:**
-- [ ] Add event logging variables
-- [ ] Document defaults
-- [ ] Update README if needed
+#### .env.example ✅
+**Status:** ✅ COMPLETE
+- Added event logging environment variables with defaults
+- Variables documented:
+  - `EVENT_BATCH_SIZE=100`
+  - `EVENT_FLUSH_INTERVAL_MS=50`
+  - `EVENT_ENABLE_WAL=true`
+  - `EVENT_WAL_PATH=./data/event-wal.jsonl`
+  - `EVENT_MAX_BUFFER_SIZE=10485760`
+  - `ENABLE_EVENT_CAPTURE=true`
 
 ---
 
@@ -444,6 +443,15 @@ ENABLE_EVENT_CAPTURE=true
 - Eliminates 1 DB query per request
 - Critical for <200ms SLO
 - Low memory footprint (~10KB for 100 event types)
+
+### Decision 6: UUID v4 for Consistency
+**Date:** 2025-10-08
+**Decision:** Use UUID v4 instead of v1 throughout event logging system
+**Rationale:**
+- Existing integration tests already mock `v4` for ESM compatibility
+- Avoids breaking 1000+ existing tests
+- Consistent with rest of codebase
+- No functional difference for event IDs (both are unique)
 
 ---
 

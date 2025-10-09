@@ -67,3 +67,6 @@ secrets/
 # Backup files
 *.bak
 *.backup
+
+# Event Logging WAL
+data/event-wal.jsonl
