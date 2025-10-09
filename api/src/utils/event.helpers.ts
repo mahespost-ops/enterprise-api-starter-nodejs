@@ -19,6 +19,130 @@ import {
 } from '../types/event.types';
 import { CLOUDEVENTS_SPEC_VERSION, CLOUDEVENTS_TYPE_PREFIX, CLOUDEVENTS_CONTENT_TYPE } from '../constants/cloudevents.constants';
 
+// Sensitive field patterns for redaction
+const SENSITIVE_HEADER_PATTERNS = [
+  /^authorization$/i,
+  /^cookie$/i,
+  /^set-cookie$/i,
+  /^x-api-key$/i,
+  /^api-key$/i,
+  /^apikey$/i,
+  /^x-auth-token$/i,
+  /^auth-token$/i,
+  /^proxy-authorization$/i,
+  /^www-authenticate$/i,
+];
+
+const SENSITIVE_BODY_PATTERNS = [
+  /password/i,
+  /passwd/i,
+  /pwd/i,
+  /secret/i,
+  /token/i,
+  /apikey/i,
+  /api[-_]?key/i,
+  /private[-_]?key/i,
+  /access[-_]?key/i,
+  /secret[-_]?key/i,
+  /client[-_]?secret/i,
+  /bearer/i,
+  /credentials?/i,
+  /auth/i,
+  /ssn/i,
+  /social[-_]?security/i,
+  /credit[-_]?card/i,
+  /card[-_]?number/i,
+  /cvv/i,
+  /cvc/i,
+  /pin/i,
+  /fingerprint/i,
+  /hash/i,
+];
+
+const REDACTED = '[REDACTED]';
+
+/**
+ * Redact sensitive data from headers
+ * Replaces authorization tokens, API keys, cookies, etc.
+ */
+export function redactHeaders(headers: Record<string, string | string[] | undefined>): Record<string, string | string[] | undefined> {
+  const redacted: Record<string, string | string[] | undefined> = {};
+
+  for (const [key, value] of Object.entries(headers)) {
+    // Check if header matches sensitive pattern
+    const isSensitive = SENSITIVE_HEADER_PATTERNS.some(pattern => pattern.test(key));
+
+    if (isSensitive && value !== undefined) {
+      redacted[key] = REDACTED;
+    } else {
+      redacted[key] = value;
+    }
+  }
+
+  return redacted;
+}
+
+/**
+ * Redact sensitive data from request/response body
+ * Recursively redacts passwords, tokens, secrets, etc.
+ */
+export function redactBody(body: unknown): unknown {
+  // Handle null/undefined
+  if (body === null || body === undefined) {
+    return body;
+  }
+
+  // Handle primitives (string, number, boolean)
+  if (typeof body !== 'object') {
+    return body;
+  }
+
+  // Handle arrays
+  if (Array.isArray(body)) {
+    return body.map(item => redactBody(item));
+  }
+
+  // Handle objects
+  const redacted: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(body)) {
+    // Check if key matches sensitive pattern
+    const isSensitive = SENSITIVE_BODY_PATTERNS.some(pattern => pattern.test(key));
+
+    if (isSensitive) {
+      redacted[key] = REDACTED;
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively redact nested objects
+      redacted[key] = redactBody(value);
+    } else {
+      redacted[key] = value;
+    }
+  }
+
+  return redacted;
+}
+
+/**
+ * Redact sensitive data from query parameters
+ * Similar to body redaction but for URL query strings
+ */
+export function redactQuery(query: Record<string, unknown>): Record<string, unknown> {
+  return redactBody(query) as Record<string, unknown>;
+}
+
+/**
+ * Redact sensitive data from request snapshot
+ * Applies redaction to headers, body, and query parameters
+ */
+export function redactRequestSnapshot(snapshot: RequestSnapshot): RequestSnapshot {
+  return {
+    ...snapshot,
+    headers: redactHeaders(snapshot.headers),
+    body: redactBody(snapshot.body),
+    query: redactQuery(snapshot.query),
+  };
+}
+
 /**
  * Build actor JSONB field for Event model
  * Includes impersonation context if present
@@ -69,6 +193,7 @@ export function buildCloudEventActor(context: EventContext): CloudEventActor {
 /**
  * Build object JSONB field (primary resource being acted upon)
  * Extracts resource information from request body and params
+ * Redacts sensitive fields from body data
  */
 export function buildObject(request: RequestSnapshot): Record<string, unknown> {
   const body = (request.body as Record<string, unknown>) || {};
@@ -80,25 +205,32 @@ export function buildObject(request: RequestSnapshot): Record<string, unknown> {
   // Try to extract ID from params (common patterns)
   const resourceId = extractResourceId(params);
 
+  // Redact sensitive fields from body
+  const redactedBody = redactBody(body) as Record<string, unknown>;
+
   return {
     type: resourceType,
     id: resourceId,
-    ...body,
+    ...redactedBody,
   };
 }
 
 /**
  * Build CloudEvents object field
+ * Redacts sensitive fields from body data
  */
 export function buildCloudEventObject(request: RequestSnapshot): CloudEventObject {
   const body = (request.body as Record<string, unknown>) || {};
   const params = request.params || {};
   const resourceId = extractResourceId(params);
 
+  // Redact sensitive fields from body
+  const redactedBody = redactBody(body) as Record<string, unknown>;
+
   return {
     type: inferResourceType(request.path),
     ...(resourceId ? { id: resourceId } : {}),
-    ...body,
+    ...redactedBody,
   };
 }
 

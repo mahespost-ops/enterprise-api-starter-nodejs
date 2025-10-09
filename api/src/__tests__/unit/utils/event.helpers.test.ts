@@ -18,6 +18,10 @@ import {
   toCloudEvent,
   inferResourceType,
   extractResourceId,
+  redactHeaders,
+  redactBody,
+  redactQuery,
+  redactRequestSnapshot,
 } from '../../../utils/event.helpers';
 import { EventData, EventContext, RequestSnapshot, ResponseSnapshot } from '../../../types/event.types';
 
@@ -326,6 +330,296 @@ describe('Event Helpers', () => {
 
       // Should return 'id' first as it's the most generic
       expect(extractResourceId(params)).toBe('generic-333');
+    });
+  });
+
+  describe('redactHeaders()', () => {
+    it('should redact authorization header', () => {
+      const headers = {
+        'authorization': 'Bearer secret-token-12345',
+        'content-type': 'application/json',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted['authorization']).toBe('[REDACTED]');
+      expect(redacted['content-type']).toBe('application/json');
+    });
+
+    it('should redact authorization header (case-insensitive)', () => {
+      const headers = {
+        'Authorization': 'Bearer secret-token-12345',
+        'AUTHORIZATION': 'Bearer another-token',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted['Authorization']).toBe('[REDACTED]');
+      expect(redacted['AUTHORIZATION']).toBe('[REDACTED]');
+    });
+
+    it('should redact cookie headers', () => {
+      const headers = {
+        'cookie': 'sessionId=abc123; token=xyz789',
+        'set-cookie': 'sessionId=abc123; Path=/; HttpOnly',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted['cookie']).toBe('[REDACTED]');
+      expect(redacted['set-cookie']).toBe('[REDACTED]');
+    });
+
+    it('should redact API key headers', () => {
+      const headers = {
+        'x-api-key': 'secret-api-key-12345',
+        'api-key': 'another-secret-key',
+        'apikey': 'yet-another-key',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted['x-api-key']).toBe('[REDACTED]');
+      expect(redacted['api-key']).toBe('[REDACTED]');
+      expect(redacted['apikey']).toBe('[REDACTED]');
+    });
+
+    it('should preserve non-sensitive headers', () => {
+      const headers = {
+        'content-type': 'application/json',
+        'user-agent': 'Mozilla/5.0',
+        'accept': 'application/json',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted).toEqual(headers);
+    });
+
+    it('should handle array header values', () => {
+      const headers: Record<string, string | string[] | undefined> = {
+        'authorization': ['Bearer token1', 'Bearer token2'],
+        'content-type': 'application/json',
+      };
+
+      const redacted = redactHeaders(headers);
+
+      expect(redacted['authorization']).toBe('[REDACTED]');
+      expect(redacted['content-type']).toBe('application/json');
+    });
+  });
+
+  describe('redactBody()', () => {
+    it('should redact password field', () => {
+      const body = {
+        email: 'user@example.com',
+        password: 'super-secret-password',
+        fullName: 'John Doe',
+      };
+
+      const redacted = redactBody(body);
+
+      expect(redacted).toEqual({
+        email: 'user@example.com',
+        password: '[REDACTED]',
+        fullName: 'John Doe',
+      });
+    });
+
+    it('should redact multiple sensitive fields', () => {
+      const body = {
+        username: 'john',
+        password: 'secret123',
+        apiKey: 'key-12345',
+        token: 'jwt-token',
+        secret: 'my-secret',
+      };
+
+      const redacted = redactBody(body);
+
+      expect(redacted).toEqual({
+        username: 'john',
+        password: '[REDACTED]',
+        apiKey: '[REDACTED]',
+        token: '[REDACTED]',
+        secret: '[REDACTED]',
+      });
+    });
+
+    it('should handle nested objects', () => {
+      const body = {
+        user: {
+          email: 'user@example.com',
+          password: 'secret',
+          profile: {
+            name: 'John',
+            apiKey: 'nested-key',
+          },
+        },
+        token: 'jwt-token',
+      };
+
+      const redacted = redactBody(body);
+
+      expect(redacted).toEqual({
+        user: {
+          email: 'user@example.com',
+          password: '[REDACTED]',
+          profile: {
+            name: 'John',
+            apiKey: '[REDACTED]',
+          },
+        },
+        token: '[REDACTED]',
+      });
+    });
+
+    it('should handle arrays', () => {
+      const body = {
+        users: [
+          { email: 'user1@example.com', password: 'secret1' },
+          { email: 'user2@example.com', password: 'secret2' },
+        ],
+      };
+
+      const redacted = redactBody(body);
+
+      expect(redacted).toEqual({
+        users: [
+          { email: 'user1@example.com', password: '[REDACTED]' },
+          { email: 'user2@example.com', password: '[REDACTED]' },
+        ],
+      });
+    });
+
+    it('should handle null and undefined', () => {
+      expect(redactBody(null)).toBeNull();
+      expect(redactBody(undefined)).toBeUndefined();
+    });
+
+    it('should handle primitives', () => {
+      expect(redactBody('string')).toBe('string');
+      expect(redactBody(123)).toBe(123);
+      expect(redactBody(true)).toBe(true);
+    });
+
+    it('should redact sensitive field name variations', () => {
+      const body = {
+        user_password: 'secret1',
+        apiKey: 'secret2',
+        api_key: 'secret3',
+        privateKey: 'secret4',
+        private_key: 'secret5',
+        accessKey: 'secret6',
+        clientSecret: 'secret7',
+        bearerToken: 'secret8',
+        credentials: 'secret9',
+        authToken: 'secret10',
+      };
+
+      const redacted = redactBody(body) as Record<string, string>;
+
+      expect(redacted.user_password).toBe('[REDACTED]');
+      expect(redacted.apiKey).toBe('[REDACTED]');
+      expect(redacted.api_key).toBe('[REDACTED]');
+      expect(redacted.privateKey).toBe('[REDACTED]');
+      expect(redacted.private_key).toBe('[REDACTED]');
+      expect(redacted.accessKey).toBe('[REDACTED]');
+      expect(redacted.clientSecret).toBe('[REDACTED]');
+      expect(redacted.bearerToken).toBe('[REDACTED]');
+      expect(redacted.credentials).toBe('[REDACTED]');
+      expect(redacted.authToken).toBe('[REDACTED]');
+    });
+
+    it('should redact security-sensitive fields', () => {
+      const body = {
+        fingerprint: 'device-fingerprint-hash',
+        hash: 'password-hash',
+        ssn: '123-45-6789',
+        creditCard: '4111-1111-1111-1111',
+        cvv: '123',
+      };
+
+      const redacted = redactBody(body) as Record<string, string>;
+
+      expect(redacted.fingerprint).toBe('[REDACTED]');
+      expect(redacted.hash).toBe('[REDACTED]');
+      expect(redacted.ssn).toBe('[REDACTED]');
+      expect(redacted.creditCard).toBe('[REDACTED]');
+      expect(redacted.cvv).toBe('[REDACTED]');
+    });
+  });
+
+  describe('redactQuery()', () => {
+    it('should redact sensitive query parameters', () => {
+      const query = {
+        search: 'user@example.com',
+        token: 'secret-token',
+        apiKey: 'secret-key',
+      };
+
+      const redacted = redactQuery(query);
+
+      expect(redacted).toEqual({
+        search: 'user@example.com',
+        token: '[REDACTED]',
+        apiKey: '[REDACTED]',
+      });
+    });
+  });
+
+  describe('redactRequestSnapshot()', () => {
+    it('should redact all sensitive data from request snapshot', () => {
+      const snapshot: RequestSnapshot = {
+        method: 'POST',
+        path: '/api/v1/auth/register',
+        headers: {
+          'authorization': 'Bearer secret-token',
+          'content-type': 'application/json',
+        },
+        body: {
+          email: 'user@example.com',
+          password: 'super-secret',
+        },
+        query: {
+          token: 'query-token',
+          search: 'test',
+        },
+        params: { orgId: 'org-123' },
+        ip: '192.168.1.100',
+        userAgent: 'Mozilla/5.0',
+      };
+
+      const redacted = redactRequestSnapshot(snapshot);
+
+      expect(redacted.headers['authorization']).toBe('[REDACTED]');
+      expect(redacted.headers['content-type']).toBe('application/json');
+      expect((redacted.body as Record<string, unknown>).email).toBe('user@example.com');
+      expect((redacted.body as Record<string, unknown>).password).toBe('[REDACTED]');
+      expect(redacted.query.token).toBe('[REDACTED]');
+      expect(redacted.query.search).toBe('test');
+      expect(redacted.params).toEqual({ orgId: 'org-123' });
+      expect(redacted.ip).toBe('192.168.1.100');
+      expect(redacted.userAgent).toBe('Mozilla/5.0');
+    });
+
+    it('should preserve original request snapshot structure', () => {
+      const snapshot: RequestSnapshot = {
+        method: 'GET',
+        path: '/api/v1/users',
+        headers: {},
+        body: null,
+        query: {},
+        params: {},
+        ip: '127.0.0.1',
+        userAgent: 'Test Agent',
+      };
+
+      const redacted = redactRequestSnapshot(snapshot);
+
+      expect(redacted.method).toBe('GET');
+      expect(redacted.path).toBe('/api/v1/users');
+      expect(redacted.body).toBeNull();
     });
   });
 });

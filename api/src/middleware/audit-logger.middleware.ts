@@ -19,6 +19,7 @@ import { eventTypeCacheService } from '../services/event-type-cache.service';
 import { eventProcessorService } from '../services/event-processor.service';
 import logger from '../config/logger';
 import type { EventData, RequestSnapshot, ResponseSnapshot, EventContext } from '../types/event.types';
+import { redactRequestSnapshot } from '../utils/event.helpers';
 
 /**
  * Audit logger middleware
@@ -42,6 +43,9 @@ export const auditLogger = (
     ip: req.ip || req.socket.remoteAddress || 'unknown',
     userAgent: req.get('user-agent') || 'unknown',
   };
+
+  // Redact sensitive data (authorization tokens, passwords, etc.)
+  const redactedSnapshot = redactRequestSnapshot(requestSnapshot);
 
   // Register listener for when response finishes (after client receives response)
   res.on('finish', () => {
@@ -81,10 +85,10 @@ export const auditLogger = (
         requestId: req.id || 'unknown',
       };
 
-      // Build event data
+      // Build event data (use redacted snapshot for security)
       const eventData: EventData = {
         eventType,
-        request: requestSnapshot,
+        request: redactedSnapshot,
         response: responseSnapshot,
         context,
       };

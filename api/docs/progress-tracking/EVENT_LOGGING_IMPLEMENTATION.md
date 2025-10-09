@@ -13,11 +13,11 @@
 - Phase 1: Configuration & Constants
 - Phase 2: EventType Cache Service (11/11 tests ✅)
 - Phase 3: Event Batch Writer (16/16 tests ✅)
-- Phase 4: Event Processor (implementation ✅, tests pending)
+- Phase 4: Event Processor (10/10 tests ✅)
 - Phase 5: Audit Logger Middleware (implementation ✅, tests pending)
 - Phase 6: App Integration (✅ Server running, EventTypeCache initialized with 115 types)
 - Phase 7: Adapter Factory Updates (✅ Verified)
-- Phase 8: Helper Utilities (21/21 tests ✅)
+- Phase 8: Helper Utilities (38/38 tests ✅) - **includes 17 redaction tests for security**
 
 ### ⏳ PENDING:
 - Phase 5 tests: Audit Logger middleware unit tests (0/6)
@@ -44,7 +44,7 @@ Implementing non-blocking event logging system with CloudEvents 1.0.2 webhook de
 |-------|-----------|--------|-------|-------|
 | 1 | Configuration & Constants | ✅ DONE | 2/2 | - |
 | 2 | EventType Cache Service | ✅ DONE | 1/1 | 11/11 ✅ |
-| 8 | Helper Utilities | ✅ DONE | 2/2 | 21/21 ✅ |
+| 8 | Helper Utilities + Redaction | ✅ DONE | 2/2 | 38/38 ✅ |
 | 3 | Event Batch Writer | ✅ DONE | 2/2 | 16/16 ✅ |
 | 4 | Event Processor | ✅ DONE | 1/1 | 10/10 ✅ |
 | 5 | Audit Logger Middleware | ✅ DONE | 1/1 | 0/6 ⏳ |
@@ -52,7 +52,7 @@ Implementing non-blocking event logging system with CloudEvents 1.0.2 webhook de
 | 7 | Adapter Factory Updates | ✅ DONE | 0/0 | - |
 | 9 | Testing & Validation | ⏳ TODO | 0/0 | 0/10 |
 
-**Total:** 10/10 files created (100%), 4/4 files modified, 58/64 tests passing (91%)
+**Total:** 10/10 files created (100%), 4/4 files modified, 75/81 tests passing (93%)
 
 ---
 
@@ -131,7 +131,7 @@ HTTP Request
 
 ---
 
-### Phase 8: Helper Utilities ✅
+### Phase 8: Helper Utilities + Security Redaction ✅
 
 **Status:** ✅ COMPLETE
 **Files Created:**
@@ -139,14 +139,17 @@ HTTP Request
 - `src/constants/cloudevents.constants.ts` ✅
 - `src/__tests__/unit/utils/event.helpers.test.ts` ✅
 
-**Tests:** 21/21 passing ✅
+**Files Modified:**
+- `src/middleware/audit-logger.middleware.ts` ✅ (integrated redaction)
 
-**Test Coverage:**
+**Tests:** 38/38 passing ✅
+
+**Test Coverage - JSONB Builders:**
 - ✅ buildActor() for User and System
 - ✅ buildActor() with impersonation context
 - ✅ buildActor() handles missing user details
 - ✅ buildCloudEventActor() for User and System
-- ✅ buildObject() extracts resource from request
+- ✅ buildObject() extracts resource from request (with redaction)
 - ✅ buildObject() handles empty body
 - ✅ buildAudit() formats HTTP metadata
 - ✅ buildDescription() generates human-readable text
@@ -161,11 +164,34 @@ HTTP Request
 - ✅ extractResourceId() returns null if not found
 - ✅ extractResourceId() prioritizes specific ID fields
 
+**Test Coverage - Security Redaction (17 tests):**
+- ✅ redactHeaders() removes authorization tokens
+- ✅ redactHeaders() case-insensitive matching
+- ✅ redactHeaders() removes cookies and API keys
+- ✅ redactHeaders() preserves non-sensitive headers
+- ✅ redactHeaders() handles array header values
+- ✅ redactBody() redacts password fields
+- ✅ redactBody() redacts multiple sensitive fields (tokens, secrets, keys)
+- ✅ redactBody() handles nested objects recursively
+- ✅ redactBody() handles arrays
+- ✅ redactBody() handles null/undefined/primitives
+- ✅ redactBody() redacts field name variations (snake_case, camelCase)
+- ✅ redactBody() redacts security-sensitive fields (fingerprint, hash, ssn, credit cards)
+- ✅ redactQuery() redacts sensitive query parameters
+- ✅ redactRequestSnapshot() comprehensive redaction
+- ✅ redactRequestSnapshot() preserves structure
+
 **Completion Notes:**
 - All JSONB builder functions implemented following DRY principle
 - CloudEvents 1.0.2 spec compliance verified
 - Smart resource type inference from URL paths
 - Flexible ID extraction supporting multiple naming patterns
+- **SECURITY: Comprehensive redaction of sensitive data**
+  - Headers: Authorization, cookies, API keys
+  - Body: Passwords, tokens, secrets, hashes, fingerprints, PII (SSN, credit cards)
+  - Query: Sensitive parameters
+  - Recursive redaction for nested objects and arrays
+- Integrated into audit logger middleware for automatic protection
 - Full test coverage with edge cases
 
 ---
