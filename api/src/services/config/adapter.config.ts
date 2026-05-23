@@ -4,7 +4,7 @@
  * Defines configuration types and provider selection for all adapters.
  */
 
-export type EmailProvider = 'sendgrid' | 'ses' | 'mock';
+export type EmailProvider = 'sendgrid' | 'ses' | 'smtp' | 'mock';
 export type SecretsProvider = 'gcp' | 'aws' | 'env' | 'file' | 'memory' | 'vault';
 export type StorageProvider = 'gcs' | 's3' | 'local';
 export type MessageQueueProvider = 'pubsub' | 'sqs' | 'redis' | 'kafka' | 'memory';
@@ -23,6 +23,7 @@ export interface IEmailAdapterConfig {
   defaultFrom?: string;
   sendgrid?: ISendGridConfig;
   ses?: ISESConfig;
+  smtp?: ISMTPConfig;
 }
 
 export interface ISendGridConfig {
@@ -35,6 +36,17 @@ export interface ISESConfig {
   accessKeyId?: string;
   secretAccessKey?: string;
   configurationSet?: string;
+}
+
+export interface ISMTPConfig {
+  host: string;
+  port: number;
+  secure?: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+  defaultFrom?: string;
 }
 
 // Secrets Adapter Configuration
@@ -163,7 +175,7 @@ export function loadAdapterConfig(): IAdapterConfig {
   return {
     email: {
       provider: (process.env.EMAIL_PROVIDER as EmailProvider) || 'mock',
-      defaultFrom: process.env.EMAIL_DEFAULT_FROM,
+      defaultFrom: process.env.EMAIL_DEFAULT_FROM || process.env.EMAIL_FROM,
       sendgrid: process.env.SENDGRID_API_KEY
         ? {
             apiKey: process.env.SENDGRID_API_KEY,
@@ -176,6 +188,18 @@ export function loadAdapterConfig(): IAdapterConfig {
             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
             configurationSet: process.env.SES_CONFIGURATION_SET,
+          }
+        : undefined,
+      smtp: process.env.SMTP_HOST
+        ? {
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || '587', 10),
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+              user: process.env.SMTP_USER || '',
+              pass: process.env.SMTP_PASS || '',
+            },
+            defaultFrom: process.env.EMAIL_FROM,
           }
         : undefined,
     },

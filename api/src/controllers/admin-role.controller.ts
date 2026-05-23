@@ -141,8 +141,8 @@ export const createRole = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:roles:read)
  */
 export const getRole = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId } = req.params;
-
+  const roleId = req.params.roleId as string;
+  
   logger.debug('Admin: Getting role', { roleId });
 
   const role = await adminRoleService.getRoleById(roleId);
@@ -156,7 +156,7 @@ export const getRole = asyncHandler(async (req: Request, res: Response): Promise
  * @access  Private (admin:roles:manage)
  */
 export const updateRole = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId } = req.params;
+  const roleId = req.params.roleId as string;
 
   logger.debug('Admin: Updating role', { roleId, body: req.body });
 
@@ -174,7 +174,7 @@ export const updateRole = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:roles:manage)
  */
 export const deleteRole = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId } = req.params;
+  const roleId = req.params.roleId as string;
 
   logger.debug('Admin: Deleting role', { roleId });
 
@@ -189,7 +189,7 @@ export const deleteRole = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:roles:read)
  */
 export const listRolePermissions = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId } = req.params;
+  const roleId = req.params.roleId as string;
 
   logger.debug('Admin: Listing role permissions', { roleId });
 
@@ -204,7 +204,7 @@ export const listRolePermissions = asyncHandler(async (req: Request, res: Respon
  * @access  Private (admin:roles:manage)
  */
 export const addRolePermission = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId } = req.params;
+  const roleId = req.params.roleId as string;
   const { permissionId } = req.body;
 
   logger.debug('Admin: Adding permission to role', { roleId, permissionId });
@@ -220,7 +220,9 @@ export const addRolePermission = asyncHandler(async (req: Request, res: Response
  * @access  Private (admin:roles:manage)
  */
 export const removeRolePermission = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { roleId, permissionId } = req.params;
+  const roleId = req.params.roleId as string;
+  const permissionId = req.params.permissionId as string;
+  
 
   logger.debug('Admin: Removing permission from role', { roleId, permissionId });
 

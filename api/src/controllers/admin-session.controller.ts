@@ -189,7 +189,7 @@ export const listSessions = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (admin:sessions:read)
  */
 export const getSessionById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { sessionId } = req.params;
+  const sessionId = req.params.sessionId as string;
 
   logger.debug(`Admin: Getting session: ${sessionId}`);
 
@@ -204,7 +204,7 @@ export const getSessionById = asyncHandler(async (req: Request, res: Response): 
  * @access  Private (admin:sessions:manage)
  */
 export const revokeSession = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { sessionId } = req.params;
+  const sessionId = req.params.sessionId as string;
 
   logger.debug(`Admin: Revoking session: ${sessionId}`);
 
@@ -219,7 +219,7 @@ export const revokeSession = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (admin:sessions:manage)
  */
 export const revokeAllUserSessions = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+  const userId = req.params.userId as string;
 
   logger.debug(`Admin: Revoking all sessions for user: ${userId}`);
 

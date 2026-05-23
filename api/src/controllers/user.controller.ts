@@ -149,7 +149,7 @@ export const getCurrentUserDevices = asyncHandler(async (req: Request, res: Resp
  */
 export const updateCurrentUserDevice = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.sub;
-  const { deviceId } = req.params;
+  const deviceId = req.params.deviceId as string;
 
   logger.debug(`Updating device: ${deviceId} for user: ${userId}`);
 
@@ -176,7 +176,7 @@ export const updateCurrentUserDevice = asyncHandler(async (req: Request, res: Re
  */
 export const revokeCurrentUserDevice = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.sub;
-  const { deviceId } = req.params;
+  const deviceId = req.params.deviceId as string;
 
   logger.debug(`Revoking device: ${deviceId} for user: ${userId}`);
 
@@ -233,7 +233,7 @@ export const getCurrentUserSessions = asyncHandler(async (req: Request, res: Res
  */
 export const revokeCurrentUserSession = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.sub;
-  const { sessionId } = req.params;
+  const sessionId = req.params.sessionId as string;
 
   logger.debug(`Revoking session: ${sessionId} for user: ${userId}`);
 

@@ -148,7 +148,7 @@ function transformGroupMemberResponse(member: {
  * @access  Private (admin:members:read)
  */
 export const listOrganizationMembers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
 
   logger.debug('Admin: Listing organization members', { orgId, query: req.query });
 
@@ -185,7 +185,8 @@ export const listOrganizationMembers = asyncHandler(async (req: Request, res: Re
  * @access  Private (admin:members:read)
  */
 export const getOrganizationMemberById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Admin: Getting organization member: ${memberId}`);
 
@@ -200,7 +201,8 @@ export const getOrganizationMemberById = asyncHandler(async (req: Request, res: 
  * @access  Private (admin:members:manage)
  */
 export const updateOrganizationMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Admin: Updating organization member: ${memberId}`, { body: req.body });
 
@@ -215,7 +217,8 @@ export const updateOrganizationMember = asyncHandler(async (req: Request, res: R
  * @access  Private (admin:members:manage)
  */
 export const deleteOrganizationMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Admin: Deleting organization member: ${memberId}`);
 
@@ -232,7 +235,8 @@ export const deleteOrganizationMember = asyncHandler(async (req: Request, res: R
  * @access  Private (admin:groups:read)
  */
 export const listGroupMembers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId } = req.params;
+  const groupId = req.params.groupId as string;
+  
 
   logger.debug('Admin: Listing group members', { groupId, query: req.query });
 
@@ -258,8 +262,8 @@ export const listGroupMembers = asyncHandler(async (req: Request, res: Response)
  * @access  Private (admin:groups:manage)
  */
 export const addGroupMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId } = req.params;
-  const { userId } = req.body;
+  const groupId = req.params.groupId as string;
+  const userId = req.params.userId as string;
 
   logger.debug('Admin: Adding member to group', { groupId, userId });
 
@@ -274,7 +278,8 @@ export const addGroupMember = asyncHandler(async (req: Request, res: Response): 
  * @access  Private (admin:groups:manage)
  */
 export const removeGroupMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId, userId } = req.params;
+  const groupId = req.params.groupId as string;
+  const userId = req.params.userId as string;
 
   logger.debug('Admin: Removing member from group', { groupId, userId });
 

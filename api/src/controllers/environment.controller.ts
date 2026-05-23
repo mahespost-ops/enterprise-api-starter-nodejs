@@ -16,7 +16,7 @@ import { EnvironmentType } from '../models/Environment.model';
  * @access  Private (member access)
  */
 export const listEnvironments = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const userId = req.user!.sub;
   const { limit, offset, search, fields } = req.query;
 
@@ -62,7 +62,7 @@ export const listEnvironments = asyncHandler(async (req: Request, res: Response)
  * @access  Private (requires environments:manage permission)
  */
 export const createEnvironment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Creating environment for organization: ${orgId}`);
@@ -90,7 +90,8 @@ export const createEnvironment = asyncHandler(async (req: Request, res: Response
  * @access  Private (member access)
  */
 export const getEnvironment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Getting environment: ${envId}`);
@@ -118,7 +119,9 @@ export const getEnvironment = asyncHandler(async (req: Request, res: Response): 
  * @access  Private (requires environments:manage permission)
  */
 export const updateEnvironment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Updating environment: ${envId}`);
@@ -146,7 +149,8 @@ export const updateEnvironment = asyncHandler(async (req: Request, res: Response
  * @access  Private (requires environments:manage permission)
  */
 export const deleteEnvironment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Deleting environment: ${envId}`);

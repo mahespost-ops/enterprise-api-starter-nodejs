@@ -154,7 +154,7 @@ export const listUsers = asyncHandler(async (req: Request, res: Response): Promi
  * @access  Private (admin:users:read)
  */
 export const getUserById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+  const userId = req.params.userId as string;
 
   logger.debug(`Admin: Getting user: ${userId}`);
 
@@ -169,7 +169,7 @@ export const getUserById = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (admin:users:manage)
  */
 export const updateUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+  const userId = req.params.userId as string;
 
   logger.debug(`Admin: Updating user: ${userId}`, { body: req.body });
 
@@ -184,7 +184,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:users:manage)
  */
 export const deleteUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+  const userId = req.params.userId as string;
 
   logger.debug(`Admin: Deleting user: ${userId}`);
 

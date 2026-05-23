@@ -196,8 +196,8 @@ export const createWebhook = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (admin:webhooks:read)
  */
 export const getWebhookById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { webhookId } = req.params;
-
+  const webhookId = req.params.webhookId as string;
+  
   logger.debug(`Admin: Getting webhook: ${webhookId}`);
 
   const webhook = await adminWebhookService.getWebhookById(webhookId);
@@ -211,7 +211,7 @@ export const getWebhookById = asyncHandler(async (req: Request, res: Response): 
  * @access  Private (admin:webhooks:manage)
  */
 export const updateWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { webhookId } = req.params;
+  const webhookId = req.params.webhookId as string;
 
   logger.debug(`Admin: Updating webhook: ${webhookId}`, { body: req.body });
 
@@ -226,7 +226,7 @@ export const updateWebhook = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (admin:webhooks:manage)
  */
 export const deleteWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { webhookId } = req.params;
+  const webhookId = req.params.webhookId as string;
 
   logger.debug(`Admin: Deleting webhook: ${webhookId}`);
 
@@ -242,7 +242,7 @@ export const deleteWebhook = asyncHandler(async (req: Request, res: Response): P
  */
 export const retryWebhookDelivery = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { deliveryId } = req.params;
+    const deliveryId = req.params.deliveryId as string;
 
     logger.debug(`Admin: Retrying delivery: ${deliveryId}`);
 

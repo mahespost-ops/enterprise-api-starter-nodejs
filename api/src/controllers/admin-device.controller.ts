@@ -199,7 +199,7 @@ export const listDevices = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (admin:devices:read)
  */
 export const getDeviceById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { deviceId } = req.params;
+  const deviceId = req.params.deviceId as string;
 
   logger.debug(`Admin: Getting device: ${deviceId}`);
 
@@ -214,7 +214,7 @@ export const getDeviceById = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (admin:devices:manage)
  */
 export const updateDevice = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { deviceId } = req.params;
+  const deviceId = req.params.deviceId as string;
 
   logger.debug(`Admin: Updating device: ${deviceId}`, { body: req.body });
 
@@ -229,7 +229,7 @@ export const updateDevice = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (admin:devices:manage)
  */
 export const revokeDevice = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { deviceId } = req.params;
+  const deviceId = req.params.deviceId as string;
 
   logger.debug(`Admin: Revoking device: ${deviceId}`);
 

@@ -15,7 +15,7 @@ import logger from '../config/logger';
  * @access  Private (requires groups:read permission)
  */
 export const listGroups = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const {
     limit = 20,
     offset = 0,
@@ -65,7 +65,8 @@ export const listGroups = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (requires groups:read permission)
  */
 export const getGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
 
   logger.debug(`Getting group: ${groupId}`);
 
@@ -92,7 +93,7 @@ export const getGroup = asyncHandler(async (req: Request, res: Response): Promis
  * @access  Private (requires groups:create permission)
  */
 export const createGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
 
   logger.debug(`Creating group in organization: ${orgId}`);
 
@@ -119,7 +120,9 @@ export const createGroup = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (requires groups:write permission)
  */
 export const updateGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
+  
 
   logger.debug(`Updating group: ${groupId}`);
 
@@ -146,7 +149,8 @@ export const updateGroup = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (requires groups:delete permission)
  */
 export const deleteGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
 
   logger.debug(`Deleting group: ${groupId}`);
 
@@ -161,7 +165,8 @@ export const deleteGroup = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (requires groups:read permission)
  */
 export const listGroupMembers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
   const { limit = 20, offset = 0 } = req.query;
 
   logger.debug(`Listing members for group: ${groupId}`);
@@ -195,7 +200,10 @@ export const listGroupMembers = asyncHandler(async (req: Request, res: Response)
  * @access  Private (requires groups:manage_members permission)
  */
 export const addGroupMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
+  //const userId = req.body.userId as string;
+  
   const { userId } = req.body;
   const addedBy = req.user!.sub;
 
@@ -219,7 +227,10 @@ export const addGroupMember = asyncHandler(async (req: Request, res: Response): 
  */
 export const removeGroupMember = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, groupId, userId } = req.params;
+    const orgId = req.params.orgId as string;
+    const groupId = req.params.groupId as string;
+    const userId = req.params.userId as string;
+    
 
     logger.debug(`Removing member from group: ${groupId}`);
 
@@ -235,7 +246,8 @@ export const removeGroupMember = asyncHandler(
  * @access  Private (requires groups:read permission)
  */
 export const getChildGroups = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, groupId } = req.params;
+  const orgId = req.params.orgId as string;
+  const groupId = req.params.groupId as string;
   const { limit = 20, offset = 0 } = req.query;
 
   logger.debug(`Getting child groups for: ${groupId}`);

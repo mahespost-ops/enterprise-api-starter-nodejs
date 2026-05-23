@@ -141,7 +141,7 @@ function transformSessionResponse(session: any): Record<string, unknown> {
  * @access  Private (admin:users:impersonate)
  */
 export const startImpersonation = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+  const userId = req.params.userId as string;
   const { reason, expiresInMinutes } = req.body;
 
   logger.info('Admin: Starting impersonation', {
@@ -242,7 +242,7 @@ export const listSessions = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (admin:impersonation:manage)
  */
 export const forceEndSession = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { sessionId } = req.params;
+  const sessionId = req.params.sessionId as string;
 
   logger.info('Admin: Force-ending impersonation session', { sessionId });
 

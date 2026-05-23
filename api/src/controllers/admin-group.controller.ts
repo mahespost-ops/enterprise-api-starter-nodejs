@@ -155,7 +155,7 @@ export const listGroups = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:groups:read)
  */
 export const getGroupById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId } = req.params;
+  const groupId = req.params.groupId as string;
 
   logger.debug(`Admin: Getting group: ${groupId}`);
 
@@ -170,7 +170,7 @@ export const getGroupById = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (admin:groups:manage)
  */
 export const updateGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId } = req.params;
+  const groupId = req.params.groupId as string;
 
   logger.debug(`Admin: Updating group: ${groupId}`, { body: req.body });
 
@@ -185,8 +185,8 @@ export const updateGroup = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (admin:groups:manage)
  */
 export const deleteGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { groupId } = req.params;
-
+  const groupId = req.params.groupId as string;
+  
   logger.debug(`Admin: Deleting group: ${groupId}`);
 
   await adminGroupService.deleteGroup(groupId);

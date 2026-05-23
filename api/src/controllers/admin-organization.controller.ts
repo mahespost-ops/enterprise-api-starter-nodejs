@@ -138,7 +138,7 @@ export const listOrganizations = asyncHandler(async (req: Request, res: Response
  * @access  Private (admin:organizations:read)
  */
 export const getOrganization = asyncHandler(async (req: Request, res: Response) => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
 
   logger.debug('Admin: Get organization request', { orgId });
 
@@ -153,7 +153,7 @@ export const getOrganization = asyncHandler(async (req: Request, res: Response) 
  * @access  Private (admin:organizations:manage)
  */
 export const updateOrganization = asyncHandler(async (req: Request, res: Response) => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const updateData = req.body;
 
   logger.debug('Admin: Update organization request', { orgId, updateData });
@@ -169,7 +169,7 @@ export const updateOrganization = asyncHandler(async (req: Request, res: Respons
  * @access  Private (admin:organizations:manage)
  */
 export const deleteOrganization = asyncHandler(async (req: Request, res: Response) => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
 
   logger.debug('Admin: Delete organization request', { orgId });
 

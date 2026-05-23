@@ -128,7 +128,7 @@ export const createEventType = asyncHandler(async (req: Request, res: Response):
  * @access  Private (admin:events:read)
  */
 export const getEventTypeById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { eventTypeId } = req.params;
+  const eventTypeId = req.params.eventTypeId as string;
 
   logger.debug(`Admin: Getting event type: ${eventTypeId}`);
 
@@ -143,7 +143,7 @@ export const getEventTypeById = asyncHandler(async (req: Request, res: Response)
  * @access  Private (admin:events:manage)
  */
 export const updateEventType = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { eventTypeId } = req.params;
+  const eventTypeId = req.params.eventTypeId as string;
 
   logger.debug(`Admin: Updating event type: ${eventTypeId}`, { body: req.body });
 
@@ -158,7 +158,7 @@ export const updateEventType = asyncHandler(async (req: Request, res: Response):
  * @access  Private (admin:events:manage)
  */
 export const deleteEventType = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { eventTypeId } = req.params;
+  const eventTypeId = req.params.eventTypeId as string;
 
   logger.debug(`Admin: Deleting event type: ${eventTypeId}`);
 

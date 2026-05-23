@@ -166,7 +166,10 @@ export const listRoleAssignments = asyncHandler(async (req: Request, res: Respon
 export const createRoleAssignment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   logger.debug('Admin: Creating role assignment', { body: req.body });
 
-  const { roleId, environmentId, membershipId, groupId } = req.body;
+  const roleId = req.params.roleId as string;
+  const environmentId = req.params.environmentId as string;
+  const membershipId = req.params.membershipId as string;
+  const groupId = req.params.groupId as string;
 
   // Get current user ID from JWT for assignedBy field
   const assignedBy = (req as { user?: { userId: string } }).user?.userId;
@@ -208,7 +211,8 @@ export const createRoleAssignment = asyncHandler(async (req: Request, res: Respo
 export const deleteRoleAssignment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   logger.debug('Admin: Deleting role assignment', { params: req.params });
 
-  const { assignmentId } = req.params;
+  const assignmentId = req.params.assignmentId as string;
+    
 
   await adminRoleAssignmentService.deleteRoleAssignment(assignmentId);
 

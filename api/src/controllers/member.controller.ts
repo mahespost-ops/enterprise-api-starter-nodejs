@@ -18,7 +18,7 @@ import logger from '../config/logger';
  * @access  Private (requires members:read permission)
  */
 export const listMembers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const { limit = 20, offset = 0, 'filter[status]': status } = req.query;
 
   logger.debug(`Listing members for organization: ${orgId}`);
@@ -60,7 +60,8 @@ export const listMembers = asyncHandler(async (req: Request, res: Response): Pro
  * @access  Private (requires members:read permission)
  */
 export const getMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Getting member: ${memberId}`);
 
@@ -84,7 +85,7 @@ export const getMember = asyncHandler(async (req: Request, res: Response): Promi
  * @access  Private (requires members:invite permission)
  */
 export const inviteMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Inviting member to organization: ${orgId}`);
@@ -109,7 +110,8 @@ export const inviteMember = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (requires members:write permission)
  */
 export const updateMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Updating member: ${memberId}`);
 
@@ -133,7 +135,8 @@ export const updateMember = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (requires members:delete permission)
  */
 export const removeMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, memberId } = req.params;
+  const orgId = req.params.orgId as string;
+  const memberId = req.params.memberId as string;
 
   logger.debug(`Removing member: ${memberId}`);
 
@@ -149,7 +152,8 @@ export const removeMember = asyncHandler(async (req: Request, res: Response): Pr
  */
 export const getMemberOrganizations = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
 
     logger.debug(`Getting organizations for member: ${memberId}`);
 
@@ -173,7 +177,8 @@ export const getMemberOrganizations = asyncHandler(
  */
 export const getMemberPermissions = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
 
     logger.debug(`Getting permissions for member: ${memberId}`);
 
@@ -190,7 +195,8 @@ export const getMemberPermissions = asyncHandler(
  */
 export const startImpersonation = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
     const { reason, expiresInMinutes, environmentId } = req.body;
     const originalUserId = req.user!.sub;
     const ipAddress = req.ip || req.socket.remoteAddress;
@@ -228,7 +234,8 @@ export const startImpersonation = asyncHandler(
  */
 export const endImpersonation = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
     const impersonation = req.user?.impersonation;
 
     logger.debug(`Ending impersonation for member: ${memberId}`);
@@ -269,7 +276,8 @@ export const endImpersonation = asyncHandler(
  */
 export const getImpersonationStatus = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
     const isImpersonating = req.user?.impersonation !== undefined;
 
     logger.debug(`Getting impersonation status for member: ${memberId}`);

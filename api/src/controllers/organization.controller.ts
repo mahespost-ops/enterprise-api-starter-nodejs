@@ -15,7 +15,7 @@ import logger from '../config/logger';
  * @access  Private (member access)
  */
 export const getOrganization = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Getting organization: ${orgId}`);
@@ -53,7 +53,7 @@ export const getOrganization = asyncHandler(async (req: Request, res: Response):
  * @access  Private (requires organizations:manage permission)
  */
 export const updateOrganization = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId } = req.params;
+  const orgId = req.params.orgID as string;
   const userId = req.user!.sub;
 
   logger.debug(`Updating organization: ${orgId}`);

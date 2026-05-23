@@ -157,7 +157,8 @@ export const listEnvironments = asyncHandler(async (req: Request, res: Response)
  * @access  Private (admin:environments:read)
  */
 export const getEnvironment = asyncHandler(async (req: Request, res: Response) => {
-  const { envId } = req.params;
+  const envId = req.params.envId as string;
+  
 
   logger.debug('Admin: Get environment request', { envId });
 
@@ -172,7 +173,7 @@ export const getEnvironment = asyncHandler(async (req: Request, res: Response) =
  * @access  Private (admin:environments:manage)
  */
 export const updateEnvironment = asyncHandler(async (req: Request, res: Response) => {
-  const { envId } = req.params;
+  const envId = req.params.envId as string;
   const updateData = req.body;
 
   logger.debug('Admin: Update environment request', { envId, updateData });
@@ -188,7 +189,7 @@ export const updateEnvironment = asyncHandler(async (req: Request, res: Response
  * @access  Private (admin:environments:manage)
  */
 export const deleteEnvironment = asyncHandler(async (req: Request, res: Response) => {
-  const { envId } = req.params;
+  const envId = req.params.envId as string;
 
   logger.debug('Admin: Delete environment request', { envId });
 

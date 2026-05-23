@@ -12,6 +12,7 @@ import type { IMessageQueueAdapter } from './queue/message-queue.interface';
 import type { IAdapterConfig } from './config/adapter.config';
 import { loadAdapterConfig } from './config/adapter.config';
 import { MockEmailAdapter } from './email/mock.email.adapter';
+import { SMTPEmailAdapter } from './email/smtp.email.adapter';
 import { EnvSecretsAdapter } from './secrets/env.secrets.adapter';
 import { LocalStorageAdapter } from './storage/local.storage.adapter';
 import { MemoryQueueAdapter } from './queue/memory.queue.adapter';
@@ -149,6 +150,11 @@ export class AdapterFactory {
       case 'ses':
         // TODO: Implement SESAdapter
         throw new Error('SES adapter not yet implemented');
+      case 'smtp':
+        if (!this.config.email.smtp) {
+          throw new Error('SMTP configuration is missing');
+        }
+        return new SMTPEmailAdapter(this.config.email.smtp);
       case 'mock':
         return new MockEmailAdapter();
       default:

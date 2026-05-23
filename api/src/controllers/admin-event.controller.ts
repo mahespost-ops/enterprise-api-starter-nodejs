@@ -136,7 +136,7 @@ export const listEvents = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (admin:events:read)
  */
 export const getEvent = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { eventId } = req.params;
+  const eventId = req.params.eventId as string;
 
   logger.debug('Admin get event request', { eventId });
 

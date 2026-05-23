@@ -17,7 +17,8 @@ import logger from '../config/logger';
  * @access  Private (requires events:read permission)
  */
 export const listEvents = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
   const { limit, cursor, fields } = req.query;
 
@@ -51,7 +52,10 @@ export const listEvents = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (requires events:read permission)
  */
 export const getEvent = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, eventId } = req.params;
+  
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const eventId = req.params.eventId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Getting event: ${eventId}`);

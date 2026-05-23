@@ -15,7 +15,8 @@ import logger from '../config/logger';
  * @access  Private (requires webhooks:read permission)
  */
 export const listWebhooks = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
   const { limit, offset, search, fields } = req.query;
 
@@ -48,7 +49,8 @@ export const listWebhooks = asyncHandler(async (req: Request, res: Response): Pr
  * @access  Private (requires webhooks:manage permission)
  */
 export const createWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Creating webhook for environment: ${envId}`);
@@ -65,7 +67,11 @@ export const createWebhook = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (requires webhooks:read permission)
  */
 export const getWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId } = req.params;
+
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
+  
   const userId = req.user!.sub;
 
   logger.debug(`Getting webhook: ${webhookId}`);
@@ -82,7 +88,9 @@ export const getWebhook = asyncHandler(async (req: Request, res: Response): Prom
  * @access  Private (requires webhooks:manage permission)
  */
 export const updateWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Updating webhook: ${webhookId}`);
@@ -99,7 +107,9 @@ export const updateWebhook = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (requires webhooks:manage permission)
  */
 export const deleteWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Deleting webhook: ${webhookId}`);
@@ -115,7 +125,9 @@ export const deleteWebhook = asyncHandler(async (req: Request, res: Response): P
  * @access  Private (requires webhooks:read permission)
  */
 export const listWebhookDeliveries = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
   const userId = req.user!.sub;
   const { limit, offset } = req.query;
 
@@ -142,7 +154,10 @@ export const listWebhookDeliveries = asyncHandler(async (req: Request, res: Resp
  * @access  Private (requires webhooks:read permission)
  */
 export const getWebhookDelivery = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId, deliveryId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
+  const deliveryId = req.params.deliveryId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Getting delivery: ${deliveryId} for webhook: ${webhookId}`);
@@ -158,7 +173,10 @@ export const getWebhookDelivery = asyncHandler(async (req: Request, res: Respons
  * @access  Private (requires webhooks:manage permission)
  */
 export const retryWebhookDelivery = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { orgId, envId, webhookId, deliveryId } = req.params;
+  const orgId = req.params.orgId as string;
+  const envId = req.params.envId as string;
+  const webhookId = req.params.webhookId as string;
+  const deliveryId = req.params.deliveryId as string;
   const userId = req.user!.sub;
 
   logger.debug(`Retrying delivery: ${deliveryId} for webhook: ${webhookId}`);
